@@ -139,7 +139,7 @@ class PainelEmpresaScreen extends StatelessWidget {
       ),
       body: Center(
         child: Text(
-          'Welcome to Geoponto. The greatest app in mankind!\n\n'
+          'Welcome to Geoponto. An app, of kings.\n\n'
           'Usuário: ${usuario?.email}',
           textAlign: TextAlign.center,
         ),
