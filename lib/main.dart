@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/services/supabase_service.dart';
+import 'core/themes/app_themes.dart';
+import 'core/themes/theme_controller.dart';
 import 'features/auth/screens/login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await dotenv.load(fileName: '.env');
-
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+  await SupabaseService.inicializar();
 
   runApp(const MyApp());
 }
@@ -21,14 +18,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'GeoPonto',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-        ),
-      ),
-      home: const LoginScreen(),
+    return ListenableBuilder(
+      listenable: ThemeController.instance,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'GeoPonto',
+          debugShowCheckedModeBanner: false,
+          themeMode: ThemeController.instance.themeMode,
+          theme: AppThemes.lightTheme,
+          darkTheme: AppThemes.darkTheme,
+          home: const LoginScreen(),
+        );
+      },
     );
   }
 }
