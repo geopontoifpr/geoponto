@@ -64,3 +64,36 @@ class PontoForaDoRaioException extends AppException {
   const PontoForaDoRaioException([String mensagem = 'Você está fora do raio permitido da empresa.'])
       : super(mensagem: mensagem, codigo: 'OUT_OF_RANGE', cor: Colors.red);
 }
+
+// Erro quando o serviço de localização está desativado
+class LocalizacaoDesativadaException extends AppException {
+  const LocalizacaoDesativadaException([
+    String mensagem = 'O serviço de localização está desativado.',
+  ]) : super(
+          mensagem: mensagem,
+          codigo: 'LOCATION_DISABLED',
+          cor: Colors.orange,
+        );
+}
+
+// Erro quando a permissão de localização foi negada
+class PermissaoLocalizacaoNegadaException extends AppException {
+  const PermissaoLocalizacaoNegadaException([
+    String mensagem = 'Permissão de localização negada.',
+  ]) : super(
+          mensagem: mensagem,
+          codigo: 'LOCATION_PERMISSION_DENIED',
+          cor: Colors.redAccent,
+        );
+}
+
+// Erro quando a permissão de localização foi negada permanentemente
+class PermissaoLocalizacaoNegadaPermanentementeException extends AppException {
+  const PermissaoLocalizacaoNegadaPermanentementeException([
+    String mensagem = 'Permissão de localização negada permanentemente.',
+  ]) : super(
+          mensagem: mensagem,
+          codigo: 'LOCATION_PERMISSION_DENIED_FOREVER',
+          cor: Colors.red,
+        );
+}
