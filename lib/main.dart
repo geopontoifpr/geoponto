@@ -4,9 +4,6 @@ import 'core/services/supabase_service.dart';
 import 'core/themes/app_themes.dart';
 import 'core/themes/theme_controller.dart';
 import 'features/auth/screens/login_screen.dart';
-import 'package:geolocator/geolocator.dart';
-import 'core/services/location_service.dart';
-import 'core/utils/calculadora_distancia_util.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

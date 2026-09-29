@@ -1,11 +1,13 @@
 import 'package:geolocator/geolocator.dart';
 
+import '../errors/app_exception.dart';
+
 class LocationService {
   Future<Position> obterLocalizacaoAtual() async {
     bool servicoAtivo = await Geolocator.isLocationServiceEnabled();
 
     if (!servicoAtivo) {
-      throw Exception('O serviço de localização está desativado.');
+      throw const LocalizacaoDesativadaException();
     }
 
     LocationPermission permissao = await Geolocator.checkPermission();
@@ -14,12 +16,12 @@ class LocationService {
       permissao = await Geolocator.requestPermission();
 
       if (permissao == LocationPermission.denied) {
-        throw Exception('Permissão de localização negada.');
+        throw const PermissaoLocalizacaoNegadaException();
       }
     }
 
     if (permissao == LocationPermission.deniedForever) {
-      throw Exception('Permissão de localização negada permanentemente.');
+      throw const PermissaoLocalizacaoNegadaPermanentementeException();
     }
 
     return await Geolocator.getCurrentPosition();
