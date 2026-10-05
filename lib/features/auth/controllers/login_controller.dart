@@ -36,7 +36,7 @@ class LoginController extends ChangeNotifier {
       _erro = e.toString().replaceAll('Exception: ', '');
       _carregando = false;
       notifyListeners();
-      return false; // Retorno explícito obrigatório
+      return false; // Retorno obrigatório
     }
   }
 }

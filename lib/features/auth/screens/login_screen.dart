@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../controllers/login_controller.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../admin/screens/painel_empresa_screen.dart';
 
+// Importando os widgets globais que criamos
+import '../../../core/widgets/custom_text_field.dart';
+import '../../../core/widgets/primary_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,7 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
   late final LoginController _controller;
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
-  bool _ocultarSenha = true;
 
   @override
   void initState() {
@@ -29,15 +32,28 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submeter() async {
+    final email = _emailController.text.trim();
+    final senha = _senhaController.text;
+
+    // Validação manual dos campos
+    if (email.isEmpty || senha.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, preencha o e-mail e a senha.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     final sucesso = await _controller.entrar(
-      email: _emailController.text,
-      senha: _senhaController.text,
+      email: email,
+      senha: senha,
     );
 
     if (sucesso && mounted) {
       final usuario = _controller.usuarioLogado;
 
-      // Redirecionamento por perfil conforme regras do GeoPonto
       Widget destino;
       switch (usuario?.tipoUsuario) {
         case TipoUsuario.administrador:
@@ -69,76 +85,112 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('GeoPonto'),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Iniciar sessão',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 30),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'E-mail',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-             TextField(
-                  controller: _senhaController,
-                  obscureText: _ocultarSenha,
-                  enableSuggestions: false,
-                  autocorrect: false,
-                  decoration: InputDecoration(
-                    labelText: 'Senha',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _ocultarSenha ? Icons.visibility_off : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _ocultarSenha = !_ocultarSenha;
-                        });
-                      },
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Placeholder para a Logo corrigido
+                Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.location_on, 
+                      size: 45, 
+                      color: Color(0xFFF05B5B),
                     ),
                   ),
                 ),
-              const SizedBox(height: 20),
-              if (_controller.erro != null) ...[
+                const SizedBox(height: 24),
+                
+                // Títulos (Corrigidos: sem 'const' e sem duplicação estrutural)
                 Text(
-                  _controller.erro!,
-                  style: const TextStyle(color: Colors.red),
+                  'GeoPonto',
                   textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-                const SizedBox(height: 20),
-              ],
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
+                const SizedBox(height: 8),
+                Text(
+                  'Controle de jornada e ponto eletrônico',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 48),
+                
+                // Input de E-mail Refatorado
+                CustomTextField(
+                  controller: _emailController,
+                  labelText: 'E-mail corporativo',
+                  prefixIcon: Icons.email_outlined,
+                ),
+                const SizedBox(height: 24),
+                
+                // Input de Senha Refatorado
+                CustomTextField(
+                  controller: _senhaController,
+                  labelText: 'Senha',
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: true,
+                ),
+                const SizedBox(height: 32),
+                
+                // Exibição de Erro
+                if (_controller.erro != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.error.withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.error),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _controller.erro!,
+                            style: const TextStyle(color: AppColors.error),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                
+                // Botão Acessar Sistema Refatorado
+                PrimaryButton(
                   onPressed: _controller.carregando ? null : _submeter,
-                  child: _controller.carregando
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Entrar'),
+                  isLoading: _controller.carregando,
+                  text: 'Acessar Sistema',
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
