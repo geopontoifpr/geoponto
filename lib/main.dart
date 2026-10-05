@@ -24,10 +24,10 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'GeoPonto',
           debugShowCheckedModeBanner: false,
-          themeMode: ThemeController.instance.themeMode,
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
-          home: const LoginScreen(),
+          themeMode: ThemeController.instance.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          home: const LoginScreen(), 
         );
       },
     );
