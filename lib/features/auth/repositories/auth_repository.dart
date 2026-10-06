@@ -24,19 +24,6 @@ class AuthRepository {
     await _client.auth.signOut();
   }
 
-//   Future<UsuarioModel?> buscarDadosPerfil(String email) async {
-//     final response = await _client
-//         .from('usuarios')
-//         .select()
-//         .eq('email', email)
-//         .maybeSingle();
-
-//     if (response == null) return null;
-//     return UsuarioModel.fromMap(response);
-//   }
-
-  // Busca o usuário usando email e senha diretamente na tabela usuarios
-  // Invoca a RPC segura mantendo as políticas de RLS ativas
   Future<UsuarioModel?> buscarPorCredenciais({
     required String email,
     required String senha,
