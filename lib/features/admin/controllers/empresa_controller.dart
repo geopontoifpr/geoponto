@@ -21,31 +21,29 @@ class EmpresaController extends ChangeNotifier {
     required String raioTexto,
   }) async {
     if (nome.isEmpty || cnpj.isEmpty || latTexto.isEmpty || lngTexto.isEmpty) {
-      throw const ValidacaoException('Por favor, preencha todos os campos obrigatórios.');
+      throw const ValidacaoException('Preencha todos os campos obrigatórios.');
     }
 
     final lat = double.tryParse(latTexto.replaceAll(',', '.'));
     final lng = double.tryParse(lngTexto.replaceAll(',', '.'));
     final raio = int.tryParse(raioTexto);
 
-    if (lat == null || lng == null) {
-      throw const ValidacaoException('As coordenadas devem ser números válidos.');
-    }
-    if (raio == null || raio <= 0) {
-      throw const ValidacaoException('O raio deve ser um número inteiro maior que zero.');
+    if (lat == null || lng == null || raio == null) {
+      throw const ValidacaoException('Coordenadas ou raio em formato inválido.');
     }
 
     final empresa = EmpresaModel(
       id: idAtual ?? '',
       nome: nome,
       cnpj: cnpj,
-      latitude: lat, // Corrigido
-      longitude: lng, // Corrigido
-      raioPermitido: raio, // Corrigido
+      latitude: lat,
+      longitude: lng,
+      raioPermitido: raio,
     );
 
     _setLoading(true);
     try {
+      // Se idAtual vier preenchido, é edição. Se for nulo, é criação.
       await _service.salvarEmpresa(empresa, ehEdicao: idAtual != null);
     } finally {
       _setLoading(false);
@@ -58,9 +56,12 @@ class EmpresaController extends ChangeNotifier {
       final empresas = await _service.buscarMinhasEmpresas();
       if (empresas.isNotEmpty) {
         empresaAtual = empresas.first;
+      } else {
+        print('DEBUG CONTROLLER: A lista de empresas veio VAZIA!');
       }
-    } catch (_) {
-      // Falhas silenciosas no carregamento do painel
+    } catch (e) {
+      // ADICIONE ESTE PRINT PARA VER SE A TELA ESTÁ ESCONDENDO O ERRO
+      print('DEBUG CONTROLLER: Erro ao carregar painel: $e');
     } finally {
       _setLoading(false);
     }

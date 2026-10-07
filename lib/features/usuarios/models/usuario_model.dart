@@ -1,7 +1,7 @@
 enum TipoUsuario {
   administrador,
   gestor,
-  funcionario;
+  colaborador;
 
   static TipoUsuario fromString(String valor) {
     switch (valor.toUpperCase()) {
@@ -9,9 +9,9 @@ enum TipoUsuario {
         return TipoUsuario.administrador;
       case 'GESTOR':
         return TipoUsuario.gestor;
-      case 'FUNCIONARIO':
+      case 'COLABORADOR':
       default:
-        return TipoUsuario.funcionario;
+        return TipoUsuario.colaborador;
     }
   }
 
@@ -21,8 +21,8 @@ enum TipoUsuario {
         return 'ADMINISTRADOR';
       case TipoUsuario.gestor:
         return 'GESTOR';
-      case TipoUsuario.funcionario:
-        return 'FUNCIONARIO';
+      case TipoUsuario.colaborador:
+        return 'COLABORADOR';
     }
   }
 }
@@ -53,7 +53,7 @@ class UsuarioModel {
     setorId: map['setor_id']?.toString(),
     nome: map['nome']?.toString() ?? '',
     email: map['email']?.toString() ?? '',
-    tipoUsuario: TipoUsuario.fromString(map['tipo_usuario']?.toString() ?? 'FUNCIONARIO'),
+    tipoUsuario: TipoUsuario.fromString(map['tipo_usuario']?.toString() ?? 'COLABORADOR'),
     // Garante que se vier null, false falso-positivo ou outro tipo, trate com segurança
     ativo: map['ativo'] == true || map['ativo'] == null, 
   );

@@ -3,7 +3,6 @@ class SetorModel {
   final String empresaId;
   final String gestorId;
   final String nome;
-  final bool ativo;
   final DateTime? criadoEm;
   final DateTime? atualizadoEm;
 
@@ -12,7 +11,6 @@ class SetorModel {
     required this.empresaId,
     required this.gestorId,
     required this.nome,
-    required this.ativo,
     this.criadoEm,
     this.atualizadoEm,
   });
@@ -23,7 +21,6 @@ class SetorModel {
       empresaId: map['empresa_id']?.toString() ?? '',
       gestorId: map['gestor_id']?.toString() ?? '',
       nome: map['nome']?.toString() ?? '',
-      ativo: map['ativo'] == true || map['ativo'] == null,
       criadoEm: map['criado_em'] != null 
           ? DateTime.tryParse(map['criado_em'].toString()) 
           : null,
@@ -39,7 +36,6 @@ class SetorModel {
       'empresa_id': empresaId,
       'gestor_id': gestorId,
       'nome': nome,
-      'ativo': ativo,
     };
   }
 }

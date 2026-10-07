@@ -9,36 +9,30 @@ class EmpresaService {
       : _repository = repository ?? AdminRepository();
 
   Future<EmpresaModel> salvarEmpresa(EmpresaModel empresa, {bool ehEdicao = false}) async {
-    // 1. Regra de Negócio: Limpar a máscara e validar o tamanho do CNPJ
+    // Validação de CNPJ
     final cnpjLimpo = empresa.cnpj?.replaceAll(RegExp(r'[^0-9]'), '') ?? '';
-
-    if (cnpjLimpo.isEmpty) {
-      throw const ValidacaoException('O CNPJ não pode estar vazio.');
-    }
-    
     if (cnpjLimpo.length != 14) {
-      throw const ValidacaoException('O CNPJ inválido. Ele deve conter exatamente 14 dígitos numéricos.');
+      throw const ValidacaoException('CNPJ inválido. Digite exatamente 14 números.');
     }
 
-    // 2. Regra de Negócio: Validar limites geográficos
+    // Validação GPS
     if (empresa.latitude != null && (empresa.latitude! < -90 || empresa.latitude! > 90)) {
-      throw const ValidacaoException('Latitude inválida. Deve estar entre -90 e 90.');
+      throw const ValidacaoException('Latitude inválida.');
     }
     if (empresa.longitude != null && (empresa.longitude! < -180 || empresa.longitude! > 180)) {
-      throw const ValidacaoException('Longitude inválida. Deve estar entre -180 e 180.');
+      throw const ValidacaoException('Longitude inválida.');
     }
 
-    // Atualiza o model para salvar o CNPJ limpo no banco
-    final empresaValidada = EmpresaModel(
+    final empresaFormatada = EmpresaModel(
       id: empresa.id,
       nome: empresa.nome,
       cnpj: cnpjLimpo,
-      latitude: empresa.latitude, // Corrigido para latitude
-      longitude: empresa.longitude, // Corrigido para longitude
-      raioPermitido: empresa.raioPermitido, // Corrigido para raioPermitido
+      latitude: empresa.latitude,
+      longitude: empresa.longitude,
+      raioPermitido: empresa.raioPermitido,
     );
 
-    return await _repository.salvarEmpresa(empresaValidada, ehEdicao: ehEdicao);
+    return await _repository.salvarEmpresa(empresaFormatada, ehEdicao: ehEdicao);
   }
 
   Future<List<EmpresaModel>> buscarMinhasEmpresas() async {

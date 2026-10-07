@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
           destino = PainelEmpresaScreen(usuario: usuario!);
           break;
         case TipoUsuario.gestor:
-        case TipoUsuario.funcionario:
+        case TipoUsuario.colaborador:
         default:
           destino = PainelEmpresaScreen(usuario: usuario!);
           break;

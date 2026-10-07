@@ -15,12 +15,17 @@ class AdminRepository {
   // EMPRESAS
   // ==========================================
 
-  Future<List<EmpresaModel>> listarEmpresas() async {
+ Future<List<EmpresaModel>> listarEmpresas() async {
     try {
       final response = await _client
           .from('empresas')
           .select()
-          .order('nome', ascending: true); // Ajustado para 'nome'
+          .order('nome', ascending: true); 
+      
+      // ADICIONE ESTE PRINT PARA DEBUG
+      print('=== DEBUG SUPABASE (listarEmpresas) ===');
+      print('Resposta do banco: $response');
+      print('=======================================');
       
       return (response as List)
           .map((e) => EmpresaModel.fromMap(e as Map<String, dynamic>))
@@ -28,8 +33,10 @@ class AdminRepository {
     } on SocketException {
       throw const ConexaoException();
     } on PostgrestException catch (e) {
+      print('ERRO POSTGREST: ${e.message} | Detalhes: ${e.details}'); // DEBUG
       throw ServidorException('Erro ao buscar empresas: ${e.message}');
     } catch (e) {
+      print('ERRO DESCONHECIDO NO REPOSITÓRIO: $e'); // DEBUG
       throw const ServidorException('Falha inesperada ao listar empresas.');
     }
   }
@@ -60,10 +67,16 @@ class AdminRepository {
 
   Future<EmpresaModel> salvarEmpresa(EmpresaModel empresa, {bool ehEdicao = false}) async {
     try {
+      // GARANTIA: Pegamos o usuário logado direto do Supabase no Flutter
+      final usuarioLogado = _client.auth.currentUser;
+      if (usuarioLogado == null) {
+        throw const ServidorException('Sessão expirada. Feche o app e faça login novamente.');
+      }
+
       if (ehEdicao) {
-        // Fluxo de Edição normal usando o RLS restrito da tabela
+        // FLUXO DE EDIÇÃO
         final dados = empresa.toMap();
-        dados.remove('id'); // Não tentamos atualizar a Primary Key
+        dados.remove('id'); 
 
         final response = await _client
             .from('empresas')
@@ -74,8 +87,9 @@ class AdminRepository {
             
         return EmpresaModel.fromMap(response);
       } else {
-        // Fluxo de Criação: Aciona a RPC que salva a empresa e atualiza o usuário na mesma transação
+        // FLUXO DE CRIAÇÃO: Passando o ID explicitamente para a RPC!
         final response = await _client.rpc('cadastrar_empresa_inicial', params: {
+          'p_admin_id': usuarioLogado.id, // <=== PASSAMOS O UUID DO ADMIN AQUI!
           'p_nome': empresa.nome,
           'p_cnpj': empresa.cnpj,
           'p_latitude_ponto': empresa.latitude,
@@ -85,17 +99,18 @@ class AdminRepository {
 
         return EmpresaModel.fromMap(response as Map<String, dynamic>);
       }
-    } on SocketException {
-      throw const ConexaoException();
     } on PostgrestException catch (e) {
       if (e.code == '23505') {
-        throw const DadoDuplicadoException('Já existe uma empresa cadastrada com este CNPJ.');
+        throw const DadoDuplicadoException('Já existe uma empresa cadastrada com este CNPJ no sistema.');
       }
-      throw ServidorException('Erro ao salvar empresa: ${e.message}');
-    } catch (_) {
+      if (e.message.contains('já possui uma empresa')) {
+        throw const ValidacaoException('Você já possui uma empresa vinculada. Atualize os dados em vez de recadastrar.');
+      }
+      throw ServidorException('Erro no banco: ${e.message}');
+    } catch (e) {
+      print('ERRO DESCONHECIDO NO REPOSITÓRIO: $e');
       throw const ServidorException('Falha inesperada ao processar empresa.');
-    }    
-    
+    }
   }
 
   // ==========================================
