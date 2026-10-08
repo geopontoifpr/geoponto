@@ -1,7 +1,7 @@
 class SetorModel {
   final String id;
   final String empresaId;
-  final String gestorId;
+  final String? gestorId;
   final String nome;
   final DateTime? criadoEm;
   final DateTime? atualizadoEm;

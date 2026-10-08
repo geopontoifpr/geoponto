@@ -3,6 +3,8 @@ import '../../usuarios/models/usuario_model.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../controllers/empresa_controller.dart';
 import 'cadastro_empresa_screen.dart';
+import 'cadastro_setor_screen.dart';
+import 'equipe_screen.dart';
 
 class PainelEmpresaScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -147,28 +149,49 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                       context: context,
                       title: 'Gerenciar\nSetores',
                       icon: Icons.account_tree_outlined,
-                      onTap: () {
+                      onTap: () async { // <-- Adicione o 'async' aqui no onTap
                         if (!temEmpresa) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Por favor, cadastre a empresa primeiro.'), backgroundColor: Colors.orange),
+                            const SnackBar(
+                              content: Text('Por favor, cadastre a empresa primeiro.'),
+                              backgroundColor: Colors.orange,
+                            ),
                           );
-                          return;
+                          return;                        
+                        } else {
+                          // Executa a navegação diretamente, sem aquele "onPressed:" solto
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              // Dica: Se o Flutter acusar que empresa pode ser nula, use empresa!.id
+                              builder: (context) => CadastroSetorScreen(empresaId: empresa.id), 
+                            ),
+                          );
                         }
-                        // TODO: Navegar para Lista/Cadastro de Setores
                       },
                     ),
-                    _buildActionCard(
+                   _buildActionCard(
                       context: context,
-                      title: 'Gestão da\nEquipe',
-                      icon: Icons.people_outline,
-                      onTap: () {
+                      title: 'Gerenciar\nEquipe',
+                      icon: Icons.people_alt_outlined, // Ícone de grupo de pessoas
+                      onTap: () async { 
                         if (!temEmpresa) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Por favor, cadastre a empresa primeiro.'), backgroundColor: Colors.orange),
+                            const SnackBar(
+                              content: Text('Por favor, cadastre a empresa primeiro.'),
+                              backgroundColor: Colors.orange,
+                            ),
                           );
-                          return;
+                          return;                        
+                        } else {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              // Abre a nova tela passando o ID da empresa!
+                              builder: (context) => EquipeScreen(empresaId: empresa.id), 
+                            ),
+                          );
                         }
-                        // TODO: Navegar para CadastroUsuarioScreen
                       },
                     ),
                   ],
