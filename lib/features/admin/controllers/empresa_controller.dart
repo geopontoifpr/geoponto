@@ -61,7 +61,7 @@ class EmpresaController extends ChangeNotifier {
       if (empresas.isNotEmpty) {
         empresaAtual = empresas.first;
       } else {
-        print('DEBUG CONTROLLER: A lista de empresas veio VAZIA!');
+        empresaAtual = null;
       }
     } catch (e) {
       // ADICIONE ESTE PRINT PARA VER SE A TELA ESTÁ ESCONDENDO O ERRO
