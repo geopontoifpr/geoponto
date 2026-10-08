@@ -15,12 +15,17 @@ class PainelEmpresaScreen extends StatefulWidget {
 
 class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
   // Instanciamos o controller da empresa aqui no painel
-  final EmpresaController _controller = EmpresaController();
+  late final EmpresaController _controller;
 
   @override
   void initState() {
-    super.initState();
-    _carregarPainel();
+  super.initState();
+
+  _controller = EmpresaController(
+    usuario: widget.usuario,
+  );
+
+  _carregarPainel();
   }
 
   // Busca no banco de dados a empresa atrelada a este administrador
@@ -131,7 +136,7 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CadastroEmpresaScreen(empresa: empresa),
+                            builder: (context) => CadastroEmpresaScreen(empresa: empresa, usuario: widget.usuario),
                           ),
                         );
                         // Quando voltar da tela de cadastro/edição, recarrega o painel automaticamente!

@@ -4,18 +4,20 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/errors/app_exception.dart';
 import '../models/empresa_model.dart';
 import '../controllers/empresa_controller.dart';
+import '../../usuarios/models/usuario_model.dart';
 
 class CadastroEmpresaScreen extends StatefulWidget {
   final EmpresaModel? empresa;
+  final UsuarioModel usuario;
 
-  const CadastroEmpresaScreen({super.key, this.empresa});
+  const CadastroEmpresaScreen({super.key, this.empresa, required this.usuario});
 
   @override
   State<CadastroEmpresaScreen> createState() => _CadastroEmpresaScreenState();
 }
 
 class _CadastroEmpresaScreenState extends State<CadastroEmpresaScreen> {
-  final _controller = EmpresaController();
+  late final EmpresaController _controller;
   
   final _nomeController = TextEditingController();
   final _cnpjController = TextEditingController();
@@ -26,13 +28,19 @@ class _CadastroEmpresaScreenState extends State<CadastroEmpresaScreen> {
   @override
   void initState() {
     super.initState();
+
+    _controller = EmpresaController(
+      usuario: widget.usuario,
+    );
+
     if (widget.empresa != null) {
       final e = widget.empresa!;
+
       _nomeController.text = e.nome ?? '';
       _cnpjController.text = e.cnpj ?? '';
-      _latitudeController.text = e.latitude?.toString() ?? ''; // Corrigido
-      _longitudeController.text = e.longitude?.toString() ?? ''; // Corrigido
-      _raioController.text = e.raioPermitido?.toString() ?? ''; // Corrigido
+      _latitudeController.text = e.latitude?.toString() ?? '';
+      _longitudeController.text = e.longitude?.toString() ?? '';
+      _raioController.text = e.raioPermitido?.toString() ?? '';
     }
   }
 

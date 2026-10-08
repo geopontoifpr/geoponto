@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import '../../../core/errors/app_exception.dart';
 import '../models/empresa_model.dart';
 import '../services/empresa_service.dart';
+import '../../usuarios/models/usuario_model.dart';
 
 class EmpresaController extends ChangeNotifier {
   final EmpresaService _service;
+  final UsuarioModel usuario;
 
   bool isLoading = false;
   EmpresaModel? empresaAtual;
 
-  EmpresaController({EmpresaService? service}) 
-      : _service = service ?? EmpresaService();
+  EmpresaController({
+    required this.usuario,
+    EmpresaService? service,
+  }) : _service = service ?? EmpresaService(usuario: usuario);
 
   Future<void> submeterFormulario({
     required String? idAtual,

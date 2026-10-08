@@ -4,40 +4,47 @@ import '../../../core/errors/app_exception.dart';
 import '../../../core/services/supabase_service.dart';
 import '../models/empresa_model.dart';
 import '../models/setor_model.dart';
+import '../../usuarios/models/usuario_model.dart';
 
 class AdminRepository {
   final SupabaseClient _client;
+  final UsuarioModel usuario;
 
-  AdminRepository({SupabaseClient? client})
-      : _client = client ?? SupabaseService.instance.client;
+  AdminRepository({
+    required this.usuario,
+    SupabaseClient? client,
+  }) : _client = client ?? SupabaseService.instance.client;
 
   // ==========================================
   // EMPRESAS
   // ==========================================
 
- Future<List<EmpresaModel>> listarEmpresas() async {
+  Future<List<EmpresaModel>> listarEmpresas() async {
     try {
-      final response = await _client
-          .from('empresas')
-          .select()
-          .order('nome', ascending: true); 
-      
-      // ADICIONE ESTE PRINT PARA DEBUG
-      print('=== DEBUG SUPABASE (listarEmpresas) ===');
-      print('Resposta do banco: $response');
-      print('=======================================');
-      
-      return (response as List)
-          .map((e) => EmpresaModel.fromMap(e as Map<String, dynamic>))
-          .toList();
-    } on SocketException {
-      throw const ConexaoException();
+      final response = await _client.rpc(
+        'buscar_empresa_do_admin',
+        params: {
+          'p_admin_id': usuario.id,
+        },
+      );
+
+      if (response == null) {
+        return [];
+      }
+
+      return [
+        EmpresaModel.fromMap(
+          response as Map<String, dynamic>,
+        ),
+      ];
     } on PostgrestException catch (e) {
-      print('ERRO POSTGREST: ${e.message} | Detalhes: ${e.details}'); // DEBUG
-      throw ServidorException('Erro ao buscar empresas: ${e.message}');
+      throw ServidorException(
+        'Erro ao buscar empresa: ${e.message}',
+      );
     } catch (e) {
-      print('ERRO DESCONHECIDO NO REPOSITÓRIO: $e'); // DEBUG
-      throw const ServidorException('Falha inesperada ao listar empresas.');
+      throw const ServidorException(
+        'Falha inesperada ao buscar empresa.',
+      );
     }
   }
 
@@ -68,7 +75,7 @@ class AdminRepository {
   Future<EmpresaModel> salvarEmpresa(EmpresaModel empresa, {bool ehEdicao = false}) async {
     try {
       // GARANTIA: Pegamos o usuário logado direto do Supabase no Flutter
-      final usuarioLogado = _client.auth.currentUser;
+      final usuarioLogado = usuario;
       if (usuarioLogado == null) {
         throw const ServidorException('Sessão expirada. Feche o app e faça login novamente.');
       }
@@ -89,7 +96,7 @@ class AdminRepository {
       } else {
         // FLUXO DE CRIAÇÃO: Passando o ID explicitamente para a RPC!
         final response = await _client.rpc('cadastrar_empresa_inicial', params: {
-          'p_admin_id': usuarioLogado.id, // <=== PASSAMOS O UUID DO ADMIN AQUI!
+          'p_admin_id': usuario.id, // <=== PASSAMOS O UUID DO ADMIN AQUI!
           'p_nome': empresa.nome,
           'p_cnpj': empresa.cnpj,
           'p_latitude_ponto': empresa.latitude,

@@ -1,12 +1,15 @@
 import '../../../core/errors/app_exception.dart';
 import '../models/empresa_model.dart';
 import '../repositories/admin_repository.dart';
+import '../../usuarios/models/usuario_model.dart';
 
 class EmpresaService {
   final AdminRepository _repository;
 
-  EmpresaService({AdminRepository? repository}) 
-      : _repository = repository ?? AdminRepository();
+  EmpresaService({
+    required UsuarioModel usuario,
+    AdminRepository? repository,
+  }) : _repository = repository ?? AdminRepository(usuario: usuario);
 
   Future<EmpresaModel> salvarEmpresa(EmpresaModel empresa, {bool ehEdicao = false}) async {
     // Validação de CNPJ
