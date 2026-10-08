@@ -3,10 +3,9 @@ import '../../../core/constants/app_colors.dart';
 import '../controllers/login_controller.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../admin/screens/painel_empresa_screen.dart';
-
-// Importando os widgets globais que criamos
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../../core/themes/theme_controller.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +18,8 @@ class _LoginScreenState extends State<LoginScreen> {
   late final LoginController _controller;
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
+  
+  bool _ocultarSenha = true;
 
   @override
   void initState() {
@@ -35,7 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final senha = _senhaController.text;
 
-    // Validação manual dos campos
     if (email.isEmpty || senha.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -85,22 +85,46 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          ListenableBuilder(
+            listenable: ThemeController.instance,
+            builder: (context, _) {
+              return IconButton(
+                tooltip: ThemeController.instance.isDarkMode ? 'Tema Claro' : 'Tema Escuro',
+                icon: Icon(
+                  ThemeController.instance.isDarkMode
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                  color: Theme.of(context).colorScheme.onSurface, // Adapta a cor do ícone
+                ),
+                onPressed: () {
+                  ThemeController.instance.alternarTema();
+                },
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Placeholder para a Logo corrigido
+                // A Logo
                 Align(
                   alignment: Alignment.center,
                   child: Container(
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -113,13 +137,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Icon(
                       Icons.location_on, 
                       size: 45, 
-                      color: Color(0xFFF05B5B),
+                      color: AppColors.logoRed,
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
                 
-                // Títulos (Corrigidos: sem 'const' e sem duplicação estrutural)
+                // Títulos
                 Text(
                   'GeoPonto',
                   textAlign: TextAlign.center,
@@ -141,24 +165,34 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
                 
-                // Input de E-mail Refatorado
+                // Input de E-mail
                 CustomTextField(
                   controller: _emailController,
-                  labelText: 'E-mail corporativo',
+                  labelText: 'E-mail',
                   prefixIcon: Icons.email_outlined,
                 ),
                 const SizedBox(height: 24),
                 
-                // Input de Senha Refatorado
+                // Input de Senha com ocultação
                 CustomTextField(
                   controller: _senhaController,
                   labelText: 'Senha',
                   prefixIcon: Icons.lock_outline,
-                  obscureText: true,
+                  obscureText: _ocultarSenha,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _ocultarSenha ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _ocultarSenha = !_ocultarSenha;
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 32),
                 
-                // Exibição de Erro
                 if (_controller.erro != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -183,7 +217,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
                 ],
                 
-                // Botão Acessar Sistema Refatorado
                 PrimaryButton(
                   onPressed: _controller.carregando ? null : _submeter,
                   isLoading: _controller.carregando,

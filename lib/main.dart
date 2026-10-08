@@ -4,6 +4,7 @@ import 'core/services/supabase_service.dart';
 import 'core/themes/app_themes.dart';
 import 'core/themes/theme_controller.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'features/jornadas/screens/lista_jornadas_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
           themeMode: ThemeController.instance.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          home: const LoginScreen(), 
+          home: const ListaJornadasScreen(), 
         );
       },
     );

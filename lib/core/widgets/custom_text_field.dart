@@ -5,6 +5,7 @@ class CustomTextField extends StatelessWidget {
   final String labelText;
   final IconData prefixIcon;
   final bool obscureText;
+  final Widget? suffixIcon;
 
   const CustomTextField({
     super.key,
@@ -12,17 +13,18 @@ class CustomTextField extends StatelessWidget {
     required this.labelText,
     required this.prefixIcon,
     this.obscureText = false,
+    this.suffixIcon,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Utiliza Theme.of(context) para herdar as cores definidas no app_themes.dart
     return TextField(
       controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: Icon(prefixIcon, color: Theme.of(context).primaryColor),
+        suffixIcon: suffixIcon, 
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: Theme.of(context).cardColor, 

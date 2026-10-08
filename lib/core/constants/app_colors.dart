@@ -6,6 +6,7 @@ class AppColors {
   // Cores principais baseadas no protótipo
   static const Color primary = Color(0xFF2B3445); // Azul escuro/Slate do botão e título
   static const Color background = Color(0xFFF4F6F9); // Fundo off-white/azulado bem claro
+  static const Color logoRed = Color(0xFFF05B5B);
 
   // Textos
   static const Color textPrimary = Color(0xFF2B3445);
