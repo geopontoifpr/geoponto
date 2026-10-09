@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../themes/app_themes.dart'; // Importe seu arquivo de temas aqui
+import '../themes/app_themes.dart';
 
 abstract class AppException implements Exception {
   final String mensagem;
@@ -9,7 +9,7 @@ abstract class AppException implements Exception {
   const AppException({
     required this.mensagem,
     this.codigo,
-    this.cor = AppThemes.errorColor, // Cor padrão baseada no seu tema
+    this.cor = AppThemes.errorColor, 
   });
 
   @override
@@ -66,23 +66,38 @@ class PontoForaDoRaioException extends AppException {
 
 // Erro quando o serviço de localização está desativado
 class LocalizacaoDesativadaException extends AppException {
-  const LocalizacaoDesativadaException([String mensagem = 'O serviço de localização está desativado.']) 
-      : super(mensagem: mensagem, codigo: 'LOCATION_DISABLED', cor: AppThemes.warningColor);
+  const LocalizacaoDesativadaException([
+    String mensagem = 'O serviço de localização está desativado.',
+  ]) : super(
+          mensagem: mensagem, 
+          codigo: 'LOCATION_DISABLED', 
+          cor: AppThemes.warningColor,
+        );
 }
 
 // Erro quando a permissão de localização foi negada
 class PermissaoLocalizacaoNegadaException extends AppException {
-  const PermissaoLocalizacaoNegadaException([String mensagem = 'Permissão de localização negada.']) 
-      : super(mensagem: mensagem, codigo: 'LOCATION_PERMISSION_DENIED', cor: AppThemes.errorColor);
+  const PermissaoLocalizacaoNegadaException([
+    String mensagem = 'Permissão de localização negada.',
+  ]) : super(
+          mensagem: mensagem, 
+          codigo: 'LOCATION_PERMISSION_DENIED', 
+          cor: AppThemes.errorColor,
+        );
 }
 
 // Erro quando a permissão de localização foi negada permanentemente
 class PermissaoLocalizacaoNegadaPermanentementeException extends AppException {
-  const PermissaoLocalizacaoNegadaPermanentementeException([String mensagem = 'Permissão de localização negada permanentemente.']) 
-      : super(mensagem: mensagem, codigo: 'LOCATION_PERMISSION_DENIED_FOREVER', cor: AppThemes.errorColor);
+  const PermissaoLocalizacaoNegadaPermanentementeException([
+    String mensagem = 'Permissão de localização negada permanentemente.',
+  ]) : super(
+          mensagem: mensagem, 
+          codigo: 'LOCATION_PERMISSION_DENIED_FOREVER', 
+          cor: AppThemes.errorColor,
+        );
 }
 
-// --- As três exceções corrigidas com o construtor correto e cores ---
+// --- Novas exceções de cadastro ---
 
 class ConexaoException extends AppException {
   const ConexaoException([String mensagem = 'Falha na conexão de rede. Verifique sua internet.'])
