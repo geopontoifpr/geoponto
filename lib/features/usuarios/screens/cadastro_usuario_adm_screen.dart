@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../usuarios/models/usuario_model.dart';
-import '../controllers/equipe_controller.dart';
-import '../controllers/setor_controller.dart';
+import '../models/usuario_model.dart';
+import '../controllers/usuario_controller.dart';
+import '../../admin/controllers/setor_controller.dart';
 
-class CadastroEquipeScreen extends StatefulWidget {
+class CadastroUsuarioScreen extends StatefulWidget {
   final String empresaId;
   final UsuarioModel? membroEmEdicao;
 
-  const CadastroEquipeScreen({
+  const CadastroUsuarioScreen({
     Key? key,
     required this.empresaId,
     this.membroEmEdicao,
   }) : super(key: key);
 
   @override
-  State<CadastroEquipeScreen> createState() => _CadastroEquipeScreenState();
+  State<CadastroUsuarioScreen> createState() => _CadastroUsuarioScreenState();
 }
 
-class _CadastroEquipeScreenState extends State<CadastroEquipeScreen> {
+class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
@@ -25,7 +25,7 @@ class _CadastroEquipeScreenState extends State<CadastroEquipeScreen> {
   String? _tipoSelecionado;
   String? _setorSelecionado;
 
-  final _equipeController = EquipeController();
+  final _usuarioController = UsuarioController();
   final _setorController = SetorController();
 
   bool get ehEdicao => widget.membroEmEdicao != null;
@@ -51,7 +51,7 @@ class _CadastroEquipeScreenState extends State<CadastroEquipeScreen> {
   void dispose() {
     _nomeController.dispose();
     _emailController.dispose();
-    _equipeController.dispose();
+    _usuarioController.dispose();
     _setorController.dispose();
     super.dispose();
   }
@@ -59,7 +59,7 @@ class _CadastroEquipeScreenState extends State<CadastroEquipeScreen> {
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final sucesso = await _equipeController.salvarMembro(
+    final sucesso = await _usuarioController.salvarUsuario(
       idEdicao: widget.membroEmEdicao?.id,
       empresaId: widget.empresaId,
       nome: _nomeController.text,
@@ -81,7 +81,7 @@ class _CadastroEquipeScreenState extends State<CadastroEquipeScreen> {
       Navigator.pop(context); // Volta para a lista
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_equipeController.erroMensagem ?? 'Erro ao salvar'), backgroundColor: Colors.red),
+        SnackBar(content: Text(_usuarioController.erroMensagem ?? 'Erro ao salvar'), backgroundColor: Colors.red),
       );
     }
   }
@@ -182,9 +182,9 @@ class _CadastroEquipeScreenState extends State<CadastroEquipeScreen> {
 
               // BOTÃO SALVAR
               AnimatedBuilder(
-                animation: _equipeController,
+                animation: _usuarioController,
                 builder: (context, _) {
-                  if (_equipeController.isLoading) {
+                  if (_usuarioController.isLoading) {
                     return const Center(child: CircularProgressIndicator());
                   }
                   return ElevatedButton(

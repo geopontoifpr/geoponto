@@ -1,75 +1,116 @@
-import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors/app_exception.dart';
-import '../../../core/services/supabase_service.dart';
 import '../models/usuario_model.dart';
 
+
 class UsuarioRepository {
-  final SupabaseClient _client;
+  final _client = Supabase.instance.client;
 
-  UsuarioRepository({SupabaseClient? client})
-      : _client = client ?? SupabaseService.instance;
-
-  Future<List<UsuarioModel>> listarPorEmpresa(String empresaId, {String? setorId}) async {
-    try {
-      var query = _client.from('usuarios').select().eq('empresa_id', empresaId);
-
-      if (setorId != null && setorId.isNotEmpty) {
-        query = query.eq('setor_id', setorId);
+  Future<List<UsuarioModel>> listarUsuarios(String empresaId) async {
+      try {
+        final response = await _client
+            .from('usuarios')
+            // A MÁGICA: !usuarios_setor_id_fkey força o banco a olhar para onde o usuário trabalha
+            .select('*, setores!setor_id(nome)') 
+            .eq('empresa_id', empresaId)
+            .order('nome', ascending: true);
+            
+        return (response as List).map((e) => UsuarioModel.fromMap(e)).toList();
+      } on PostgrestException catch (e) {
+        throw ServidorException('Erro ao carregar equipe: ${e.message}');
       }
+    }
 
-      final response = await query.order('nome', ascending: true);
-      return (response as List).map((u) => UsuarioModel.fromJson(u)).toList();
-    } on SocketException {
-      throw const ConexaoException();
+  Future<void> atualizarUsuario(String id, Map<String, dynamic> dados) async {
+    try {
+      // O banco dispara o Gatilho automaticamente nesse update!
+      await _client.from('usuarios').update(dados).eq('id', id);
+      
     } on PostgrestException catch (e) {
-      throw ServidorException('Erro ao consultar usuários: ${e.message}');
-    } catch (_) {
-      throw const ServidorException('Falha ao processar lista de colaboradores.');
+      // Se o Gatilho bloquear a edição/reativação:
+      if (e.message.contains('GESTOR_DUPLICADO')) {
+        throw ValidacaoException('O setor selecionado já possui um Gestor vinculado. Altere o gestor atual primeiro.');
+      }
+      
+      // Tratamento de e-mail duplicado
+      if (e.code == '23505') {
+        final msgBanco = e.message.toLowerCase();
+        if (msgBanco.contains('email')) {
+          throw ValidacaoException('Este e-mail já está cadastrado no sistema.');
+        } else {
+          throw ValidacaoException('Este dado já existe no sistema.');
+        }
+      }
+      
+      throw ServidorException('Erro ao atualizar dados: ${e.message}');
+    } catch (e) {
+      throw ServidorException('Falha inesperada ao atualizar usuário.');
     }
   }
-
-  Future<void> criarUsuario({
-    required String nome,
-    required String email,
-    required String senha,
-    required String tipoUsuario,
-    required String empresaId,
-    String? setorId,
-  }) async {
+    
+  Future<void> criarUsuario(Map<String, dynamic> dados) async {
     try {
-      await _client.rpc('cadastrar_novo_usuario', params: {
-        'p_nome': nome.trim(),
-        'p_email': email.trim().toLowerCase(),
-        'p_senha': senha,
-        'p_tipo_usuario': tipoUsuario,
-        'p_empresa_id': empresaId,
-        'p_setor_id': setorId,
+      final response = await _client.rpc('criar_membro_equipe', params: {
+        'p_email': dados['email'],
+        'p_nome': dados['nome'],
+        'p_tipo': dados['tipo_usuario'],
+        'p_empresa_id': dados['empresa_id'],
+        'p_setor_id': dados['setor_id'],
       });
-    } on SocketException {
-      throw const ConexaoException();
-    } on PostgrestException catch (e) {
-      if (e.code == '23505' || e.message.contains('email_key') || e.message.contains('já cadastrado')) {
-        throw const DadoDuplicadoException('O e-mail informado já está em uso.');
+
+      // Se o banco negou a criação (ex: E-mail duplicado)
+      if (response != null && response['success'] == false) {
+        // Lança a ValidacaoException para o texto aparecer amarelinho/vermelho na tela
+        throw ValidacaoException(response['error']); 
       }
-      throw ServidorException('Falha no cadastro: ${e.message}');
-    } catch (_) {
-      throw const ServidorException('Erro inesperado ao cadastrar novo usuário.');
+      
+    } on PostgrestException catch (e) {
+      throw ServidorException('Erro de permissão no banco: ${e.message}');
+    } catch (e) {
+      if (e is AppException) rethrow; // Deixa a nossa ValidacaoException passar reto!
+      throw const ServidorException('Falha inesperada ao tentar salvar usuario.');
     }
   }
 
-  Future<void> alternarStatusUsuario(String usuarioId, bool ativo) async {
+  Future<bool> verificarSeSetorTemGestor(String setorId, {String? ignorarId}) async {
     try {
-      await _client
-          .from('usuarios')
-          .update({'ativo': ativo})
-          .eq('id', usuarioId);
-    } on SocketException {
-      throw const ConexaoException();
+      // SUA LÓGICA: Olha diretamente pra quem é o dono na tabela de setores
+      final response = await _client
+          .from('setores')
+          .select('gestor_id')
+          .eq('id', setorId)
+          .single();
+      
+      final gestorIdNoBanco = response['gestor_id'];
+      
+      // Se tiver alguém ocupando a vaga, e NÃO for a pessoa que estamos editando
+      if (gestorIdNoBanco != null && gestorIdNoBanco != ignorarId) {
+        return true; 
+      }
+      
+      return false; // Vaga livre
     } on PostgrestException catch (e) {
-      throw ServidorException('Erro ao atualizar usuário: ${e.message}');
-    } catch (_) {
-      throw const ServidorException('Falha ao modificar status do colaborador.');
+      // Se der erro porque ainda não existe, assumimos livre
+      if (e.code == 'PGRST116') return false; 
+      throw ServidorException('Erro ao verificar gestor: ${e.message}');
+    }
+  }
+  
+  // 1. Remove este usuário do cargo de gestor de qualquer setor que ele possua
+  Future<void> removerGestorDosSetores(String usuarioId) async {
+    try {
+      await _client.from('setores').update({'gestor_id': null}).eq('gestor_id', usuarioId);
+    } catch (e) {
+      throw ServidorException('Erro ao remover vínculo antigo do gestor.');
+    }
+  }
+
+  // 2. Define este usuário como o dono de um setor específico
+  Future<void> vincularGestorAoSetor(String setorId, String usuarioId) async {
+    try {
+      await _client.from('setores').update({'gestor_id': usuarioId}).eq('id', setorId);
+    } catch (e) {
+      throw ServidorException('Erro ao vincular gestor ao setor.');
     }
   }
 }

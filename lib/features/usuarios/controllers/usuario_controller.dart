@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../usuarios/models/usuario_model.dart';
-import '../services/equipe_service.dart';
+import '../services/usuario_service.dart';
 
-class EquipeController extends ChangeNotifier {
-  final EquipeService _service;
+class UsuarioController extends ChangeNotifier {
+  final UsuarioService _service;
   
   bool isLoading = false;
   String? erroMensagem;
-  List<UsuarioModel> equipe = [];
+  List<UsuarioModel> usuario = [];
 
-  EquipeController({EquipeService? service}) : _service = service ?? EquipeService();
+  UsuarioController({UsuarioService? service}) : _service = service ?? UsuarioService();
 
   void _setLoading(bool value) { isLoading = value; notifyListeners(); }
 
-  Future<void> carregarEquipe(String empresaId) async {
+  Future<void> carregarUsuarios(String empresaId) async {
     _setLoading(true);
     erroMensagem = null;
     try {
-      equipe = await _service.listar(empresaId);
+      usuario = await _service.listar(empresaId);
     } on AppException catch (e) {
       erroMensagem = e.mensagem;
     } finally {
@@ -26,7 +26,7 @@ class EquipeController extends ChangeNotifier {
     }
   }
 
-  Future<bool> salvarMembro({
+  Future<bool> salvarUsuario({
     String? idEdicao,
     required String empresaId,
     required String nome,
@@ -36,11 +36,11 @@ class EquipeController extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
-      await _service.salvarMembro(
+      await _service.salvarUsuario(
         idEdicao: idEdicao, empresaId: empresaId, nome: nome, 
         email: email, tipoUsuario: tipoUsuario, setorId: setorId
       );
-      await carregarEquipe(empresaId);
+      await carregarUsuarios(empresaId);
       return true;
     } on AppException catch (e) {
       erroMensagem = e.mensagem; return false;
@@ -51,14 +51,17 @@ class EquipeController extends ChangeNotifier {
     }
   }
 
-  Future<bool> alternarStatus(String id, bool statusAtual, String empresaId) async {
+  // Alteramos para receber o UsuarioModel
+  Future<bool> alternarStatus(UsuarioModel usuario, String empresaId) async {
     _setLoading(true);
+    erroMensagem = null; // Limpa o erro anterior antes de tentar
     try {
-      await _service.alternarStatusAtivo(id, statusAtual);
-      await carregarEquipe(empresaId);
+      await _service.alternarStatusAtivo(usuario); // Passa o objeto para o Service
+      await carregarUsuarios(empresaId);
       return true;
     } on AppException catch (e) {
-      erroMensagem = e.mensagem; return false;
+      erroMensagem = e.mensagem; 
+      return false;
     } finally {
       _setLoading(false);
     }
