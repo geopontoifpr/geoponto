@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../../core/widgets/custom_app_bar.dart';
+import '../../../core/utils/snackbar_util.dart'; // <-- Import do novo utilitário adicionado
 import '../controllers/empresa_controller.dart';
 import 'cadastro_empresa_screen.dart';
 import 'cadastro_setor_screen.dart';
@@ -16,21 +17,19 @@ class PainelEmpresaScreen extends StatefulWidget {
 }
 
 class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
-  // Instanciamos o controller da empresa aqui no painel
   late final EmpresaController _controller;
 
   @override
   void initState() {
-  super.initState();
+    super.initState();
 
-  _controller = EmpresaController(
-    usuario: widget.usuario,
-  );
+    _controller = EmpresaController(
+      usuario: widget.usuario,
+    );
 
-  _carregarPainel();
+    _carregarPainel();
   }
 
-  // Busca no banco de dados a empresa atrelada a este administrador
   Future<void> _carregarPainel() async {
     await _controller.carregarDadosDoPainel();
   }
@@ -47,14 +46,12 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
           // Futuramente abrirá a edição de perfil
         },
       ),
-      // ListenableBuilder fica "escutando" o controller e reconstrói a tela 
-      // quando o isLoading muda ou quando a empresaAtual é encontrada
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {
           
           if (_controller.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator(color: theme.primaryColor));
           }
 
           final empresa = _controller.empresaAtual;
@@ -94,7 +91,6 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      // Mostra o nome real ou um aviso para cadastrar
                       Text(
                         temEmpresa ? (empresa.nome ?? 'Sem nome') : 'Nenhuma empresa vinculada',
                         style: const TextStyle(
@@ -104,7 +100,6 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                       ),
                       const SizedBox(height: 4),
                       
-                      // Mostra o CNPJ real
                       Text(
                         temEmpresa ? 'CNPJ: ${empresa.cnpj}' : 'Cadastre sua empresa no botão abaixo',
                         style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
@@ -130,18 +125,15 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                   children: [
                     _buildActionCard(
                       context: context,
-                      // Se já tem empresa, o botão vira "Editar Empresa"
                       title: temEmpresa ? 'Dados da\nEmpresa' : 'Cadastrar\nEmpresa',
                       icon: Icons.business_outlined,
                       onTap: () async {
-                        // Navega para a tela passando a empresa atual. Se for null, vira cadastro.
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => CadastroEmpresaScreen(empresa: empresa, usuario: widget.usuario),
                           ),
                         );
-                        // Quando voltar da tela de cadastro/edição, recarrega o painel automaticamente!
                         _carregarPainel();
                       },
                     ),
@@ -149,21 +141,15 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                       context: context,
                       title: 'Gerenciar\nSetores',
                       icon: Icons.account_tree_outlined,
-                      onTap: () async { // <-- Adicione o 'async' aqui no onTap
+                      onTap: () async { 
                         if (!temEmpresa) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Por favor, cadastre a empresa primeiro.'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
+                          // <-- UTILIZAÇÃO DO SNACKBAR_UTIL
+                          SnackbarUtil.showError(context, 'Por favor, cadastre a empresa primeiro.');
                           return;                        
                         } else {
-                          // Executa a navegação diretamente, sem aquele "onPressed:" solto
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              // Dica: Se o Flutter acusar que empresa pode ser nula, use empresa!.id
                               builder: (context) => CadastroSetorScreen(empresaId: empresa.id), 
                             ),
                           );
@@ -173,21 +159,16 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                    _buildActionCard(
                       context: context,
                       title: 'Gerenciar\nEquipe',
-                      icon: Icons.people_alt_outlined, // Ícone de grupo de pessoas
+                      icon: Icons.people_alt_outlined, 
                       onTap: () async { 
                         if (!temEmpresa) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Por favor, cadastre a empresa primeiro.'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
+                          // <-- UTILIZAÇÃO DO SNACKBAR_UTIL
+                          SnackbarUtil.showError(context, 'Por favor, cadastre a empresa primeiro.');
                           return;                        
                         } else {
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              // Abre a nova tela passando o ID da empresa!
                               builder: (context) => EquipeScreen(empresaId: empresa.id), 
                             ),
                           );
@@ -204,7 +185,6 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
     );
   }
 
-  // --- Widget de Botão/Card Reutilizável ---
   Widget _buildActionCard({
     required BuildContext context,
     required String title,

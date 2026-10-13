@@ -17,8 +17,21 @@ class UsuarioController extends ChangeNotifier {
   Future<void> carregarUsuarios(String empresaId) async {
     _setLoading(true);
     erroMensagem = null;
+    
     try {
-      usuario = await _service.listar(empresaId);
+      if (usuarioLogado.tipoUsuario == TipoUsuario.administrador) {
+        // O Administrador vê TODOS da empresa
+        equipe = await _service.listar(
+          empresaId: usuarioLogado.empresaId!,
+        );
+      } else if (usuarioLogado.tipoUsuario == TipoUsuario.gestor) {
+        // O Gestor vê APENAS o seu setor e não vê a si mesmo
+        equipe = await _service.listar(
+          empresaId: usuarioLogado.empresaId!,
+          setorId: usuarioLogado.setorId,
+          ignorarUsuarioId: usuarioLogado.id,
+        );
+      }
     } on AppException catch (e) {
       erroMensagem = e.mensagem;
     } finally {

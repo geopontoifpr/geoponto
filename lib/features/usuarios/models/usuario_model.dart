@@ -29,6 +29,7 @@ class UsuarioModel {
   final String email;
   final TipoUsuario tipoUsuario;
   final bool ativo;
+  final bool primeiroAcesso;
   final String? setorNome; // Apenas para exibição (Join)
 
   UsuarioModel({
@@ -39,6 +40,7 @@ class UsuarioModel {
     required this.email,
     required this.tipoUsuario,
     this.ativo = true,
+    this.primeiroAcesso = true,
     this.setorNome,
   });
 
@@ -54,6 +56,7 @@ class UsuarioModel {
       setorNome: map['setores']?['nome']?.toString(),
       // Garante que se vier null do banco, tratamos como ativo (true)
       ativo: map['ativo'] == true || map['ativo'] == null,
+      primeiroAcesso: map['primeiro_acesso'] ?? false,
     );
   }
 
@@ -66,6 +69,7 @@ class UsuarioModel {
       'email': email,
       'tipo_usuario': tipoUsuario.toDbValue(),
       'ativo': ativo,
+      'primeiro_acesso': primeiroAcesso,
       // IMPORTANTE: 'setor_nome' removido. O banco não aceita inserir dados numa coluna que não existe na tabela usuarios.
     };
   }
@@ -79,6 +83,7 @@ class UsuarioModel {
     String? email,
     TipoUsuario? tipoUsuario,
     bool? ativo,
+    bool? primeiroAcesso,
     String? setorNome,
   }) {
     return UsuarioModel(
@@ -90,6 +95,7 @@ class UsuarioModel {
       tipoUsuario: tipoUsuario ?? this.tipoUsuario,
       ativo: ativo ?? this.ativo,
       setorNome: setorNome ?? this.setorNome,
+      primeiroAcesso: primeiroAcesso ?? this.primeiroAcesso
     );
   }
 }

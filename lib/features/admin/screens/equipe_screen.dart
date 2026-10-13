@@ -40,18 +40,20 @@ class _EquipeScreenState extends State<EquipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Puxa o tema atual (Claro ou Escuro) para adaptar as fontes e cores base
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Gestão de Equipe')),
+      appBar: AppBar(
+        title: const Text('Gestão de Equipe'),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _irParaCadastro(),
         icon: const Icon(Icons.person_add),
         label: const Text('Novo Membro'),
       ),
-      body: AnimatedBuilder(
-        animation: _controller,
+      // Trocado AnimatedBuilder por ListenableBuilder (Padrão mais moderno)
+      body: ListenableBuilder(
+        listenable: _controller,
         builder: (context, _) {
           if (_controller.isLoading && _controller.usuario.isEmpty) {
             return Center(
@@ -63,7 +65,7 @@ class _EquipeScreenState extends State<EquipeScreen> {
              return Center(
                child: Text(
                  _controller.erroMensagem!, 
-                 style: const TextStyle(color: AppThemes.errorColor), // Usa a cor de erro do seu Theme
+                 style: const TextStyle(color: AppThemes.errorColor),
                  textAlign: TextAlign.center,
                ),
              );
@@ -78,14 +80,10 @@ class _EquipeScreenState extends State<EquipeScreen> {
             itemBuilder: (context, index) {
               final membro = _controller.usuario[index];
               
-              // Aqui nós chamamos o seu novo componente lindão!
+              // O componente reutilizável!
               return UsuarioList(
                 membro: membro,
-                
-                // O que acontece ao clicar em Editar
                 onEdit: () => _irParaCadastro(membroEmEdicao: membro),
-                
-                // O que acontece ao clicar em Bloquear/Desbloquear
                 onToggleStatus: () async {
                   final sucesso = await _controller.alternarStatus(membro, widget.empresaId);
                   

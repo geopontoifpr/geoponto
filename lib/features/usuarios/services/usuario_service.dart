@@ -7,8 +7,8 @@ class UsuarioService {
 
   UsuarioService({UsuarioRepository? repository}) : _repository = repository ?? UsuarioRepository();
 
-  Future<List<UsuarioModel>> listar(String empresaId) async {
-    return await _repository.listarUsuarios(empresaId);
+  Future<List<UsuarioModel>> listar(String empresaId, String? setorId,String? ignorarUsuarioId) async {
+    return await _repository.listarUsuarios(empresaId: empresaId, setorId: setorId, ignorarUsuarioId: ignorarUsuarioId);
   }
 
   Future<void> salvarUsuario({

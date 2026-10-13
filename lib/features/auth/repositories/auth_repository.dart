@@ -22,7 +22,7 @@ class AuthRepository {
       // 2. Busca o perfil na tabela pública (O RLS agora permite pois temos o Token!)
       final dadosUsuario = await _client
           .from('usuarios')
-          .select()
+          .select('*, setores!setor_id(nome)')
           .eq('id', user.id)
           .single();
 
@@ -40,5 +40,22 @@ class AuthRepository {
 
   Future<void> deslogar() async {
     await _client.auth.signOut();
+  }
+  // Atualiza a senha no cofre do Supabase (Auth)
+  Future<void> atualizarSenha(String novaSenha) async {
+    try {
+      await _client.auth.updateUser(UserAttributes(password: novaSenha));
+    } catch (e) {
+      throw ServidorException('Erro ao atualizar a senha no provedor de autenticação.');
+    }
+  }
+
+  // Remove a flag de primeiro acesso na tabela pública
+  Future<void> removerFlagPrimeiroAcesso(String usuarioId) async {
+    try {
+      await _client.from('usuarios').update({'primeiro_acesso': false}).eq('id', usuarioId);
+    } catch (e) {
+      throw ServidorException('Erro ao atualizar o status de primeiro acesso.');
+    }
   }
 }
