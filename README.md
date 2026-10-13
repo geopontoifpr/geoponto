@@ -175,7 +175,7 @@ flutter pub get
 flutter run
 
 👨‍💻 Equipe
-Caroline Viana de Souza
+Caroline de Souza Viana
 Giovaine Orso Vieira
 Leonardo Nogueira Hilgenberg
 
