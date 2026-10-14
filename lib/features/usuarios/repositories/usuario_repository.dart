@@ -6,20 +6,36 @@ import '../models/usuario_model.dart';
 class UsuarioRepository {
   final _client = Supabase.instance.client;
 
-  Future<List<UsuarioModel>> listarUsuarios(String empresaId) async {
-      try {
-        final response = await _client
-            .from('usuarios')
-            // A MÁGICA: !usuarios_setor_id_fkey força o banco a olhar para onde o usuário trabalha
-            .select('*, setores!setor_id(nome)') 
-            .eq('empresa_id', empresaId)
-            .order('nome', ascending: true);
-            
-        return (response as List).map((e) => UsuarioModel.fromMap(e)).toList();
-      } on PostgrestException catch (e) {
-        throw ServidorException('Erro ao carregar equipe: ${e.message}');
+  Future<List<UsuarioModel>> listarUsuarios({
+    required String empresaId,
+    String? setorId, // Opcional: Se vier preenchido, filtra pelo setor
+    String? ignorarUsuarioId, // Opcional: Se vier preenchido, remove este ID da lista (o próprio gestor)
+  }) async {
+    try {
+      // Começa a montar a query base (trazendo todos da empresa e o nome do setor)
+      var query = _client
+          .from('usuarios')
+          .select('*, setores!setor_id(nome)')
+          .eq('empresa_id', empresaId);
+
+      // Se passou um setor_id (Gestor), adiciona o filtro na query
+      if (setorId != null && setorId.isNotEmpty) {
+        query = query.eq('setor_id', setorId);
       }
+
+      // Se passou um ID para ignorar, remove da lista
+      if (ignorarUsuarioId != null && ignorarUsuarioId.isNotEmpty) {
+        query = query.neq('id', ignorarUsuarioId);
+      }
+
+      // Executa a query final
+      final response = await query;
+      
+      return (response as List).map((e) => UsuarioModel.fromMap(e)).toList();
+    } catch (e) {
+      throw ServidorException('Erro ao buscar a equipe: $e');
     }
+  }
 
   Future<void> atualizarUsuario(String id, Map<String, dynamic> dados) async {
     try {
@@ -113,4 +129,5 @@ class UsuarioRepository {
       throw ServidorException('Erro ao vincular gestor ao setor.');
     }
   }
+  
 }

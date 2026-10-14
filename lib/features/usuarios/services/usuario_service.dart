@@ -7,8 +7,20 @@ class UsuarioService {
 
   UsuarioService({UsuarioRepository? repository}) : _repository = repository ?? UsuarioRepository();
 
-  Future<List<UsuarioModel>> listar(String empresaId) async {
-    return await _repository.listarUsuarios(empresaId);
+  Future<List<UsuarioModel>> listarUsuarios({
+      required String empresaId,
+      String? setorId,
+      String? ignorarUsuarioId,
+    }) async {
+      if (empresaId.trim().isEmpty) {
+        throw const ValidacaoException('ID da empresa é obrigatório.');
+      }
+
+      return await _repository.listarUsuarios(
+        empresaId: empresaId,
+        setorId: setorId,
+        ignorarUsuarioId: ignorarUsuarioId,
+      );
   }
 
   Future<void> salvarUsuario({

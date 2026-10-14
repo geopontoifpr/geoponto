@@ -37,4 +37,18 @@ class AuthService {
   Future<void> logout() async {
     await _repository.deslogar();
   }
+
+  Future<void> salvarPrimeiroAcesso(String novaSenha, String confirmarSenha, String usuarioId) async {
+    // Regras de negócio e validação
+    if (novaSenha.trim().length < 6) {
+      throw ValidacaoException('A senha deve ter no mínimo 6 caracteres.');
+    }
+    if (novaSenha != confirmarSenha) {
+      throw ValidacaoException('As senhas não coincidem.');
+    }
+
+    // Chama o repositório
+    await _repository.atualizarSenha(novaSenha);
+    await _repository.removerFlagPrimeiroAcesso(usuarioId);
+  }
 }
