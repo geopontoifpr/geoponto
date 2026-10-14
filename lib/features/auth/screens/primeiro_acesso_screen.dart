@@ -4,6 +4,8 @@ import '../../../core/utils/snackbar_util.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/login_controller.dart'; // <-- IMPORT CORRETO DO CONTROLLER
 import '../../gestor/screens/painel_gestor_screen.dart';
+import '../../admin/screens/painel_empresa_screen.dart';
+import '../../colaborador/screens/painel_colaborador_screen.dart';
 import 'login_screen.dart'; 
 import '../services/auth_service.dart';
 
@@ -47,12 +49,24 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
       // Cria uma cópia do usuário com o primeiroAcesso alterado para false
       final usuarioAtualizado = widget.usuario.copyWith(primeiroAcesso: false);
       
+      Widget destino;
+      switch (widget.usuario.tipoUsuario) {
+        case TipoUsuario.administrador:
+          destino = PainelEmpresaScreen(usuario: widget.usuario);
+          break;
+        case TipoUsuario.gestor:
+          destino = PainelGestorScreen(usuario: widget.usuario);
+          break;
+        case TipoUsuario.funcionario:
+          destino = PainelColaboradorScreen(usuario: widget.usuario);
+          break;
+      }
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => PainelGestorScreen(usuario: usuarioAtualizado),
-        ),
+        MaterialPageRoute(builder: (context) => destino),
       );
+      
     }else {
       // Usa o erro capturado pelo controller
       SnackbarUtil.showError(

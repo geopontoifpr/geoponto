@@ -10,6 +10,7 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../admin/screens/painel_empresa_screen.dart';
 import '../../gestor/screens/painel_gestor_screen.dart';
+import '../../colaborador/screens/painel_colaborador_screen.dart';
 import 'primeiro_acesso_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -56,20 +57,22 @@ class _LoginScreenState extends State<LoginScreen> {
       Widget destino;
       
       // 1. O FLUXO DE PRIMEIRO ACESSO DEVE VIR PRIMEIRO
-      if (usuario.primeiroAcesso) {
+     if (usuario.primeiroAcesso) {
         destino = PrimeiroAcessoScreen(usuario: usuario);
       } else {
-        // 2. SE NÃO FOR PRIMEIRO ACESSO, SEPARA POR CARGO
-        switch (usuario.tipoUsuario) {
-          case TipoUsuario.administrador:
-            destino = PainelEmpresaScreen(usuario: usuario);
-            break;
-          case TipoUsuario.gestor:
-          case TipoUsuario.funcionario:
-            destino = PainelGestorScreen(usuario: usuario); // O Gestor vem para cá!
-            break;
+          // SE NÃO FOR PRIMEIRO ACESSO, SEPARA POR CARGO
+          switch (usuario.tipoUsuario) {
+            case TipoUsuario.administrador:
+              destino = PainelEmpresaScreen(usuario: usuario);
+              break;
+            case TipoUsuario.gestor:
+              destino = PainelGestorScreen(usuario: usuario); 
+              break;
+            case TipoUsuario.funcionario:
+              destino = PainelColaboradorScreen(usuario: usuario); // <-- NOVO FLUXO!
+              break;
+          }
         }
-      }
 
       Navigator.pushReplacement(
         context,

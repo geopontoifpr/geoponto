@@ -9,11 +9,13 @@ import '../../../core/widgets/custom_text_field.dart';
 class CadastroUsuarioScreen extends StatefulWidget {
   final String empresaId;
   final UsuarioModel? membroEmEdicao;
+  final UsuarioModel usuarioLogado;
 
   const CadastroUsuarioScreen({
     Key? key,
     required this.empresaId,
     this.membroEmEdicao,
+    required this.usuarioLogado,
   }) : super(key: key);
 
   @override
@@ -32,6 +34,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   final _setorController = SetorController();
 
   bool get ehEdicao => widget.membroEmEdicao != null;
+  bool get ehAdmin => widget.usuarioLogado.tipoUsuario == TipoUsuario.administrador;
 
   @override
   void initState() {
@@ -44,9 +47,12 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
       _setorSelecionado = widget.membroEmEdicao!.setorId;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _setorController.carregarSetores(widget.empresaId);
-    });
+    // Só carrega a lista de setores se for o Administrador (Gestor não precisa)
+    if (ehAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _setorController.carregarSetores(widget.empresaId);
+      });
+    }
   }
 
   @override
@@ -61,23 +67,36 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Lógica invisível para forçar os dados baseados no utilizador logado
+    final String tipoAEnviar;
+    final String? setorAEnviar;
+
+    if (ehAdmin) {
+      tipoAEnviar = _tipoSelecionado!;
+      setorAEnviar = _setorSelecionado;
+    } else {
+      // Puxa o enum diretamente do model para garantir o padrão
+      tipoAEnviar = TipoUsuario.funcionario.name.toUpperCase();
+      setorAEnviar = widget.usuarioLogado.setorId;
+    }
+
     final sucesso = await _usuarioController.salvarUsuario(
       idEdicao: widget.membroEmEdicao?.id,
       empresaId: widget.empresaId,
+      usuarioLogado: widget.usuarioLogado,
       nome: _nomeController.text,
       email: _emailController.text,
-      tipoUsuario: _tipoSelecionado!,
-      setorId: _setorSelecionado,
+      tipoUsuario: tipoAEnviar,
+      setorId: setorAEnviar,
     );
 
     if (!mounted) return;
 
     if (sucesso) {
-      // Como o SnackbarUtil só tem o showError por enquanto, mantemos o nativo para sucesso
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ehEdicao ? 'Dados atualizados com sucesso!' : 'Membro cadastrado com sucesso!\nSenha padrão: 123456'),
-          backgroundColor: Colors.green, // Ou AppThemes.successColor se você criou
+          backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
         ),
@@ -94,7 +113,6 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -121,7 +139,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 controller: _emailController,
                 labelText: 'E-mail',
                 prefixIcon: Icons.email,
-                enabled: !ehEdicao, // Passando o bloqueio para o widget!
+                enabled: !ehEdicao,
                 validator: (value) => value == null || !value.contains('@') ? 'Informe um e-mail válido' : null,
               ),
               if (ehEdicao) 
@@ -134,71 +152,81 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 ),
               const SizedBox(height: 16),
 
-              // TIPO DE USUÁRIO
-              DropdownButtonFormField<String>(
-                value: _tipoSelecionado,
-                decoration: InputDecoration(
-                  labelText: 'Tipo de Acesso',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: Icon(Icons.badge, color: theme.primaryColor),
-                  filled: true,
-                  fillColor: theme.cardColor,
+              // ESCONDE OS CAMPOS SE NÃO FOR ADMINISTRADOR
+              if (ehAdmin) ...[
+                // TIPO DE USUÁRIO
+                DropdownButtonFormField<String>(
+                  value: _tipoSelecionado,
+                  decoration: InputDecoration(
+                    labelText: 'Tipo de Acesso',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.badge, color: theme.primaryColor),
+                    filled: true,
+                    fillColor: theme.cardColor,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'GESTOR', child: Text('Gestor (Admin do Setor)')),
+                    DropdownMenuItem(value: 'FUNCIONARIO', child: Text('Funcionário')),
+                  ],
+                  onChanged: (value) => setState(() => _tipoSelecionado = value),
+                  validator: (value) => value == null ? 'Selecione o tipo de acesso' : null,
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'GESTOR', child: Text('Gestor (Admin do Setor)')),
-                  DropdownMenuItem(value: 'FUNCIONARIO', child: Text('Funcionário')),
-                ],
-                onChanged: (value) => setState(() => _tipoSelecionado = value),
-                validator: (value) => value == null ? 'Selecione o tipo de acesso' : null,
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // SETOR (Dinâmico do banco de dados com ListenableBuilder)
-              ListenableBuilder(
-                listenable: _setorController,
-                builder: (context, _) {
-                  if (_setorController.isLoading) {
-                    return Center(child: CircularProgressIndicator(color: theme.primaryColor));
-                  }
+                // SETOR
+                ListenableBuilder(
+                  listenable: _setorController,
+                  builder: (context, _) {
+                    if (_setorController.isLoading) {
+                      return Center(child: CircularProgressIndicator(color: theme.primaryColor));
+                    }
 
-                  if (_setorController.setores.isEmpty) {
-                    return const Text(
-                      'Nenhum setor cadastrado na empresa. Cadastre um setor primeiro.', 
-                      style: TextStyle(color: AppThemes.errorColor),
-                    );
-                  }
-
-                  return DropdownButtonFormField<String>(
-                    value: _setorSelecionado,
-                    decoration: InputDecoration(
-                      labelText: 'Setor',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: Icon(Icons.account_tree, color: theme.primaryColor),
-                      filled: true,
-                      fillColor: theme.cardColor,
-                    ),
-                    items: _setorController.setores.map((setor) {
-                      return DropdownMenuItem(
-                        value: setor.id,
-                        child: Text(setor.nome),
+                    if (_setorController.setores.isEmpty) {
+                      return const Text(
+                        'Nenhum setor cadastrado na empresa. Cadastre um setor primeiro.', 
+                        style: TextStyle(color: AppThemes.errorColor),
                       );
-                    }).toList(),
-                    onChanged: (value) => setState(() => _setorSelecionado = value),
-                    validator: (value) => value == null ? 'Selecione um setor' : null,
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
+                    }
 
-              // BOTÃO SALVAR (ListenableBuilder)
+                    return DropdownButtonFormField<String>(
+                      value: _setorSelecionado,
+                      decoration: InputDecoration(
+                        labelText: 'Setor',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: Icon(Icons.account_tree, color: theme.primaryColor),
+                        filled: true,
+                        fillColor: theme.cardColor,
+                      ),
+                      items: _setorController.setores.map((setor) {
+                        return DropdownMenuItem(
+                          value: setor.id,
+                          child: Text(setor.nome),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => _setorSelecionado = value),
+                      validator: (value) => value == null ? 'Selecione um setor' : null,
+                    );
+                  },
+                ),
+                const SizedBox(height: 32),
+              ] else ...[
+                // Espaço extra para manter o botão bem posicionado quando os campos estão ocultos
+                const SizedBox(height: 16),
+              ],
+
+              // BOTÃO SALVAR
               ListenableBuilder(
                 listenable: _usuarioController,
                 builder: (context, _) {
                   if (_usuarioController.isLoading) {
                     return Center(child: CircularProgressIndicator(color: theme.primaryColor));
                   }
+                  
+                  // Gestor não tem _setorController carregado, por isso a condição precisa avaliar se é admin primeiro
+                  final botaoBloqueado = ehAdmin && _setorController.setores.isEmpty;
+
                   return ElevatedButton(
-                    onPressed: _setorController.setores.isEmpty ? null : _salvar,
+                    onPressed: botaoBloqueado ? null : _salvar,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       backgroundColor: theme.primaryColor,

@@ -169,7 +169,7 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => EquipeScreen(empresaId: empresa.id), 
+                              builder: (context) => EquipeScreen(empresaId: empresa.id, usuarioLogado: widget.usuario), 
                             ),
                           );
                         }

@@ -85,7 +85,7 @@ class PainelGestorScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EquipeScreen(empresaId: usuario.empresaId!),
+                        builder: (context) => EquipeScreen(empresaId: usuario.empresaId!, usuarioLogado: usuario),
                       ),
                     );
                   },

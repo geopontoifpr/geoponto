@@ -14,24 +14,27 @@ class UsuarioController extends ChangeNotifier {
 
   void _setLoading(bool value) { isLoading = value; notifyListeners(); }
 
-  Future<void> carregarUsuarios(String empresaId) async {
+  Future<void> carregarUsuarios(UsuarioModel usuarioLogado, String empresaId) async {
     _setLoading(true);
     erroMensagem = null;
     
-    try {
+    try {    
+
       if (usuarioLogado.tipoUsuario == TipoUsuario.administrador) {
-        // O Administrador vê TODOS da empresa
-        equipe = await _service.listar(
-          empresaId: usuarioLogado.empresaId!,
+        // Administrador vê TODOS da empresa
+        usuario = await _service.listarUsuarios(
+          empresaId: empresaId,
         );
       } else if (usuarioLogado.tipoUsuario == TipoUsuario.gestor) {
-        // O Gestor vê APENAS o seu setor e não vê a si mesmo
-        equipe = await _service.listar(
+        // Gestor vê o seu setor e a query exclui ele mesmo
+        
+        usuario = await _service.listarUsuarios(
           empresaId: usuarioLogado.empresaId!,
           setorId: usuarioLogado.setorId,
           ignorarUsuarioId: usuarioLogado.id,
         );
       }
+    
     } on AppException catch (e) {
       erroMensagem = e.mensagem;
     } finally {
@@ -42,6 +45,7 @@ class UsuarioController extends ChangeNotifier {
   Future<bool> salvarUsuario({
     String? idEdicao,
     required String empresaId,
+    required UsuarioModel usuarioLogado,
     required String nome,
     required String email,
     required String tipoUsuario,
@@ -53,7 +57,7 @@ class UsuarioController extends ChangeNotifier {
         idEdicao: idEdicao, empresaId: empresaId, nome: nome, 
         email: email, tipoUsuario: tipoUsuario, setorId: setorId
       );
-      await carregarUsuarios(empresaId);
+      await carregarUsuarios(usuarioLogado, empresaId); // Recarrega a lista após salvar
       return true;
     } on AppException catch (e) {
       erroMensagem = e.mensagem; return false;
@@ -64,16 +68,21 @@ class UsuarioController extends ChangeNotifier {
     }
   }
 
-  // Alteramos para receber o UsuarioModel
-  Future<bool> alternarStatus(UsuarioModel usuario, String empresaId) async {
+  Future<bool> alternarStatus(UsuarioModel membro, UsuarioModel usuarioLogado) async {
     _setLoading(true);
-    erroMensagem = null; // Limpa o erro anterior antes de tentar
+    erroMensagem = null;
+    
     try {
-      await _service.alternarStatusAtivo(usuario); // Passa o objeto para o Service
-      await carregarUsuarios(empresaId);
+      // 1. Chama a Service (que vai validar a regra do Gestor que você acabou de criar)
+      await _service.alternarStatusAtivo(membro);
+      
+      // 2. Se não lançou exceção (ValidacaoException), recarrega a lista atualizada
+      await carregarUsuarios(usuarioLogado, membro.empresaId!); 
       return true;
+      
     } on AppException catch (e) {
-      erroMensagem = e.mensagem; 
+      // Captura o erro "O setor selecionado já possui um Gestor..." e exibe na tela
+      erroMensagem = e.mensagem;
       return false;
     } finally {
       _setLoading(false);

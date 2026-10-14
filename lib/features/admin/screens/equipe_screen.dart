@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../usuarios/controllers/usuario_controller.dart';
-import '../../usuarios/screens/cadastro_usuario_adm_screen.dart';
+import '../../usuarios/screens/cadastro_usuario_screen.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../../core/themes/app_themes.dart'; 
 import '../../../core/utils/snackbar_util.dart';
@@ -8,7 +8,13 @@ import '../../../core/widgets/usuario_list.dart';
 
 class EquipeScreen extends StatefulWidget {
   final String empresaId;
-  const EquipeScreen({Key? key, required this.empresaId}) : super(key: key);
+  final UsuarioModel usuarioLogado; // 1. ADICIONADO: Agora a tela recebe quem está a aceder!
+
+  const EquipeScreen({
+    Key? key, 
+    required this.empresaId,
+    required this.usuarioLogado, // 1. ADICIONADO NO CONSTRUTOR
+  }) : super(key: key);
 
   @override
   State<EquipeScreen> createState() => _EquipeScreenState();
@@ -21,7 +27,8 @@ class _EquipeScreenState extends State<EquipeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _controller.carregarUsuarios(widget.empresaId);
+      // 2. CORRIGIDO: Agora passa o utilizador logado para o filtro do Controller
+      _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId); 
     });
   }
 
@@ -31,11 +38,13 @@ class _EquipeScreenState extends State<EquipeScreen> {
       MaterialPageRoute(
         builder: (context) => CadastroUsuarioScreen(
           empresaId: widget.empresaId,
+          usuarioLogado: widget.usuarioLogado,
           membroEmEdicao: membroEmEdicao,
         ),
       ),
     );
-    _controller.carregarUsuarios(widget.empresaId); // Recarrega ao voltar
+    // 3. CORRIGIDO: Recarrega passando o utilizador correto
+    _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId); 
   }
 
   @override
@@ -51,10 +60,10 @@ class _EquipeScreenState extends State<EquipeScreen> {
         icon: const Icon(Icons.person_add),
         label: const Text('Novo Membro'),
       ),
-      // Trocado AnimatedBuilder por ListenableBuilder (Padrão mais moderno)
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {
+          // 4. CORRIGIDO: Padronizado para "_controller.usuarios" (no plural)
           if (_controller.isLoading && _controller.usuario.isEmpty) {
             return Center(
               child: CircularProgressIndicator(color: theme.primaryColor),
@@ -80,12 +89,11 @@ class _EquipeScreenState extends State<EquipeScreen> {
             itemBuilder: (context, index) {
               final membro = _controller.usuario[index];
               
-              // O componente reutilizável!
               return UsuarioList(
                 membro: membro,
                 onEdit: () => _irParaCadastro(membroEmEdicao: membro),
                 onToggleStatus: () async {
-                  final sucesso = await _controller.alternarStatus(membro, widget.empresaId);
+                  final sucesso = await _controller.alternarStatus(membro, widget.usuarioLogado); // 5. CORRIGIDO: Passa o usuário logado para a função
                   
                   if (!mounted) return;
                   
@@ -94,6 +102,9 @@ class _EquipeScreenState extends State<EquipeScreen> {
                       context, 
                       _controller.erroMensagem ?? 'Erro ao alterar status.',
                     );
+                  } else {
+                     // Recarrega a lista para mostrar o novo status imediatamente
+                     _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId);
                   }
                 },
               );
