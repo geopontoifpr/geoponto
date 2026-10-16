@@ -88,4 +88,7 @@ class UsuarioController extends ChangeNotifier {
       _setLoading(false);
     }
   }
+  Future<String?> obterIdPorEmail(String email) async {
+    return await _service.obterIdPorEmail(email);
+  }
 }

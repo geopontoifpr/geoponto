@@ -129,5 +129,19 @@ class UsuarioRepository {
       throw ServidorException('Erro ao vincular gestor ao setor.');
     }
   }
+ Future<String?> obterIdPorEmail(String email) async {
+    try {
+      final Map<String, dynamic>? response = await _client
+          .from('usuarios')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+          
+      if (response == null) return null;
+      return response['id'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
   
 }

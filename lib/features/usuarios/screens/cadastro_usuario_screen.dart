@@ -5,12 +5,13 @@ import '../../admin/controllers/setor_controller.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_text_field.dart';
+import '../../jornadas/controllers/jornada_controller.dart';
 
 class CadastroUsuarioScreen extends StatefulWidget {
   final String empresaId;
   final UsuarioModel? membroEmEdicao;
   final UsuarioModel usuarioLogado;
-
+  
   const CadastroUsuarioScreen({
     Key? key,
     required this.empresaId,
@@ -27,11 +28,14 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
   
-  String? _tipoSelecionado;
-  String? _setorSelecionado;
-
+  // Controllers
   final _usuarioController = UsuarioController();
   final _setorController = SetorController();
+  final _jornadaController = JornadaController();
+  
+  String? _tipoSelecionado;
+  String? _setorSelecionado;
+  String? _jornadaSelecionada;  
 
   bool get ehEdicao => widget.membroEmEdicao != null;
   bool get ehAdmin => widget.usuarioLogado.tipoUsuario == TipoUsuario.administrador;
@@ -46,13 +50,23 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
       _tipoSelecionado = widget.membroEmEdicao!.tipoUsuario.name.toUpperCase();
       _setorSelecionado = widget.membroEmEdicao!.setorId;
     }
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _jornadaController.carregarJornadas();
+      
+      if (ehEdicao) {
+        final jornadaId = await _jornadaController.buscarJornadaSelecionada(widget.membroEmEdicao!.id);
+        if (jornadaId != null && mounted) {
+          setState(() {
+            _jornadaSelecionada = jornadaId;
+          });
+        }
+      }
 
-    // Só carrega a lista de setores se for o Administrador (Gestor não precisa)
-    if (ehAdmin) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ehAdmin && mounted) {
         _setorController.carregarSetores(widget.empresaId);
-      });
-    }
+      }
+    });
   }
 
   @override
@@ -67,7 +81,6 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Lógica invisível para forçar os dados baseados no utilizador logado
     final String tipoAEnviar;
     final String? setorAEnviar;
 
@@ -75,7 +88,6 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
       tipoAEnviar = _tipoSelecionado!;
       setorAEnviar = _setorSelecionado;
     } else {
-      // Puxa o enum diretamente do model para garantir o padrão
       tipoAEnviar = TipoUsuario.funcionario.name.toUpperCase();
       setorAEnviar = widget.usuarioLogado.setorId;
     }
@@ -93,6 +105,21 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
     if (!mounted) return;
 
     if (sucesso) {
+      if (_jornadaSelecionada != null) {
+        String? usuarioAlvoId;
+        
+        if (ehEdicao) {
+           usuarioAlvoId = widget.membroEmEdicao!.id;
+        } else {
+           // Delegamos a responsabilidade de buscar o ID para o Controller, mantendo o MVC intacto.
+           usuarioAlvoId = await _usuarioController.obterIdPorEmail(_emailController.text.trim());
+        }
+        
+        if (usuarioAlvoId != null) {
+          await _jornadaController.salvarJornadaUsuario(usuarioAlvoId, _jornadaSelecionada!);
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ehEdicao ? 'Dados atualizados com sucesso!' : 'Membro cadastrado com sucesso!\nSenha padrão: 123456'),
@@ -125,7 +152,6 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // NOME
               CustomTextField(
                 controller: _nomeController,
                 labelText: 'Nome Completo',
@@ -134,7 +160,6 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
               ),
               const SizedBox(height: 16),
 
-              // E-MAIL
               CustomTextField(
                 controller: _emailController,
                 labelText: 'E-mail',
@@ -152,9 +177,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 ),
               const SizedBox(height: 16),
 
-              // ESCONDE OS CAMPOS SE NÃO FOR ADMINISTRADOR
               if (ehAdmin) ...[
-                // TIPO DE USUÁRIO
                 DropdownButtonFormField<String>(
                   value: _tipoSelecionado,
                   decoration: InputDecoration(
@@ -173,7 +196,6 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // SETOR
                 ListenableBuilder(
                   listenable: _setorController,
                   builder: (context, _) {
@@ -208,13 +230,50 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 32),
-              ] else ...[
-                // Espaço extra para manter o botão bem posicionado quando os campos estão ocultos
                 const SizedBox(height: 16),
+              ] else ...[
+                const SizedBox(height: 4),
               ],
 
-              // BOTÃO SALVAR
+              ListenableBuilder(
+                listenable: _jornadaController,
+                builder: (context, _) {
+                  if (_jornadaController.isLoading) {
+                    return Center(child: CircularProgressIndicator(color: theme.primaryColor));
+                  }
+
+                  if (_jornadaController.jornadas.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'Nenhuma jornada cadastrada no banco de dados.', 
+                        style: TextStyle(color: AppThemes.errorColor),
+                      ),
+                    );
+                  }
+
+                  return DropdownButtonFormField<String>(
+                    value: _jornadaSelecionada,
+                    decoration: InputDecoration(
+                      labelText: 'Jornada de Trabalho',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: Icon(Icons.schedule, color: theme.primaryColor),
+                      filled: true,
+                      fillColor: theme.cardColor,
+                    ),
+                    items: _jornadaController.jornadas.map((jornada) {
+                      return DropdownMenuItem(
+                        value: jornada.id,
+                        child: Text('${jornada.cargaHorariaSem} Horas Semanais'), 
+                      );
+                    }).toList(),
+                    onChanged: (value) => setState(() => _jornadaSelecionada = value),
+                    validator: (value) => value == null ? 'Selecione uma jornada' : null,
+                  );
+                },
+              ),
+              const SizedBox(height: 32),
+
               ListenableBuilder(
                 listenable: _usuarioController,
                 builder: (context, _) {
@@ -222,7 +281,6 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                     return Center(child: CircularProgressIndicator(color: theme.primaryColor));
                   }
                   
-                  // Gestor não tem _setorController carregado, por isso a condição precisa avaliar se é admin primeiro
                   final botaoBloqueado = ehAdmin && _setorController.setores.isEmpty;
 
                   return ElevatedButton(

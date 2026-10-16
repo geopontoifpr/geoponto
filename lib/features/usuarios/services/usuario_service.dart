@@ -95,4 +95,11 @@ class UsuarioService {
       }
     }
   }
+  Future<String?> obterIdPorEmail(String email) async {
+    try {
+      return await _repository.obterIdPorEmail(email);
+    } catch (e) {
+      return null; // Se falhar a busca, retorna nulo silenciosamente para não quebrar a UI
+    }
+  }
 }
