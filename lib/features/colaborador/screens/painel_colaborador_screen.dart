@@ -1,8 +1,8 @@
 import 'historico_mensal_screen.dart';
 import 'package:flutter/material.dart';
 import '../../usuarios/models/usuario_model.dart';
-import '../../../core/themes/app_themes.dart';
-import '../../../core/widgets/custom_app_bar.dart'; // O seu AppBar que já possui o botão de sair
+import '../../../core/widgets/custom_app_bar.dart';
+import 'bater_ponto_screen.dart';
 
 
 class PainelColaboradorScreen extends StatefulWidget {
@@ -20,11 +20,10 @@ class PainelColaboradorScreen extends StatefulWidget {
 class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
   
   void _baterPonto() {
-    // TODO: Implementar lógica e tela de bater ponto (ex: biometria, localização, etc)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Funcionalidade de Ponto em breve!'),
-        behavior: SnackBarBehavior.floating,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BaterPontoScreen(usuario: widget.usuario),
       ),
     );
   }
