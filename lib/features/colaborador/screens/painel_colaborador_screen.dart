@@ -1,3 +1,4 @@
+import 'historico_mensal_screen.dart';
 import 'package:flutter/material.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../../core/themes/app_themes.dart';
@@ -29,11 +30,10 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
   }
 
   void _verFrequencia() {
-    // TODO: Navegar para a tela de calendário/frequência mensal
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Histórico de Frequência em breve!'),
-        behavior: SnackBarBehavior.floating,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HistoricoMensalScreen(usuario: widget.usuario),
       ),
     );
   }
