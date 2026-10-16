@@ -7,22 +7,12 @@ class PontoRepository {
   PontoRepository({SupabaseService? supabaseService})
       : _supabaseService = supabaseService ?? SupabaseService.instance;
 
-  Future<Map<String, dynamic>> buscarDadosEmpresa(String usuarioId) async {
-    final respostaUsuario = await _supabaseService.client
-        .from('usuarios')
-        .select('nome, empresa_id')
-        .eq('id', usuarioId)
-        .single();
-
-    final empresaId = respostaUsuario['empresa_id'];
-    if (empresaId == null) {
-      throw StateError('O usuário não está vinculado a uma empresa.');
-    }
-
+  Future<Map<String, dynamic>> buscarDadosEmpresa() async {
+    // Vai direto na tabela empresas e pega a primeira/única linha que existe
     final respostaEmpresa = await _supabaseService.client
         .from('empresas')
         .select('nome, latitude_ponto, longitude_ponto, raio_permitido_m')
-        .eq('id', empresaId)
+        .limit(1)
         .single();
 
     final latitude = (respostaEmpresa['latitude_ponto'] as num?)?.toDouble();
@@ -34,7 +24,6 @@ class PontoRepository {
     }
 
     return {
-      'nome_usuario': respostaUsuario['nome']?.toString() ?? 'Colaborador',
       'nome_empresa': respostaEmpresa['nome']?.toString() ?? 'Empresa',
       'latitude_empresa': latitude,
       'longitude_empresa': longitude,
@@ -66,7 +55,17 @@ class PontoRepository {
     if (registros.length >= 4) {
       throw StateError('O limite de 4 registros de ponto por dia foi atingido.');
     }
-    return registros.length.isEven ? 'ENTRADA' : 'SAIDA';
+    
+    // Aqui você coloca os valores EXATOS como estão cadastrados no ENUM do banco Postgres
+    // Pode ser ['entry1', 'exit1', 'entry2', 'exit2'] se for assim que está no seu banco.
+    const tiposDoBanco = [
+      'entrada_1', 
+      'saida_1',   
+      'entrada_2', 
+      'saida_2'    
+    ];
+    
+    return tiposDoBanco[registros.length];
   }
 
   Future<RegistroPontoModel> registrarPonto({

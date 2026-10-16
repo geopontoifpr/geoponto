@@ -44,20 +44,32 @@ class PontoController extends ChangeNotifier {
       !carregando && !atualizandoLocalizacao && !registrando &&
       dentroDoRaio && precisaoValida && registros.length < 4;
 
-  Future<void> inicializar() async {
+  Future<void> inicializar(String nomeDoUsuarioLogado) async {
     try {
       carregando = true;
       erro = null;
       notifyListeners();
-      final dados = await _repository.buscarDadosEmpresa(usuarioId);
-      nomeUsuario = dados['nome_usuario'] as String;
+      
+      print('=== 1. Buscando dados da empresa no Supabase... ===');
+      final dados = await _repository.buscarDadosEmpresa(); 
+      print('=== SUCESSO 1: Empresa encontrada! ===');
+      
+      nomeUsuario = nomeDoUsuarioLogado;
       nomeEmpresa = dados['nome_empresa'] as String;
       latitudeEmpresa = dados['latitude_empresa'] as double;
       longitudeEmpresa = dados['longitude_empresa'] as double;
       raioPermitido = dados['raio_permitido_m'] as double;
+      
+      print('=== 2. Buscando localização do GPS (pode demorar)... ===');
       await atualizarLocalizacao();
+      print('=== SUCESSO 2: Localização obtida! ===');
+      
+      print('=== 3. Buscando registros de ponto de hoje... ===');
       await carregarRegistros();
+      print('=== SUCESSO 3: Tudo carregado! ===');
+      
     } catch (e) {
+      print('=== ERRO NO INICIALIZAR: $e ===');
       erro = _mensagemErro(e);
     } finally {
       carregando = false;

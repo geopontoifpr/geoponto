@@ -23,7 +23,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
   void initState() {
     super.initState();
     _controller = PontoController(usuarioId: widget.usuario.id);
-    _controller.inicializar();
+    _controller.inicializar(widget.usuario.nome);
   }
 
   @override
@@ -73,7 +73,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
 
           return RefreshIndicator(
             onRefresh: () async {
-              await _controller.inicializar();
+              await _controller.inicializar(widget.usuario.nome);
             },
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -178,30 +178,36 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
   Widget _cartaoRegistro(RegistroPontoModel registro) {
     final horario = registro.criadoEm.toLocal();
     final hora = '${horario.hour.toString().padLeft(2, '0')}:${horario.minute.toString().padLeft(2, '0')}';
+    
     return Card(
       child: ListTile(
-        leading: const Icon(Icons.access_time),
-        title: Text(_formatarTipo(registro.tipoRegistro)),
-        subtitle: Text('$hora · ${registro.latitudeDisp.toStringAsFixed(5)}, ${registro.longitudeDisp.toStringAsFixed(5)}'),
+        leading: Icon(
+          // Muda o ícone dependendo se é entrada ou saída
+          registro.tipoRegistro.name.contains('entrada') ? Icons.login : Icons.logout,
+          color: registro.tipoRegistro.name.contains('entrada') ? Colors.green : Colors.orange,
+        ),
+        // O título já vem pronto e formatado do Enum! (Ex: "Saída 1 (Almoço)")
+        title: Text(registro.tipoRegistro.titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('$hora · Lat: ${registro.latitudeDisp.toStringAsFixed(3)}, Lon: ${registro.longitudeDisp.toStringAsFixed(3)}'),
       ),
     );
   }
 
   String _textoBotao(List<RegistroPontoModel> registros) {
     if (registros.length >= 4) return 'Limite diário atingido';
-    return registros.length.isEven ? 'Registrar Entrada' : 'Registrar Saída';
+    
+    // Define o texto exato do botão com base na quantidade de registros que já existem hoje
+    const textosDosBotoes = [
+      'Registrar Entrada 1',
+      'Registrar Saída para Almoço',
+      'Registrar Retorno do Almoço',
+      'Registrar Fim do Expediente'
+    ];
+    
+    return textosDosBotoes[registros.length];
   }
 
-  String _formatarTipo(String tipo) {
-    switch (tipo.toUpperCase()) {
-      case 'SAIDA':
-      case 'SAÍDA':
-        return 'Saída';
-      default:
-        return 'Entrada';
-    }
-  }
-
+  
   String _formatarDistancia(double distancia) => distancia < 1000
       ? '${distancia.toStringAsFixed(0)} m'
       : '${(distancia / 1000).toStringAsFixed(2)} km';
