@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../admin/screens/equipe_screen.dart';
+import '../../colaborador/screens/bater_ponto_screen.dart';
 
 class PainelGestorScreen extends StatelessWidget {
   final UsuarioModel usuario;
@@ -77,6 +78,19 @@ class PainelGestorScreen extends StatelessWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: [
+                _buildActionCard(
+                  context: context,
+                  title: 'Bater\nPonto',
+                  icon: Icons.fingerprint,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BaterPontoScreen(usuario: usuario),
+                      ),
+                    );
+                  },
+                ),
                 _buildActionCard(
                   context: context,
                   title: 'Minha\nEquipe',
