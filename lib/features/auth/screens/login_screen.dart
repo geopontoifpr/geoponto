@@ -7,6 +7,11 @@ import '../../admin/screens/painel_empresa_screen.dart';
 // Importando os widgets globais que criamos
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../../core/utils/snackbar_util.dart';
+import '../../admin/screens/painel_empresa_screen.dart';
+import '../../gestor/screens/painel_gestor_screen.dart';
+import '../../colaborador/screens/painel_colaborador_screen.dart';
+import 'primeiro_acesso_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,36 +40,39 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final senha = _senhaController.text;
 
-    // Validação manual dos campos
     if (email.isEmpty || senha.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, preencha o e-mail e a senha.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      SnackbarUtil.showError(context, 'Por favor, preencha o e-mail e a senha.');
       return;
     }
 
+    // Chama o controller
     final sucesso = await _controller.entrar(
       email: email,
       senha: senha,
     );
 
     if (sucesso && mounted) {
-      final usuario = _controller.usuarioLogado;
+      final usuario = _controller.usuarioLogado!;
 
       Widget destino;
-      switch (usuario?.tipoUsuario) {
-        case TipoUsuario.administrador:
-          destino = PainelEmpresaScreen(usuario: usuario!);
-          break;
-        case TipoUsuario.gestor:
-        case TipoUsuario.funcionario:
-        default:
-          destino = PainelEmpresaScreen(usuario: usuario!);
-          break;
-      }
+      
+      // 1. O FLUXO DE PRIMEIRO ACESSO DEVE VIR PRIMEIRO
+     if (usuario.primeiroAcesso) {
+        destino = PrimeiroAcessoScreen(usuario: usuario);
+      } else {
+          // SE NÃO FOR PRIMEIRO ACESSO, SEPARA POR CARGO
+          switch (usuario.tipoUsuario) {
+            case TipoUsuario.administrador:
+              destino = PainelEmpresaScreen(usuario: usuario);
+              break;
+            case TipoUsuario.gestor:
+              destino = PainelGestorScreen(usuario: usuario); 
+              break;
+            case TipoUsuario.funcionario:
+              destino = PainelColaboradorScreen(usuario: usuario); // <-- NOVO FLUXO!
+              break;
+          }
+        }
 
       Navigator.pushReplacement(
         context,

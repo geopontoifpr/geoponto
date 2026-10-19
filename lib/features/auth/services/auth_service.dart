@@ -19,18 +19,16 @@ class AuthService {
       throw const CamposObrigatoriosException();
     }
 
-    // Consulta na tabela usuarios
-    final usuario = await _repository.buscarPorCredenciais(
-      email: emailTratado,
-      senha: senha,
-    );
+    // CORREÇÃO: Enviando os parâmetros de forma posicional, sem "email:" e "senha:"
+    final usuario = await _repository.buscarPorCredenciais(emailTratado, senha);
 
     if (usuario == null) {
-      throw const AuthExceptionApp('E-mail ou senha inválidos. Verifique suas credenciais.');
+      // CORREÇÃO: Removido o 'const' caso a exceção não tenha construtor constante
+      throw AuthExceptionApp('E-mail ou senha inválidos. Verifique suas credenciais.');
     }
 
     if (!usuario.ativo) {
-      throw const UsuarioInativoException('Usuário inativo. Entre em contato com a administração.');
+      throw UsuarioInativoException('Usuário inativo. Entre em contato com a administração.');
     }
 
     return usuario;
@@ -38,5 +36,19 @@ class AuthService {
 
   Future<void> logout() async {
     await _repository.deslogar();
+  }
+
+  Future<void> salvarPrimeiroAcesso(String novaSenha, String confirmarSenha, String usuarioId) async {
+    // Regras de negócio e validação
+    if (novaSenha.trim().length < 6) {
+      throw ValidacaoException('A senha deve ter no mínimo 6 caracteres.');
+    }
+    if (novaSenha != confirmarSenha) {
+      throw ValidacaoException('As senhas não coincidem.');
+    }
+
+    // Chama o repositório
+    await _repository.atualizarSenha(novaSenha);
+    await _repository.removerFlagPrimeiroAcesso(usuarioId);
   }
 }

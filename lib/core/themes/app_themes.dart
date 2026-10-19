@@ -8,6 +8,10 @@ class AppThemes {
   static const Color inputColorLight = Colors.white;
   static const Color inputColorDark = Color(0xFF1E1E1E);
 
+  static const Color errorColor = Colors.redAccent;
+  static const Color warningColor = Colors.orange;
+  static const Color infoColor = Colors.blue;
+
   // Tema Claro
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
