@@ -1,9 +1,9 @@
-import 'historico_mensal_screen.dart';
 import 'package:flutter/material.dart';
 import '../../usuarios/models/usuario_model.dart';
-import '../../../core/widgets/custom_app_bar.dart';
 import 'bater_ponto_screen.dart';
-
+import '../../../core/themes/app_themes.dart';
+import '../../../core/widgets/custom_app_bar.dart';
+import 'historico_mensal_screen.dart';
 
 class PainelColaboradorScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -19,7 +19,7 @@ class PainelColaboradorScreen extends StatefulWidget {
 
 class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
   
-  void _baterPonto() {
+ void _baterPonto() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -38,7 +38,6 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
   }
 
   void _verOcorrencias() {
-    // TODO: Navegar para a tela de ocorrências (faltas, atestados, justificativas)
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Ocorrências em breve!'),
@@ -50,24 +49,28 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    // Cores padronizadas com a tela de histórico
+    final bgColorScreen = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF6F7F9);
+    final cardColor = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final textColorSecondary = isDarkMode ? const Color(0xFF94A3B8) : Colors.black54;
 
     return Scaffold(
-      // Usando o seu widget padronizado! A lógica de sair já é tratada lá.
+      backgroundColor: bgColorScreen,
       appBar: CustomAppBar(
-        nomeUsuario: widget.usuario.nome, // Passa o nome do colaborador
-        onPerfilPressed: () {
-          // TODO: Navegar para a tela de edição de perfil, se desejar
-        },
+        nomeUsuario: widget.usuario.nome,
+        onPerfilPressed: () {},
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Saudação Personalizada (Reaproveitando as cores do AppThemes pelo theme do contexto)
+            // Saudação Personalizada
             Card(
               elevation: 0,
-              color: theme.primaryColor.withOpacity(0.1),
+              color: isDarkMode ? cardColor : theme.primaryColor.withOpacity(0.1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -77,16 +80,16 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Olá, ${widget.usuario.nome.split(' ').first}!', // Exibe apenas o primeiro nome
+                      'Olá, ${widget.usuario.nome.split(' ').first}!',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
+                        color: isDarkMode ? Colors.white : theme.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'O que você deseja fazer hoje?',
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                      style: TextStyle(fontSize: 16, color: textColorSecondary),
                     ),
                   ],
                 ),
@@ -107,6 +110,8 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
                     icon: Icons.fingerprint,
                     color: Colors.teal,
                     onTap: _baterPonto,
+                    isDarkMode: isDarkMode,
+                    cardBgColor: cardColor,
                   ),
                   _buildActionCard(
                     context,
@@ -114,6 +119,8 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
                     icon: Icons.calendar_month,
                     color: Colors.indigo,
                     onTap: _verFrequencia,
+                    isDarkMode: isDarkMode,
+                    cardBgColor: cardColor,
                   ),
                   _buildActionCard(
                     context,
@@ -121,6 +128,8 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
                     icon: Icons.assignment_late_outlined,
                     color: Colors.orange,
                     onTap: _verOcorrencias,
+                    isDarkMode: isDarkMode,
+                    cardBgColor: cardColor,
                   ),
                 ],
               ),
@@ -138,8 +147,11 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
+    required bool isDarkMode,
+    required Color cardBgColor,
   }) {
     return Card(
+      color: cardBgColor,
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
@@ -153,7 +165,8 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  // Fundo do ícone fica um pouquinho mais visível no modo escuro
+                  color: color.withOpacity(isDarkMode ? 0.2 : 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 40, color: color),
@@ -162,9 +175,10 @@ class _PainelColaboradorScreenState extends State<PainelColaboradorScreen> {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
                 ),
               ),
             ],

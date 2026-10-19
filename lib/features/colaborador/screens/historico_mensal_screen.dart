@@ -102,7 +102,6 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
     _carregarDadosMes();
   }
 
-  /// Soma os pares de batidas (Entrada -> Saída) de um dia específico
   Duration _calcularHorasDoDia(int dia) {
     final batidas = List<RegistroPontoModel>.from(_pontosPorDia[dia] ?? [])
       ..sort((a, b) => a.criadoEm.compareTo(b.criadoEm));
@@ -115,7 +114,6 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
       }
     }
 
-    // Soma minutos abonados de ocorrências aprovadas naquele dia, se houver
     final ocs = _ocorrenciasPorDia[dia] ?? [];
     for (final oc in ocs) {
       if (oc.aprovada && oc.minutosAbonados != null) {
@@ -125,7 +123,6 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
     return total;
   }
 
-  /// Determina a cor do dia seguindo a regra de cadastro e dias úteis
   StatusDiaCalendario _avaliarStatusDia(int dia) {
     final dataDia = DateTime(_mesAtual.year, _mesAtual.month, dia);
     final hoje = DateTime.now();
@@ -139,35 +136,29 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
     final isFimDeSemana =
         dataDia.weekday == DateTime.saturday || dataDia.weekday == DateTime.sunday;
 
-    // 1. Dias no futuro ou anteriores à criação da conta do usuário (sem batidas) ficam neutros
     if (dataDia.isAfter(hojeSemHora)) return StatusDiaCalendario.neutro;
     if (dataDia.isBefore(cadastroSemHora) && batidas.isEmpty) {
       return StatusDiaCalendario.neutro;
     }
 
-    // 2. Fim de semana sem batidas fica neutro
     if (isFimDeSemana && batidas.isEmpty) {
       return StatusDiaCalendario.neutro;
     }
 
-    // 3. Dia útil sem batidas (desde o cadastro até ontem, ou hoje com ocorrência) -> Vermelho
     if (batidas.isEmpty) {
       final temAbonoAprovado = ocorrencias.any((o) => o.aprovada);
       if (temAbonoAprovado) return StatusDiaCalendario.verde;
 
-      // Se for hoje e ainda não bateu ponto, mantém neutro (com borda azul) até o dia acabar
       if (dataDia.isAtSameMomentAs(hojeSemHora)) {
         return StatusDiaCalendario.neutro;
       }
       return StatusDiaCalendario.vermelho;
     }
 
-    // 4. Tem batidas, mas número ímpar (esqueceu de bater saída) -> Laranja
     if (batidas.length.isOdd) {
       return StatusDiaCalendario.laranja;
     }
 
-    // 5. Batidas pares: verifica se cumpriu pelo menos ~90% da meta diária
     final metaMinutosDia = (_cargaHorariaSemanal / 5.0 * 60.0).round();
     final trabalhadoMinutos = _calcularHorasDoDia(dia).inMinutes;
 
@@ -211,12 +202,20 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
+    // Definição de cores dinâmicas para a tela inteira
+    final bgColorScreen = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF6F7F9);
+    final cardColor = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final textColorPrimary = isDarkMode ? Colors.white : const Color(0xFF1E293B);
+    final textColorSecondary = isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final shadowColor = isDarkMode ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.03);
+
     final totalDiasMes = DateTime(_mesAtual.year, _mesAtual.month + 1, 0).day;
     final primeiroDiaMes = DateTime(_mesAtual.year, _mesAtual.month, 1);
-    // Ajuste para Domingo = 0, Segunda = 1, ..., Sábado = 6
     final offsetSemana = primeiroDiaMes.weekday % 7;
 
-    // Cálculo de horas totais trabalhadas no mês e meta mensal
     Duration totalTrabalhadoMes = Duration.zero;
     int diasUteisNoMes = 0;
 
@@ -245,9 +244,9 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
     final hoje = DateTime.now();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
+      backgroundColor: bgColorScreen,
       appBar: CustomAppBar(
-        nomeUsuario: 'Histórico Mensal',
+        nomeUsuario: widget.usuario.nome,
         onPerfilPressed: () {},
       ),
       body: _carregando
@@ -257,15 +256,15 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Card Superior: Resumo do Mês + Barra de Progresso
+                  // Card Superior: Resumo do Mês
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: shadowColor,
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -282,18 +281,18 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                               children: [
                                 Text(
                                   '${_nomesMeses[_mesAtual.month - 1]} ${_mesAtual.year}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E293B),
+                                    color: textColorPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   '${trabHoras}h ${trabMin.toString().padLeft(2, '0')}min trabalhadas',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
-                                    color: Color(0xFF94A3B8),
+                                    color: textColorSecondary,
                                   ),
                                 ),
                               ],
@@ -313,10 +312,10 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   '${faltamHoras}h ${faltamMinRest.toString().padLeft(2, '0')}m',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E293B),
+                                    color: textColorPrimary,
                                   ),
                                 ),
                               ],
@@ -329,7 +328,7 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                           child: LinearProgressIndicator(
                             value: progresso,
                             minHeight: 8,
-                            backgroundColor: const Color(0xFFF1F5F9),
+                            backgroundColor: isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               Color(0xFF74B49B),
                             ),
@@ -345,11 +344,11 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: shadowColor,
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -357,31 +356,31 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                     ),
                     child: Column(
                       children: [
-                        // Navegação do Mês (< Agosto >)
+                        // Navegação do Mês
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             IconButton(
                               onPressed: () => _mudarMes(-1),
-                              icon: const Icon(Icons.chevron_left, color: Color(0xFF64748B)),
+                              icon: Icon(Icons.chevron_left, color: textColorSecondary),
                             ),
                             Text(
                               _nomesMeses[_mesAtual.month - 1],
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E293B),
+                                color: textColorPrimary,
                               ),
                             ),
                             IconButton(
                               onPressed: () => _mudarMes(1),
-                              icon: const Icon(Icons.chevron_right, color: Color(0xFF64748B)),
+                              icon: Icon(Icons.chevron_right, color: textColorSecondary),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
 
-                        // Cabeçalho dos dias da semana (D S T Q Q S S)
+                        // Cabeçalho dos dias da semana
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: const ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
@@ -402,7 +401,7 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Grade de dias do mês
+                        // Grade de dias
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -430,6 +429,7 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                               status: status,
                               isHoje: isHoje,
                               mostrarAlerta: mostrarAlerta,
+                              isDarkMode: isDarkMode,
                             );
                           },
                         ),
@@ -447,36 +447,37 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
     required StatusDiaCalendario status,
     required bool isHoje,
     required bool mostrarAlerta,
+    required bool isDarkMode,
   }) {
-    Color bgColor = const Color(0xFFF1F5F9);
-    Color borderColor = Colors.transparent;
-    Color textColor = const Color(0xFF64748B);
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
 
     switch (status) {
       case StatusDiaCalendario.verde:
-        bgColor = const Color(0xFFE8F5E9);
-        borderColor = const Color(0xFF81C784);
-        textColor = const Color(0xFF2E7D32);
+        bgColor = isDarkMode ? const Color(0xFF14532D).withOpacity(0.7) : const Color(0xFFE8F5E9);
+        borderColor = isDarkMode ? const Color(0xFF22C55E) : const Color(0xFF81C784);
+        textColor = isDarkMode ? const Color(0xFF86EFAC) : const Color(0xFF2E7D32);
         break;
       case StatusDiaCalendario.laranja:
-        bgColor = const Color(0xFFFFF3E0);
-        borderColor = const Color(0xFFFFB74D);
-        textColor = const Color(0xFFE65100);
+        bgColor = isDarkMode ? const Color(0xFF7C2D12).withOpacity(0.7) : const Color(0xFFFFF3E0);
+        borderColor = isDarkMode ? const Color(0xFFF97316) : const Color(0xFFFFB74D);
+        textColor = isDarkMode ? const Color(0xFFFDBA74) : const Color(0xFFE65100);
         break;
       case StatusDiaCalendario.vermelho:
-        bgColor = const Color(0xFFFFEBEE);
-        borderColor = const Color(0xFFE57373);
-        textColor = const Color(0xFFC62828);
+        bgColor = isDarkMode ? const Color(0xFF7F1D1D).withOpacity(0.7) : const Color(0xFFFFEBEE);
+        borderColor = isDarkMode ? const Color(0xFFEF4444) : const Color(0xFFE57373);
+        textColor = isDarkMode ? const Color(0xFFFCA5A5) : const Color(0xFFC62828);
         break;
       case StatusDiaCalendario.neutro:
-        bgColor = const Color(0xFFF1F5F9);
+        bgColor = isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
         borderColor = Colors.transparent;
-        textColor = const Color(0xFF64748B);
+        textColor = isDarkMode ? const Color(0xFFCBD5E1) : const Color(0xFF64748B);
         break;
     }
 
     if (isHoje) {
-      borderColor = const Color(0xFF60A5FA); // Destaque azul do dia atual como no Figma
+      borderColor = const Color(0xFF3B82F6); // Azul vibrante para destacar o dia atual
     }
 
     return InkWell(
@@ -515,15 +516,15 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                 width: 18,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD32F2F), width: 1.5),
+                  border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
                 ),
                 child: const Center(
                   child: Text(
                     '!',
                     style: TextStyle(
-                      color: Color(0xFFD32F2F),
+                      color: Color(0xFFEF4444),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       height: 1.0,

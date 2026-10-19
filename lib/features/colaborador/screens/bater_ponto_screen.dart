@@ -54,7 +54,17 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    // Padronização das cores com o restante do app
+    final bgColorScreen = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF6F7F9);
+    final cardColor = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final textColorPrimary = isDarkMode ? Colors.white : const Color(0xFF1E293B);
+    final textColorSecondary = isDarkMode ? const Color(0xFF94A3B8) : Colors.black54;
+
     return Scaffold(
+      backgroundColor: bgColorScreen,
       appBar: CustomAppBar(nomeUsuario: widget.usuario.nome),
       body: AnimatedBuilder(
         animation: _controller,
@@ -65,11 +75,13 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
 
           final temLocalizacao = _controller.posicaoAtual != null;
           final statusDisponivel = _controller.precisaoValida && _controller.distanciaEmpresa != null;
+          
+          // Ajuste de cores para o card de status (Verde e Vermelho)
           final corStatus = !statusDisponivel
-              ? Theme.of(context).colorScheme.error
+              ? (isDarkMode ? const Color(0xFFEF4444) : theme.colorScheme.error)
               : _controller.dentroDoRaio
-                  ? Colors.green
-                  : Theme.of(context).colorScheme.error;
+                  ? (isDarkMode ? const Color(0xFF22C55E) : Colors.green)
+                  : (isDarkMode ? const Color(0xFFEF4444) : theme.colorScheme.error);
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -78,43 +90,76 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text('Bater Ponto', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  'Bater Ponto', 
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: textColorPrimary,
+                  )
+                ),
                 const SizedBox(height: 4),
-                Text(_controller.nomeEmpresa, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  _controller.nomeEmpresa, 
+                  style: theme.textTheme.titleMedium?.copyWith(color: textColorSecondary)
+                ),
                 const SizedBox(height: 20),
+                
+                // Card de Localização Atual
                 Card(
+                  color: cardColor,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(children: [Icon(Icons.my_location), SizedBox(width: 8), Text('Sua localização', style: TextStyle(fontWeight: FontWeight.bold))]),
+                        Row(
+                          children: [
+                            Icon(Icons.my_location, color: textColorPrimary), 
+                            const SizedBox(width: 8), 
+                            Text('Sua localização', style: TextStyle(fontWeight: FontWeight.bold, color: textColorPrimary))
+                          ]
+                        ),
                         const SizedBox(height: 12),
                         if (temLocalizacao) ...[
-                          Text('Latitude: ${_controller.posicaoAtual!.latitude.toStringAsFixed(6)}'),
-                          Text('Longitude: ${_controller.posicaoAtual!.longitude.toStringAsFixed(6)}'),
-                          Text('Precisão estimada: ±${_controller.posicaoAtual!.accuracy.toStringAsFixed(0)} m'),
+                          Text('Latitude: ${_controller.posicaoAtual!.latitude.toStringAsFixed(6)}', style: TextStyle(color: textColorSecondary)),
+                          Text('Longitude: ${_controller.posicaoAtual!.longitude.toStringAsFixed(6)}', style: TextStyle(color: textColorSecondary)),
+                          Text('Precisão estimada: ±${_controller.posicaoAtual!.accuracy.toStringAsFixed(0)} m', style: TextStyle(color: textColorSecondary)),
                         ] else
-                          const Text('Aguardando uma localização válida.'),
+                          Text('Aguardando uma localização válida.', style: TextStyle(color: textColorSecondary)),
                         const SizedBox(height: 12),
                         OutlinedButton.icon(
                           onPressed: _controller.atualizandoLocalizacao ? null : _controller.atualizarLocalizacao,
                           icon: const Icon(Icons.refresh),
                           label: Text(_controller.atualizandoLocalizacao ? 'Atualizando...' : 'Atualizar localização'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isDarkMode ? Colors.white : theme.primaryColor,
+                          ),
                         ),
                         if ((_controller.avisoLocalizacao ?? '').contains('desativada'))
                           TextButton.icon(
                             onPressed: _abrirConfiguracoesLocalizacao,
                             icon: const Icon(Icons.settings),
                             label: const Text('Abrir configurações de localização'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: isDarkMode ? Colors.white : theme.primaryColor,
+                            ),
                           ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
+                
+                // Card de Status da Localização (Raio da empresa)
                 Card(
-                  color: corStatus.withOpacity(0.08),
+                  color: corStatus.withOpacity(isDarkMode ? 0.15 : 0.08),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: corStatus.withOpacity(isDarkMode ? 0.3 : 0.1)),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -135,9 +180,9 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
                                 style: TextStyle(color: corStatus, fontWeight: FontWeight.bold),
                               ),
                               if (_controller.distanciaEmpresa != null)
-                                Text('Distância da empresa: ${_formatarDistancia(_controller.distanciaEmpresa!)}'),
+                                Text('Distância da empresa: ${_formatarDistancia(_controller.distanciaEmpresa!)}', style: TextStyle(color: textColorPrimary)),
                               if (_controller.raioPermitido != null)
-                                Text('Raio permitido: ${_formatarDistancia(_controller.raioPermitido!)}'),
+                                Text('Raio permitido: ${_formatarDistancia(_controller.raioPermitido!)}', style: TextStyle(color: textColorPrimary)),
                               if (!statusDisponivel)
                                 Text(_controller.avisoLocalizacao ?? 'Atualize a localização antes de bater ponto.', style: TextStyle(color: corStatus)),
                               if (statusDisponivel && !_controller.dentroDoRaio)
@@ -151,9 +196,10 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
                 ),
                 if (_controller.erro != null) ...[
                   const SizedBox(height: 12),
-                  Text(_controller.erro!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  Text(_controller.erro!, style: TextStyle(color: isDarkMode ? const Color(0xFFEF4444) : theme.colorScheme.error)),
                 ],
                 const SizedBox(height: 16),
+                
                 PunchButton(
                   habilitado: _controller.podeBaterPonto,
                   carregando: _controller.registrando || _controller.atualizandoLocalizacao,
@@ -161,12 +207,20 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
                   onPressed: _baterPonto,
                 ),
                 const SizedBox(height: 24),
-                Text('Registros de hoje', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                
+                Text('Registros de hoje', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: textColorPrimary)),
                 const SizedBox(height: 8),
                 if (_controller.registros.isEmpty)
-                  const Card(child: Padding(padding: EdgeInsets.all(18), child: Text('Nenhum registro realizado hoje.')))
+                  Card(
+                    color: cardColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(18), 
+                      child: Text('Nenhum registro realizado hoje.', style: TextStyle(color: textColorSecondary))
+                    )
+                  )
                 else
-                  ..._controller.registros.map(_cartaoRegistro),
+                  ..._controller.registros.map((r) => _cartaoRegistro(r, isDarkMode, cardColor, textColorPrimary, textColorSecondary)),
               ],
             ),
           );
@@ -175,20 +229,22 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
     );
   }
 
-  Widget _cartaoRegistro(RegistroPontoModel registro) {
+  Widget _cartaoRegistro(RegistroPontoModel registro, bool isDarkMode, Color cardColor, Color textColorPrimary, Color textColorSecondary) {
     final horario = registro.criadoEm.toLocal();
     final hora = '${horario.hour.toString().padLeft(2, '0')}:${horario.minute.toString().padLeft(2, '0')}';
     
     return Card(
+      color: cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: Icon(
-          // Muda o ícone dependendo se é entrada ou saída
           registro.tipoRegistro.name.contains('entrada') ? Icons.login : Icons.logout,
-          color: registro.tipoRegistro.name.contains('entrada') ? Colors.green : Colors.orange,
+          color: registro.tipoRegistro.name.contains('entrada') 
+              ? (isDarkMode ? const Color(0xFF22C55E) : Colors.green) 
+              : (isDarkMode ? const Color(0xFFF97316) : Colors.orange),
         ),
-        // O título já vem pronto e formatado do Enum! (Ex: "Saída 1 (Almoço)")
-        title: Text(registro.tipoRegistro.titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('$hora · Lat: ${registro.latitudeDisp.toStringAsFixed(3)}, Lon: ${registro.longitudeDisp.toStringAsFixed(3)}'),
+        title: Text(registro.tipoRegistro.titulo, style: TextStyle(fontWeight: FontWeight.bold, color: textColorPrimary)),
+        subtitle: Text('$hora · Lat: ${registro.latitudeDisp.toStringAsFixed(3)}, Lon: ${registro.longitudeDisp.toStringAsFixed(3)}', style: TextStyle(color: textColorSecondary)),
       ),
     );
   }
@@ -196,7 +252,6 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
   String _textoBotao(List<RegistroPontoModel> registros) {
     if (registros.length >= 4) return 'Limite diário atingido';
     
-    // Define o texto exato do botão com base na quantidade de registros que já existem hoje
     const textosDosBotoes = [
       'Registrar Entrada 1',
       'Registrar Saída para Almoço',
@@ -206,7 +261,6 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
     
     return textosDosBotoes[registros.length];
   }
-
   
   String _formatarDistancia(double distancia) => distancia < 1000
       ? '${distancia.toStringAsFixed(0)} m'
