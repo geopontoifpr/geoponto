@@ -34,7 +34,6 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
   String? _tipoSelecionado;
   bool _salvando = false;
 
-  // Mapeamento dos valores do ENUM do banco para nomes amigáveis na interface
   final Map<String, String> _tiposOcorrencia = {
     'esquecimento': 'Esquecimento de marcação',
     'atraso': 'Atraso',
@@ -102,7 +101,7 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pop(context, true); // Retorna true para atualizar o calendário
+      Navigator.pop(context, true); 
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -118,7 +117,17 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Separa até 4 batidas ordenadas do dia (Entrada, Início intervalo, Retorno, Saída)
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    // Padronização de Cores
+    final bgColorScreen = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF6F7F9);
+    final cardColor = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final textColorPrimary = isDarkMode ? Colors.white : const Color(0xFF1E293B);
+    final textColorSecondary = isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final borderColor = isDarkMode ? const Color(0xFF334155) : const Color(0xFFCBD5E1);
+    final shadowColor = isDarkMode ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.03);
+
     final batidas = List<RegistroPontoModel>.from(widget.batidasDoDia)
       ..sort((a, b) => a.criadoEm.compareTo(b.criadoEm));
 
@@ -128,29 +137,29 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
     final saida = batidas.length > 3 ? batidas[3].criadoEm : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
+      backgroundColor: bgColorScreen,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
+          icon: Icon(Icons.arrow_back, color: textColorPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Ocorrências',
               style: TextStyle(
-                color: Color(0xFF1E293B),
+                color: textColorPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
             ),
             Text(
               _formatarDataSubtitulo(widget.dataSelecionada),
-              style: const TextStyle(
-                color: Color(0xFF64748B),
+              style: TextStyle(
+                color: textColorSecondary,
                 fontSize: 13,
               ),
             ),
@@ -166,10 +175,10 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                 (route) => false,
               );
             },
-            child: const Text(
+            child: Text(
               'Sair',
               style: TextStyle(
-                color: Color(0xFF475569),
+                color: textColorSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -182,23 +191,23 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Bloco 1: Registros do dia
-            const Text(
+            Text(
               'Registros do dia',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: textColorPrimary,
               ),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: shadowColor,
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -206,34 +215,34 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
               ),
               child: Column(
                 children: [
-                  _buildLinhaRegistro('Entrada', _formatarHoraMinuto(entrada)),
+                  _buildLinhaRegistro('Entrada', _formatarHoraMinuto(entrada), textColorPrimary, textColorSecondary),
                   const SizedBox(height: 14),
-                  _buildLinhaRegistro('Início do intervalo', _formatarHoraMinuto(inicioIntervalo)),
+                  _buildLinhaRegistro('Início do intervalo', _formatarHoraMinuto(inicioIntervalo), textColorPrimary, textColorSecondary),
                   const SizedBox(height: 14),
-                  _buildLinhaRegistro('Retorno', _formatarHoraMinuto(retorno)),
+                  _buildLinhaRegistro('Retorno', _formatarHoraMinuto(retorno), textColorPrimary, textColorSecondary),
                   const SizedBox(height: 14),
-                  _buildLinhaRegistro('Saída', _formatarHoraMinuto(saida)),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+                  _buildLinhaRegistro('Saída', _formatarHoraMinuto(saida), textColorPrimary, textColorSecondary),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Divider(height: 1, thickness: 1, color: borderColor),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Total trabalhado',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E293B),
+                          color: textColorPrimary,
                         ),
                       ),
                       Text(
                         _formatarDuracao(widget.totalTrabalhado),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
+                          color: textColorPrimary,
                         ),
                       ),
                     ],
@@ -242,33 +251,44 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
               ),
             ),
 
-            // Se já existirem ocorrências enviadas neste dia, exibe o status delas
+            // Ocorrências enviadas
             if (widget.ocorrenciasDoDia.isNotEmpty) ...[
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Solicitações enviadas neste dia',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: textColorPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               ...widget.ocorrenciasDoDia.map((oc) => Card(
+                    color: isDarkMode ? const Color(0xFF334155) : Colors.white,
                     margin: const EdgeInsets.only(bottom: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     child: ListTile(
                       leading: Icon(
                         oc.aprovada ? Icons.check_circle : Icons.pending_actions,
-                        color: oc.aprovada ? Colors.green : Colors.orange,
+                        color: oc.aprovada 
+                            ? (isDarkMode ? const Color(0xFF4CAF50) : Colors.green) 
+                            : (isDarkMode ? const Color(0xFFFFB74D) : Colors.orange),
                       ),
-                      title: Text(_tiposOcorrencia[oc.tipoOcorrencia] ?? oc.tipoOcorrencia),
-                      subtitle: Text(oc.justificativa),
+                      title: Text(
+                        _tiposOcorrencia[oc.tipoOcorrencia] ?? oc.tipoOcorrencia,
+                        style: TextStyle(color: textColorPrimary, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        oc.justificativa,
+                        style: TextStyle(color: textColorSecondary),
+                      ),
                       trailing: Text(
                         oc.aprovada ? 'Aprovada' : 'Pendente',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: oc.aprovada ? Colors.green : Colors.orange,
+                          color: oc.aprovada 
+                              ? (isDarkMode ? const Color(0xFF4CAF50) : Colors.green) 
+                              : (isDarkMode ? const Color(0xFFFFB74D) : Colors.orange),
                         ),
                       ),
                     ),
@@ -278,23 +298,23 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
             const SizedBox(height: 24),
 
             // Bloco 2: Registrar ocorrência
-            const Text(
+            Text(
               'Registrar ocorrência',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: textColorPrimary,
               ),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: shadowColor,
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -303,27 +323,31 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Tipo de ocorrência',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
+                      color: textColorPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _tipoSelecionado,
-                    hint: const Text('Selecione uma ocorrência'),
+                    dropdownColor: cardColor,
+                    style: TextStyle(color: textColorPrimary, fontSize: 16),
+                    hint: Text('Selecione uma ocorrência', style: TextStyle(color: textColorSecondary)),
                     decoration: InputDecoration(
+                      fillColor: isDarkMode ? bgColorScreen : Colors.white,
+                      filled: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        borderSide: BorderSide(color: borderColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        borderSide: BorderSide(color: borderColor),
                       ),
                     ),
                     items: _tiposOcorrencia.entries
@@ -335,55 +359,61 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                     onChanged: (val) => setState(() => _tipoSelecionado = val),
                   ),
                   const SizedBox(height: 18),
-                  const Text(
+                  Text(
                     'Assunto',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
+                      color: textColorPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _assuntoController,
+                    style: TextStyle(color: textColorPrimary),
                     decoration: InputDecoration(
+                      fillColor: isDarkMode ? bgColorScreen : Colors.white,
+                      filled: true,
                       hintText: 'Informe o assunto',
-                      hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      hintStyle: TextStyle(color: textColorSecondary),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        borderSide: BorderSide(color: borderColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        borderSide: BorderSide(color: borderColor),
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  const Text(
+                  Text(
                     'Observações',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
+                      color: textColorPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _observacoesController,
+                    style: TextStyle(color: textColorPrimary),
                     maxLines: 4,
                     decoration: InputDecoration(
+                      fillColor: isDarkMode ? bgColorScreen : Colors.white,
+                      filled: true,
                       hintText: 'Descreva a ocorrência...',
-                      hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      hintStyle: TextStyle(color: textColorSecondary),
                       contentPadding: const EdgeInsets.all(16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        borderSide: BorderSide(color: borderColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        borderSide: BorderSide(color: borderColor),
                       ),
                     ),
                   ),
@@ -424,23 +454,23 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
     );
   }
 
-  Widget _buildLinhaRegistro(String label, String valor) {
+  Widget _buildLinhaRegistro(String label, String valor, Color colorPrimary, Color colorSecondary) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
-            color: Color(0xFF64748B),
+            color: colorSecondary,
           ),
         ),
         Text(
           valor,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1E293B),
+            color: colorPrimary,
           ),
         ),
       ],
