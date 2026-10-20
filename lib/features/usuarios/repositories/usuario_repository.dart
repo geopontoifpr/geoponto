@@ -129,5 +129,19 @@ class UsuarioRepository {
       throw ServidorException('Erro ao vincular gestor ao setor.');
     }
   }
+
+  Future<String?> buscarIdPorEmail(String email) async {
+    final response = await _client
+        .from('usuarios') // Verifique se o nome da sua tabela é esse mesmo
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+        
+    if (response != null && response['id'] != null) {
+      return response['id'].toString();
+    }
+    
+    return null;
+  }
   
 }

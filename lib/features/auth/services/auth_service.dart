@@ -1,4 +1,3 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../repositories/auth_repository.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../../core/errors/app_exception.dart';
