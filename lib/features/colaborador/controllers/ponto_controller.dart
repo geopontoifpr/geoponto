@@ -6,20 +6,20 @@ import '../../../core/services/biometria_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/utils/calculadora_distancia_util.dart';
 import '../models/registro_ponto_model.dart';
-import '../repositories/ponto_repository.dart';
+import '../services/ponto_service.dart';
 
 class PontoController extends ChangeNotifier {
   final String usuarioId;
-  final PontoRepository _repository;
+  final PontoService _pontoService;
   final LocationService _locationService;
   final BiometriaService _biometriaService;
 
   PontoController({
     required this.usuarioId,
-    PontoRepository? repository,
+    PontoService? pontoService,
     LocationService? locationService,
     BiometriaService? biometriaService,
-  })  : _repository = repository ?? PontoRepository(),
+  })  : _pontoService = pontoService ?? PontoService(),
         _locationService = locationService ?? LocationService(),
         _biometriaService = biometriaService ?? BiometriaService();
 
@@ -41,35 +41,32 @@ class PontoController extends ChangeNotifier {
   bool get precisaoValida =>
       posicaoAtual != null && posicaoAtual!.accuracy <= 50;
   bool get podeBaterPonto =>
-      !carregando && !atualizandoLocalizacao && !registrando &&
-      dentroDoRaio && precisaoValida && registros.length < 4;
+      !carregando &&
+      !atualizandoLocalizacao &&
+      !registrando &&
+      dentroDoRaio &&
+      precisaoValida &&
+      registros.length < 4;
+
+  String get textoBotao => _pontoService.obterTextoBotao(registros);
 
   Future<void> inicializar(String nomeDoUsuarioLogado) async {
     try {
       carregando = true;
       erro = null;
       notifyListeners();
-      
-      print('=== 1. Buscando dados da empresa no Supabase... ===');
-      final dados = await _repository.buscarDadosEmpresa(); 
-      print('=== SUCESSO 1: Empresa encontrada! ===');
-      
+
+      final dados = await _pontoService.obterDadosEmpresaValidados();
+
       nomeUsuario = nomeDoUsuarioLogado;
       nomeEmpresa = dados['nome_empresa'] as String;
       latitudeEmpresa = dados['latitude_empresa'] as double;
       longitudeEmpresa = dados['longitude_empresa'] as double;
       raioPermitido = dados['raio_permitido_m'] as double;
-      
-      print('=== 2. Buscando localização do GPS (pode demorar)... ===');
+
       await atualizarLocalizacao();
-      print('=== SUCESSO 2: Localização obtida! ===');
-      
-      print('=== 3. Buscando registros de ponto de hoje... ===');
       await carregarRegistros();
-      print('=== SUCESSO 3: Tudo carregado! ===');
-      
     } catch (e) {
-      print('=== ERRO NO INICIALIZAR: $e ===');
       erro = _mensagemErro(e);
     } finally {
       carregando = false;
@@ -88,14 +85,16 @@ class PontoController extends ChangeNotifier {
         posicaoAtual = posicao;
         distanciaEmpresa = null;
         dentroDoRaio = false;
-        avisoLocalizacao = 'A localização está imprecisa (±${posicao.accuracy.toStringAsFixed(0)} m). Tente novamente em um local com melhor sinal.';
+        avisoLocalizacao =
+            'A localização está imprecisa (±${posicao.accuracy.toStringAsFixed(0)} m). Tente novamente em um local com melhor sinal.';
         return;
       }
       if (posicao.isMocked) {
         posicaoAtual = posicao;
         distanciaEmpresa = null;
         dentroDoRaio = false;
-        avisoLocalizacao = 'O dispositivo informou uma localização simulada. Não é possível bater ponto com essa localização.';
+        avisoLocalizacao =
+            'O dispositivo informou uma localização simulada. Não é possível bater ponto com essa localização.';
         return;
       }
       posicaoAtual = posicao;
@@ -119,7 +118,7 @@ class PontoController extends ChangeNotifier {
   }
 
   Future<void> carregarRegistros() async {
-    registros = await _repository.buscarRegistrosDoDia(usuarioId: usuarioId);
+    registros = await _pontoService.buscarRegistrosDoDia(usuarioId);
     notifyListeners();
   }
 
@@ -140,15 +139,13 @@ class PontoController extends ChangeNotifier {
 
       await atualizarLocalizacao();
       if (!dentroDoRaio || !precisaoValida || posicaoAtual == null) {
-        erro = avisoLocalizacao ?? 'Você está fora do raio permitido. O ponto não foi registrado.';
+        erro = avisoLocalizacao ??
+            'Você está fora do raio permitido. O ponto não foi registrado.';
         return false;
       }
 
-      await carregarRegistros();
-      final tipo = _repository.obterProximoTipo(registros);
-      await _repository.registrarPonto(
+      await _pontoService.registrarPonto(
         usuarioId: usuarioId,
-        tipoRegistro: tipo,
         latitude: posicaoAtual!.latitude,
         longitude: posicaoAtual!.longitude,
       );

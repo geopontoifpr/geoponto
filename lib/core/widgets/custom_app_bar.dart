@@ -3,10 +3,13 @@ import '../services/supabase_service.dart';
 import '../themes/theme_controller.dart';
 import 'user_header.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/controllers/login_controller.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String nomeUsuario;
   final VoidCallback? onPerfilPressed;
+  final loginController = LoginController();
+
 
   const CustomAppBar({
     super.key,
@@ -31,7 +34,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await SupabaseService.instance.auth.signOut();
+              await loginController.sair();
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,

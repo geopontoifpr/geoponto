@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../usuarios/models/usuario_model.dart';
+import '../../../core/themes/app_themes.dart';
+import '../../../core/utils/snackbar_util.dart';
+import '../../../core/widgets/action_card.dart';
 import '../../../core/widgets/custom_app_bar.dart';
-import '../../../core/utils/snackbar_util.dart'; // <-- Import do novo utilitário adicionado
+import '../../usuarios/models/usuario_model.dart';
 import '../controllers/empresa_controller.dart';
 import 'cadastro_empresa_screen.dart';
 import 'cadastro_setor_screen.dart';
@@ -22,11 +24,7 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
   @override
   void initState() {
     super.initState();
-
-    _controller = EmpresaController(
-      usuario: widget.usuario,
-    );
-
+    _controller = EmpresaController(usuario: widget.usuario);
     _carregarPainel();
   }
 
@@ -37,19 +35,16 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: CustomAppBar(
         nomeUsuario: widget.usuario.nome,
-        onPerfilPressed: () {
-          // Futuramente abrirá a edição de perfil
-        },
+        onPerfilPressed: () {},
       ),
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {
-          
           if (_controller.isLoading) {
             return Center(child: CircularProgressIndicator(color: theme.primaryColor));
           }
@@ -62,20 +57,13 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- Card Principal da Empresa ---
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24.0),
                   decoration: BoxDecoration(
                     color: theme.cardColor,
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: [AppThemes.cardShadow(context)],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,36 +74,36 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
-                          color: isDark ? Colors.blueGrey[300] : Colors.grey[600],
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 12),
-                      
                       Text(
                         temEmpresa ? (empresa.nome ?? 'Sem nome') : 'Nenhuma empresa vinculada',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      
                       Text(
                         temEmpresa ? 'CNPJ: ${empresa.cnpj}' : 'Cadastre sua empresa no botão abaixo',
-                        style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 32),
-                const Text(
+                Text(
                   'Acesso Rápido',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 16),
-
-                // --- Grid de Funcionalidades ---
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -123,56 +111,55 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
                   children: [
-                    _buildActionCard(
-                      context: context,
+                    ActionCard(
                       title: temEmpresa ? 'Dados da\nEmpresa' : 'Cadastrar\nEmpresa',
                       icon: Icons.business_outlined,
                       onTap: () async {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CadastroEmpresaScreen(empresa: empresa, usuario: widget.usuario),
+                            builder: (_) => CadastroEmpresaScreen(
+                              empresa: empresa,
+                              usuario: widget.usuario,
+                            ),
                           ),
                         );
                         _carregarPainel();
                       },
                     ),
-                    _buildActionCard(
-                      context: context,
+                    ActionCard(
                       title: 'Gerenciar\nSetores',
                       icon: Icons.account_tree_outlined,
-                      onTap: () async { 
+                      onTap: () async {
                         if (!temEmpresa) {
-                          // <-- UTILIZAÇÃO DO SNACKBAR_UTIL
                           SnackbarUtil.showError(context, 'Por favor, cadastre a empresa primeiro.');
-                          return;                        
-                        } else {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CadastroSetorScreen(empresaId: empresa.id), 
-                            ),
-                          );
+                          return;
                         }
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CadastroSetorScreen(empresaId: empresa.id),
+                          ),
+                        );
                       },
                     ),
-                   _buildActionCard(
-                      context: context,
+                    ActionCard(
                       title: 'Gerenciar\nEquipe',
-                      icon: Icons.people_alt_outlined, 
-                      onTap: () async { 
+                      icon: Icons.people_alt_outlined,
+                      onTap: () async {
                         if (!temEmpresa) {
-                          // <-- UTILIZAÇÃO DO SNACKBAR_UTIL
                           SnackbarUtil.showError(context, 'Por favor, cadastre a empresa primeiro.');
-                          return;                        
-                        } else {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => EquipeScreen(empresaId: empresa.id, usuarioLogado: widget.usuario), 
-                            ),
-                          );
+                          return;
                         }
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EquipeScreen(
+                              empresaId: empresa.id,
+                              usuarioLogado: widget.usuario,
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -180,59 +167,7 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
               ],
             ),
           );
-        }
-      ),
-    );
-  }
-
-  Widget _buildActionCard({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Material(
-      color: theme.cardColor,
-      borderRadius: BorderRadius.circular(20),
-      elevation: isDark ? 2 : 0,
-      shadowColor: Colors.black.withOpacity(0.2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 32, color: theme.primaryColor),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
+        },
       ),
     );
   }

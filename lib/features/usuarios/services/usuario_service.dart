@@ -95,4 +95,17 @@ class UsuarioService {
       }
     }
   }
+  /// Valida o e-mail e solicita a busca do ID ao repositório
+  Future<String?> obterIdPorEmail(String email) async {
+    try {
+      if (email.trim().isEmpty || !email.contains('@')) {
+        throw ValidacaoException('E-mail inválido para busca.');
+      }
+      
+      return await _repository.buscarIdPorEmail(email.trim());
+    } catch (e) {
+      // Mascara o erro do banco de dados para algo legível
+      throw ValidacaoException('Erro ao buscar o ID do usuário: $e'); 
+    }
+  }
 }

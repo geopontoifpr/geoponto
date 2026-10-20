@@ -88,4 +88,16 @@ class UsuarioController extends ChangeNotifier {
       _setLoading(false);
     }
   }
+  /// Busca o ID do usuário consumindo o serviço
+  Future<String?> obterIdPorEmail(String email) async {
+    try {
+      // _service é a sua instância de UsuarioService()
+      return await _service.obterIdPorEmail(email);
+    } catch (e) {
+      erroMensagem = e.toString();
+      // Não damos notifyListeners() aqui porque é uma chamada em background do fluxo de cadastro
+      return null;
+    }
+  }
+  
 }
