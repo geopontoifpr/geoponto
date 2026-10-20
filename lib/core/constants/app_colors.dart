@@ -3,21 +3,33 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Cores principais baseadas no protótipo
-  static const Color primary = Color(0xFF2B3445); // Azul escuro/Slate do botão e título
-  static const Color background = Color(0xFFF4F6F9); // Fundo off-white/azulado bem claro
+  // Identidade Visual Principal
+  static const Color primary = Color(0xFF2563EB);
+  static const Color primaryLight = Colors.blueAccent;
+  static const Color brandAccent = Color(0xFFF05B5B);
 
-  // Textos
-  static const Color textPrimary = Color(0xFF2B3445);
-  static const Color textSecondary = Color(0xFF7A8B9E); // Subtítulo azul acinzentado
-  static const Color textLabel = Color(0xFF7A8B9E); // Labels em cima dos inputs
+  // Paleta Tema Claro
+  static const Color backgroundLight = Color(0xFFF6F7F9);
+  static const Color cardLight = Colors.white;
+  static const Color textPrimaryLight = Color(0xFF1E293B);
+  static const Color textSecondaryLight = Color(0xFF64748B);
+  static const Color borderLight = Color(0xFFE2E8F0);
+  static const Color surfaceVariantLight = Color(0xFFF1F5F9);
 
-  // Inputs
-  static const Color inputBackground = Colors.white;
-  static const Color inputBorder = Color(0xFFE2E8F0); // Borda suave
+  // Paleta Tema Escuro (Slate Dark)
+  static const Color backgroundDark = Color(0xFF0F172A);
+  static const Color cardDark = Color(0xFF1E293B);
+  static const Color textPrimaryDark = Colors.white;
+  static const Color textSecondaryDark = Color(0xFF94A3B8);
+  static const Color borderDark = Color(0xFF334155);
+  static const Color surfaceVariantDark = Color(0xFF334155);
 
-  // Estados e validações
+  // Estados e Validações
   static const Color error = Color(0xFFEF4444);
-  static const Color success = Color(0xFF10B981);
+  static const Color success = Color(0xFF22C55E);
+  static const Color warning = Color(0xFFF97316);
+  static const Color info = Color(0xFF3B82F6);
+  static const Color progressGreen = Color(0xFF74B49B);
+  static const Color accentOrange = Color(0xFFD97757);
   static const Color white = Colors.white;
 }

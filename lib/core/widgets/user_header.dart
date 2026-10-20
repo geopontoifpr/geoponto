@@ -12,8 +12,7 @@ class UserHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -25,7 +24,7 @@ class UserHeader extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
-            color: isDark ? Colors.blueGrey[200] : const Color(0xFF94A3B8),
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 2),
@@ -37,7 +36,7 @@ class UserHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF1E293B),
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(width: 4),

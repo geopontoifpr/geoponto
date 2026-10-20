@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../usuarios/models/usuario_model.dart';
+import '../../../core/themes/app_themes.dart';
+import '../../../core/widgets/action_card.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../admin/screens/equipe_screen.dart';
 import '../../colaborador/screens/bater_ponto_screen.dart';
+import '../../usuarios/models/usuario_model.dart';
 
 class PainelGestorScreen extends StatelessWidget {
   final UsuarioModel usuario;
@@ -12,7 +14,7 @@ class PainelGestorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -29,13 +31,7 @@ class PainelGestorScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: theme.cardColor,
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                boxShadow: [AppThemes.cardShadow(context)],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,29 +42,37 @@ class PainelGestorScreen extends StatelessWidget {
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,
-                      color: isDark ? Colors.blueGrey[300] : Colors.grey[600],
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     usuario.setorNome ?? 'Setor não identificado',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Gestor Responsável',
-                    style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: theme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            const Text(
+            Text(
               'Acesso Rápido',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 16),
             GridView.count(
@@ -78,34 +82,34 @@ class PainelGestorScreen extends StatelessWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: [
-                _buildActionCard(
-                  context: context,
+                ActionCard(
                   title: 'Bater\nPonto',
                   icon: Icons.fingerprint,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => BaterPontoScreen(usuario: usuario),
+                        builder: (_) => BaterPontoScreen(usuario: usuario),
                       ),
                     );
                   },
                 ),
-                _buildActionCard(
-                  context: context,
+                ActionCard(
                   title: 'Minha\nEquipe',
                   icon: Icons.people_alt_outlined,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EquipeScreen(empresaId: usuario.empresaId!, usuarioLogado: usuario),
+                        builder: (_) => EquipeScreen(
+                          empresaId: usuario.empresaId!,
+                          usuarioLogado: usuario,
+                        ),
                       ),
                     );
                   },
                 ),
-                _buildActionCard(
-                  context: context,
+                ActionCard(
                   title: 'Relatórios\nde Ponto',
                   icon: Icons.insert_chart_outlined,
                   onTap: () {},
@@ -113,55 +117,6 @@ class PainelGestorScreen extends StatelessWidget {
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Material(
-      color: theme.cardColor,
-      borderRadius: BorderRadius.circular(20),
-      elevation: isDark ? 2 : 0,
-      shadowColor: Colors.black.withOpacity(0.2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 32, color: theme.primaryColor),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
         ),
       ),
     );
