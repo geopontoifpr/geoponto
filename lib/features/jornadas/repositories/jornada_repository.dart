@@ -59,4 +59,31 @@ class JornadaRepository {
       'data_inicio_vigencia': dataInicioVigencia.toIso8601String().split('T')[0],
     });
   }
+
+/// Busca o histórico de jornadas que tiveram vigência durante o mês.
+Future<List<JornadaUsuarioModel>> listarHistoricoJornadasPorMes({
+    required String usuarioId,
+    required DateTime inicioMes,
+    required DateTime fimMes,
+  }) async {
+    final inicio = inicioMes.toIso8601String().split('T')[0];
+    final fim = fimMes.toIso8601String().split('T')[0];
+
+    final response = await _supabase
+        .from('jornadas_usuarios')
+        .select()
+        .eq('usuario_id', usuarioId)
+        .lte('data_inicio_vigencia', fim)
+        .or('data_fim_vigencia.is.null,data_fim_vigencia.gte.$inicio')
+        .order('data_inicio_vigencia', ascending: true);
+
+    return (response as List)
+        .map(
+          (item) => JornadaUsuarioModel.fromMap(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+        .toList();
+  }
+
 }
