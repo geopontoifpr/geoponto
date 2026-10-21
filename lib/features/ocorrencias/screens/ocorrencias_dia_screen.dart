@@ -30,15 +30,29 @@ class OcorrenciasDiaScreen extends StatefulWidget {
 
 class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
   final _controller = OcorrenciaController();
-  final _assuntoController = TextEditingController();
-  final _observacoesController = TextEditingController();
+  final _justificativaController = TextEditingController();
+  final _minutosController = TextEditingController(text: '60');
 
-  String? _tipoSelecionado;
+  TipoOcorrenciaEnum? _tipoSelecionado;
+  OcorrenciaModel? _ocorrenciaExistente;
+
+  @override
+  void initState() {
+    super.initState();
+    // Se já houver ocorrência no dia, carrega para edição (1 por dia)
+    if (widget.ocorrenciasDoDia.isNotEmpty) {
+      _ocorrenciaExistente = widget.ocorrenciasDoDia.first;
+      _tipoSelecionado = _ocorrenciaExistente!.tipoOcorrencia;
+      _justificativaController.text = _ocorrenciaExistente!.justificativa;
+      final minProp = _ocorrenciaExistente!.minutosPropostos;
+      _minutosController.text = (minProp > 0 ? minProp : 60).toString();
+    }
+  }
 
   @override
   void dispose() {
-    _assuntoController.dispose();
-    _observacoesController.dispose();
+    _justificativaController.dispose();
+    _minutosController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -53,7 +67,8 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
 
   String _formatarHoraMinuto(DateTime? dt) {
     if (dt == null) return '--:--';
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    final local = dt.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 
   String _formatarDuracao(Duration d) {
@@ -64,19 +79,24 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
 
   Future<void> _salvarOcorrencia() async {
     final sucesso = await _controller.salvarOcorrencia(
+      idEdicao: _ocorrenciaExistente?.id,
       usuarioId: widget.usuario.id,
       dataReferencia: widget.dataSelecionada,
       tipoSelecionado: _tipoSelecionado,
-      assunto: _assuntoController.text,
-      observacoes: _observacoesController.text,
+      justificativa: _justificativaController.text,
+      minutosTexto: _minutosController.text,
     );
 
     if (!mounted) return;
 
     if (sucesso) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ocorrência registrada com sucesso!'),
+        SnackBar(
+          content: Text(
+            _ocorrenciaExistente != null
+                ? 'Ocorrência atualizada com sucesso!'
+                : 'Ocorrência registrada com sucesso!',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
@@ -84,7 +104,55 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
     } else {
       SnackbarUtil.showError(
         context,
-        _controller.erroMensagem ?? 'Erro ao registrar ocorrência.',
+        _controller.erroMensagem ?? 'Erro ao salvar ocorrência.',
+      );
+    }
+  }
+
+  Future<void> _confirmarExclusao() async {
+    if (_ocorrenciaExistente == null) return;
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir Ocorrência?'),
+        content: const Text(
+          'Tem certeza que deseja excluir a ocorrência registrada neste dia?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+
+    final sucesso = await _controller.excluirOcorrencia(_ocorrenciaExistente!);
+    if (!mounted) return;
+
+    if (sucesso) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ocorrência excluída com sucesso.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      Navigator.pop(context, true);
+    } else {
+      SnackbarUtil.showError(
+        context,
+        _controller.erroMensagem ?? 'Erro ao excluir ocorrência.',
       );
     }
   }
@@ -101,6 +169,8 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
     final inicioIntervalo = batidas.length > 1 ? batidas[1].criadoEm : null;
     final retorno = batidas.length > 2 ? batidas[2].criadoEm : null;
     final saida = batidas.length > 3 ? batidas[3].criadoEm : null;
+
+    final jaAvaliada = _ocorrenciaExistente?.foiAvaliada ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -183,50 +253,17 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                 ],
               ),
             ),
-            if (widget.ocorrenciasDoDia.isNotEmpty) ...[
+
+            if (_ocorrenciaExistente != null) ...[
               const SizedBox(height: 24),
-              Text(
-                'Solicitações enviadas neste dia',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...widget.ocorrenciasDoDia.map((oc) {
-                final corStatus = oc.aprovada ? AppColors.success : AppColors.warning;
-                return Card(
-                  color: theme.cardColor,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    leading: Icon(
-                      oc.aprovada ? Icons.check_circle : Icons.pending_actions,
-                      color: corStatus,
-                    ),
-                    title: Text(
-                      _controller.tiposOcorrencia[oc.tipoOcorrencia] ?? oc.tipoOcorrencia,
-                      style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      oc.justificativa,
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                    trailing: Text(
-                      oc.aprovada ? 'Aprovada' : 'Pendente',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: corStatus,
-                      ),
-                    ),
-                  ),
-                );
-              }),
+              _buildCardStatusAtual(context, _ocorrenciaExistente!),
             ],
+
             const SizedBox(height: 24),
             Text(
-              'Registrar ocorrência',
+              _ocorrenciaExistente == null
+                  ? 'Registrar ocorrência'
+                  : (jaAvaliada ? 'Detalhes da ocorrência' : 'Editar ocorrência do dia'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -253,7 +290,7 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
+                  DropdownButtonFormField<TipoOcorrenciaEnum>(
                     value: _tipoSelecionado,
                     dropdownColor: theme.cardColor,
                     style: TextStyle(color: colorScheme.onSurface, fontSize: 16),
@@ -274,17 +311,19 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                         borderSide: BorderSide(color: colorScheme.outline),
                       ),
                     ),
-                    items: _controller.tiposOcorrencia.entries
-                        .map((e) => DropdownMenuItem(
-                              value: e.key,
-                              child: Text(e.value),
+                    items: _controller.tiposOcorrencia
+                        .map((tipo) => DropdownMenuItem(
+                              value: tipo,
+                              child: Text(tipo.titulo),
                             ))
                         .toList(),
-                    onChanged: (val) => setState(() => _tipoSelecionado = val),
+                    onChanged: jaAvaliada
+                        ? null
+                        : (val) => setState(() => _tipoSelecionado = val),
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Assunto',
+                    'Minutos solicitados para abono',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -293,13 +332,16 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                   ),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: _assuntoController,
+                    controller: _minutosController,
+                    enabled: !jaAvaliada,
+                    keyboardType: TextInputType.number,
                     style: TextStyle(color: colorScheme.onSurface),
                     decoration: InputDecoration(
                       fillColor: theme.scaffoldBackgroundColor,
                       filled: true,
-                      hintText: 'Informe o assunto',
+                      hintText: 'Ex: 60 (será salvo como 01:00 em horário proposto)',
                       hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                      suffixText: 'min',
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -313,7 +355,7 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Observações',
+                    'Observações / Justificativa',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -322,7 +364,8 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                   ),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: _observacoesController,
+                    controller: _justificativaController,
+                    enabled: !jaAvaliada,
                     style: TextStyle(color: colorScheme.onSurface),
                     maxLines: 4,
                     decoration: InputDecoration(
@@ -341,25 +384,120 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  ListenableBuilder(
-                    listenable: _controller,
-                    builder: (context, _) {
-                      return SizedBox(
-                        width: double.infinity,
-                        child: PrimaryButton(
-                          onPressed: _controller.salvando ? null : _salvarOcorrencia,
-                          isLoading: _controller.salvando,
-                          text: 'Enviar Ocorrência',
-                        ),
-                      );
-                    },
-                  ),
+                  if (!jaAvaliada) ...[
+                    const SizedBox(height: 20),
+                    ListenableBuilder(
+                      listenable: _controller,
+                      builder: (context, _) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            PrimaryButton(
+                              onPressed: _controller.salvando ? null : _salvarOcorrencia,
+                              isLoading: _controller.salvando,
+                              text: _ocorrenciaExistente == null
+                                  ? 'Enviar Ocorrência'
+                                  : 'Salvar Alterações',
+                            ),
+                            if (_ocorrenciaExistente != null) ...[
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                onPressed: _controller.salvando ? null : _confirmarExclusao,
+                                icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                                label: const Text(
+                                  'Excluir Ocorrência',
+                                  style: TextStyle(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  side: const BorderSide(color: AppColors.error),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCardStatusAtual(BuildContext context, OcorrenciaModel oc) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final Color corStatus;
+    final String textoStatus;
+    final IconData iconeStatus;
+
+    if (oc.aprovada) {
+      corStatus = AppColors.success;
+      textoStatus = 'Aprovada (${oc.minutosAbonados ?? oc.minutosPropostos} min abonados)';
+      iconeStatus = Icons.check_circle;
+    } else if (oc.isRecusada) {
+      corStatus = AppColors.error;
+      textoStatus = 'Recusada pelo gestor';
+      iconeStatus = Icons.cancel;
+    } else {
+      corStatus = AppColors.warning;
+      textoStatus = 'Pendente de avaliação';
+      iconeStatus = Icons.pending_actions;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: corStatus.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(iconeStatus, color: corStatus),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  textoStatus,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: corStatus,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (oc.observacaoGestor != null && oc.observacaoGestor!.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Observação do Gestor:',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              oc.observacaoGestor!,
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
+          ],
+        ],
       ),
     );
   }

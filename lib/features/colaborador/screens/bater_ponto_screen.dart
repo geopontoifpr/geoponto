@@ -1,17 +1,23 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_app_bar.dart';
-import '../../../core/widgets/punch_button.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/ponto_controller.dart';
 import '../models/registro_ponto_model.dart';
 
 class BaterPontoScreen extends StatefulWidget {
   final UsuarioModel usuario;
+  final bool mostrarAppBar;
 
-  const BaterPontoScreen({super.key, required this.usuario});
+  const BaterPontoScreen({
+    super.key,
+    required this.usuario,
+    this.mostrarAppBar = true,
+  });
 
   @override
   State<BaterPontoScreen> createState() => _BaterPontoScreenState();
@@ -19,18 +25,43 @@ class BaterPontoScreen extends StatefulWidget {
 
 class _BaterPontoScreenState extends State<BaterPontoScreen> {
   late final PontoController _controller;
+  Timer? _relogioTimer;
+  DateTime _agora = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _controller = PontoController(usuarioId: widget.usuario.id);
     _controller.inicializar(widget.usuario.nome);
+    _relogioTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() => _agora = DateTime.now());
+      }
+    });
   }
 
   @override
   void dispose() {
+    _relogioTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  String _formatarDataCabecalho(DateTime dt) {
+    const diasSemana = [
+      'Segunda-feira',
+      'Terça-feira',
+      'Quarta-feira',
+      'Quinta-feira',
+      'Sexta-feira',
+      'Sábado',
+      'Domingo',
+    ];
+    const mesesAbrev = [
+      'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
+      'jul', 'ago', 'set', 'out', 'nov', 'dez'
+    ];
+    return '${diasSemana[dt.weekday - 1]}, ${dt.day} de ${mesesAbrev[dt.month - 1]}';
   }
 
   Future<void> _baterPonto() async {
@@ -40,11 +71,12 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
       SnackBar(
         content: Text(
           sucesso
-              ? 'Ponto registrado com sucesso.'
+              ? 'Ponto registrado com sucesso!'
               : _controller.erro ??
                   _controller.avisoLocalizacao ??
                   'Não foi possível registrar o ponto.',
         ),
+        backgroundColor: sucesso ? AppColors.success : AppColors.error,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -62,255 +94,298 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: CustomAppBar(nomeUsuario: widget.usuario.nome),
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) {
-          if (_controller.carregando) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    final horaMinuto =
+        '${_agora.hour.toString().padLeft(2, '0')}:${_agora.minute.toString().padLeft(2, '0')}';
+    final segundos = '${_agora.second.toString().padLeft(2, '0')}s';
 
-          final temLocalizacao = _controller.posicaoAtual != null;
-          final statusDisponivel =
-              _controller.precisaoValida && _controller.distanciaEmpresa != null;
+    final conteudo = AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        if (_controller.carregando) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          final corStatus = !statusDisponivel
-              ? AppColors.error
-              : _controller.dentroDoRaio
-                  ? AppColors.success
-                  : AppColors.error;
+        final statusDisponivel =
+            _controller.precisaoValida && _controller.distanciaEmpresa != null;
+        final habilitado = _controller.podeBaterPonto;
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              await _controller.inicializar(widget.usuario.nome);
-            },
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Text(
-                  'Bater Ponto',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+        return RefreshIndicator(
+          onRefresh: () => _controller.inicializar(widget.usuario.nome),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            children: [
+              const SizedBox(height: 8),
+              // Relógio Digital (1ª imagem do protótipo)
+              Center(
+                child: Text(
+                  horaMinuto,
+                  style: TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.w800,
                     color: colorScheme.onSurface,
+                    height: 1.0,
+                    letterSpacing: -1.5,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _controller.nomeEmpresa,
-                  style: theme.textTheme.titleMedium?.copyWith(
+              ),
+              const SizedBox(height: 6),
+              Center(
+                child: Text(
+                  segundos,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w400,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Card(
-                  color: theme.cardColor,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: Text(
+                  _formatarDataCabecalho(_agora),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Linha de Localização com clique para atualizar GPS
+              InkWell(
+                onTap: _controller.atualizandoLocalizacao
+                    ? null
+                    : _controller.atualizarLocalizacao,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 18,
+                        color: statusDisponivel && _controller.dentroDoRaio
+                            ? AppColors.progressGreen
+                            : AppColors.warning,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          _controller.atualizandoLocalizacao
+                              ? 'Atualizando localização...'
+                              : statusDisponivel
+                                  ? '${_controller.nomeEmpresa} — ${_controller.dentroDoRaio ? 'Dentro do raio' : 'Fora do raio'} (${_controller.distanciaEmpresa!.toStringAsFixed(0)}m)'
+                                  : (_controller.avisoLocalizacao ??
+                                      'Toque para atualizar localização'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if ((_controller.avisoLocalizacao ?? '').contains('desativada'))
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _abrirConfiguracoesLocalizacao,
+                    icon: const Icon(Icons.settings, size: 16),
+                    label: const Text('Ativar localização'),
+                  ),
+                ),
+
+              const SizedBox(height: 28),
+
+              // Botão Circular Central "Bater Ponto" (1ª imagem do protótipo)
+              Center(
+                child: GestureDetector(
+                  onTap: habilitado ? _baterPonto : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 210,
+                    height: 210,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: habilitado
+                          ? const Color(0xFFA8D5BA)
+                          : colorScheme.surfaceContainerHighest,
+                      boxShadow: [
+                        if (habilitado)
+                          BoxShadow(
+                            color: const Color(0xFF74B49B).withOpacity(0.35),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                      ],
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            Icon(Icons.my_location, color: colorScheme.onSurface),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Sua localização',
+                        if (_controller.registrando)
+                          const CircularProgressIndicator(
+                            color: Color(0xFF1E293B),
+                          )
+                        else ...[
+                          Icon(
+                            Icons.access_time,
+                            size: 32,
+                            color: habilitado
+                                ? const Color(0xFF1E293B)
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Bater Ponto',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: habilitado
+                                  ? const Color(0xFF1E293B)
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              habilitado
+                                  ? 'Toque para registrar'
+                                  : (_controller.registros.length >= 4
+                                      ? 'Jornada concluída'
+                                      : 'Aguardando raio/GPS'),
+                              textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: habilitado
+                                    ? const Color(0xFF334155)
+                                    : colorScheme.onSurfaceVariant,
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        if (temLocalizacao) ...[
-                          Text(
-                            'Latitude: ${_controller.posicaoAtual!.latitude.toStringAsFixed(6)}',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant),
                           ),
-                          Text(
-                            'Longitude: ${_controller.posicaoAtual!.longitude.toStringAsFixed(6)}',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant),
-                          ),
-                          Text(
-                            'Precisão estimada: ±${_controller.posicaoAtual!.accuracy.toStringAsFixed(0)} m',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant),
-                          ),
-                        ] else
-                          Text(
-                            'Aguardando uma localização válida.',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant),
-                          ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: _controller.atualizandoLocalizacao
-                              ? null
-                              : _controller.atualizarLocalizacao,
-                          icon: const Icon(Icons.refresh),
-                          label: Text(
-                            _controller.atualizandoLocalizacao
-                                ? 'Atualizando...'
-                                : 'Atualizar localização',
-                          ),
-                        ),
-                        if ((_controller.avisoLocalizacao ?? '').contains('desativada'))
-                          TextButton.icon(
-                            onPressed: _abrirConfiguracoesLocalizacao,
-                            icon: const Icon(Icons.settings),
-                            label: const Text('Abrir configurações de localização'),
-                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Card(
-                  color: corStatus.withOpacity(0.12),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: corStatus.withOpacity(0.3)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          statusDisponivel && _controller.dentroDoRaio
-                              ? Icons.check_circle
-                              : Icons.block,
-                          color: corStatus,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                !statusDisponivel
-                                    ? 'Localização não validada'
-                                    : _controller.dentroDoRaio
-                                        ? 'Você está dentro do raio permitido.'
-                                        : 'Você está fora do raio permitido.',
-                                style: TextStyle(
-                                  color: corStatus,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (_controller.distanciaEmpresa != null)
-                                Text(
-                                  'Distância da empresa: ${_formatarDistancia(_controller.distanciaEmpresa!)}',
-                                  style: TextStyle(color: colorScheme.onSurface),
-                                ),
-                              if (_controller.raioPermitido != null)
-                                Text(
-                                  'Raio permitido: ${_formatarDistancia(_controller.raioPermitido!)}',
-                                  style: TextStyle(color: colorScheme.onSurface),
-                                ),
-                              if (!statusDisponivel)
-                                Text(
-                                  _controller.avisoLocalizacao ??
-                                      'Atualize a localização antes de bater ponto.',
-                                  style: TextStyle(color: corStatus),
-                                ),
-                              if (statusDisponivel && !_controller.dentroDoRaio)
-                                Text(
-                                  'A biometria ficará bloqueada enquanto você estiver fora do raio.',
-                                  style: TextStyle(color: corStatus),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (_controller.erro != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _controller.erro!,
-                    style: const TextStyle(color: AppColors.error),
-                  ),
-                ],
+              ),
+
+              if (_controller.erro != null) ...[
                 const SizedBox(height: 16),
-                PunchButton(
-                  habilitado: _controller.podeBaterPonto,
-                  carregando:
-                      _controller.registrando || _controller.atualizandoLocalizacao,
-                  texto: _controller.textoBotao,
-                  onPressed: _baterPonto,
-                ),
-                const SizedBox(height: 24),
                 Text(
-                  'Registros de hoje',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
+                  _controller.erro!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.error, fontSize: 13),
                 ),
-                const SizedBox(height: 8),
-                if (_controller.registros.isEmpty)
-                  Card(
-                    color: theme.cardColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Text(
-                        'Nenhum registro realizado hoje.',
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ],
+
+              const SizedBox(height: 32),
+
+              // Card Inferior "HOJE" (1ª imagem do protótipo)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [AppThemes.cardShadow(context)],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'HOJE',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  )
-                else
-                  ..._controller.registros.map((r) => _cartaoRegistro(context, r)),
-              ],
-            ),
-          );
-        },
-      ),
+                    const SizedBox(height: 16),
+                    if (_controller.registros.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Center(
+                          child: Text(
+                            'Nenhum registro\nrealizado hoje.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: colorScheme.onSurfaceVariant,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ..._controller.registros.map((r) => _buildItemHoje(context, r)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!widget.mostrarAppBar) {
+      return conteudo;
+    }
+
+    return Scaffold(
+      appBar: CustomAppBar(nomeUsuario: widget.usuario.nome),
+      body: conteudo,
     );
   }
 
-  Widget _cartaoRegistro(BuildContext context, RegistroPontoModel registro) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  Widget _buildItemHoje(BuildContext context, RegistroPontoModel registro) {
+    final colorScheme = Theme.of(context).colorScheme;
     final horario = registro.criadoEm.toLocal();
     final hora =
         '${horario.hour.toString().padLeft(2, '0')}:${horario.minute.toString().padLeft(2, '0')}';
     final isEntrada = registro.tipoRegistro.name.contains('entrada');
 
-    return Card(
-      color: theme.cardColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(
-          isEntrada ? Icons.login : Icons.logout,
-          color: isEntrada ? AppColors.success : AppColors.warning,
-        ),
-        title: Text(
-          registro.tipoRegistro.titulo,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isEntrada ? Icons.login : Icons.logout,
+                size: 18,
+                color: isEntrada ? AppColors.success : AppColors.warning,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                registro.tipoRegistro.titulo,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
-        ),
-        subtitle: Text(
-          '$hora · Lat: ${registro.latitudeDisp.toStringAsFixed(3)}, Lon: ${registro.longitudeDisp.toStringAsFixed(3)}',
-          style: TextStyle(color: colorScheme.onSurfaceVariant),
-        ),
+          Text(
+            hora,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ],
       ),
     );
   }
-
-  String _formatarDistancia(double distancia) => distancia < 1000
-      ? '${distancia.toStringAsFixed(0)} m'
-      : '${(distancia / 1000).toStringAsFixed(2)} km';
 }

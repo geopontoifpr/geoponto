@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../usuarios/controllers/usuario_controller.dart';
-import '../../usuarios/screens/cadastro_usuario_screen.dart';
-import '../../usuarios/models/usuario_model.dart';
-import '../../../core/themes/app_themes.dart'; 
+import '../../../core/themes/app_themes.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/widgets/usuario_list.dart';
+import '../../gestor/screens/extrato_mensal_screen.dart';
+import '../../usuarios/controllers/usuario_controller.dart';
+import '../../usuarios/models/usuario_model.dart';
+import '../../usuarios/screens/cadastro_usuario_screen.dart';
 
 class EquipeScreen extends StatefulWidget {
   final String empresaId;
-  final UsuarioModel usuarioLogado; // 1. ADICIONADO: Agora a tela recebe quem está a aceder!
+  final UsuarioModel usuarioLogado;
+  final bool mostrarAppBar;
 
   const EquipeScreen({
-    Key? key, 
+    super.key,
     required this.empresaId,
-    required this.usuarioLogado, // 1. ADICIONADO NO CONSTRUTOR
-  }) : super(key: key);
+    required this.usuarioLogado,
+    this.mostrarAppBar = true,
+  });
 
   @override
   State<EquipeScreen> createState() => _EquipeScreenState();
@@ -27,9 +30,16 @@ class _EquipeScreenState extends State<EquipeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 2. CORRIGIDO: Agora passa o utilizador logado para o filtro do Controller
-      _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId); 
+      if (widget.empresaId.isNotEmpty) {
+        _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId);
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   void _irParaCadastro({UsuarioModel? membroEmEdicao}) async {
@@ -43,8 +53,21 @@ class _EquipeScreenState extends State<EquipeScreen> {
         ),
       ),
     );
-    // 3. CORRIGIDO: Recarrega passando o utilizador correto
-    _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId); 
+    if (widget.empresaId.isNotEmpty) {
+      _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId);
+    }
+  }
+
+  void _abrirExtratoColaborador(UsuarioModel membro) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExtratoMensalScreen(
+          colaborador: membro,
+          gestorLogado: widget.usuarioLogado,
+        ),
+      ),
+    );
   }
 
   @override
@@ -52,9 +75,9 @@ class _EquipeScreenState extends State<EquipeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gestão de Equipe'),
-      ),
+      appBar: widget.mostrarAppBar
+          ? AppBar(title: const Text('Gestão de Equipe'))
+          : null,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _irParaCadastro(),
         icon: const Icon(Icons.person_add),
@@ -63,48 +86,53 @@ class _EquipeScreenState extends State<EquipeScreen> {
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {
-          // 4. CORRIGIDO: Padronizado para "_controller.usuarios" (no plural)
           if (_controller.isLoading && _controller.usuario.isEmpty) {
             return Center(
               child: CircularProgressIndicator(color: theme.primaryColor),
             );
           }
-          
+
           if (_controller.erroMensagem != null) {
-             return Center(
-               child: Text(
-                 _controller.erroMensagem!, 
-                 style: const TextStyle(color: AppThemes.errorColor),
-                 textAlign: TextAlign.center,
-               ),
-             );
+            return Center(
+              child: Text(
+                _controller.erroMensagem!,
+                style: const TextStyle(color: AppThemes.errorColor),
+                textAlign: TextAlign.center,
+              ),
+            );
           }
-          
+
           if (_controller.usuario.isEmpty) {
-             return const Center(child: Text('Ninguém na equipe ainda.'));
+            return const Center(child: Text('Ninguém na equipe ainda.'));
           }
 
           return ListView.builder(
             itemCount: _controller.usuario.length,
             itemBuilder: (context, index) {
               final membro = _controller.usuario[index];
-              
+
               return UsuarioList(
                 membro: membro,
+                onTap: () => _abrirExtratoColaborador(membro),
                 onEdit: () => _irParaCadastro(membroEmEdicao: membro),
                 onToggleStatus: () async {
-                  final sucesso = await _controller.alternarStatus(membro, widget.usuarioLogado); // 5. CORRIGIDO: Passa o usuário logado para a função
-                  
+                  final sucesso = await _controller.alternarStatus(
+                    membro,
+                    widget.usuarioLogado,
+                  );
+
                   if (!mounted) return;
-                  
+
                   if (!sucesso) {
                     SnackbarUtil.showError(
-                      context, 
+                      context,
                       _controller.erroMensagem ?? 'Erro ao alterar status.',
                     );
                   } else {
-                     // Recarrega a lista para mostrar o novo status imediatamente
-                     _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId);
+                    _controller.carregarUsuarios(
+                      widget.usuarioLogado,
+                      widget.empresaId,
+                    );
                   }
                 },
               );

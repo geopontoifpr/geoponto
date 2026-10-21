@@ -24,6 +24,7 @@ class FrequenciaController extends ChangeNotifier {
   DateTime? dataCadastroUsuario;
   int cargaHorariaSemanal = 40;
   bool carregando = true;
+  bool folhaFechada = false;
   String? erroMensagem;
 
   Map<int, List<RegistroPontoModel>> pontosPorDia = {};
@@ -63,7 +64,13 @@ class FrequenciaController extends ChangeNotifier {
 
   void mudarMes(int delta) {
     mesAtual = DateTime(mesAtual.year, mesAtual.month + delta, 1);
+    folhaFechada = false;
     carregarDadosMes();
+  }
+
+  void fecharFolhaMes() {
+    folhaFechada = true;
+    notifyListeners();
   }
 
   Duration calcularHorasDoDia(int dia) {
@@ -87,7 +94,7 @@ class FrequenciaController extends ChangeNotifier {
   bool exibirAlertaExclamacao(int dia) {
     final status = avaliarStatusDia(dia);
     final ocorrencias = ocorrenciasPorDia[dia] ?? [];
-    final temOcorrenciaPendente = ocorrencias.any((o) => !o.aprovada);
+    final temOcorrenciaPendente = ocorrencias.any((o) => o.isPendente);
     return status == StatusDiaCalendario.vermelho || temOcorrenciaPendente;
   }
 
@@ -124,6 +131,68 @@ class FrequenciaController extends ChangeNotifier {
       faltamHoras: faltamMinutos ~/ 60,
       faltamMinRest: faltamMinutos % 60,
       progresso: progresso,
+    );
+  }
+
+  ({
+    int horasPrevistas,
+    Duration totalTrabalhado,
+    int saldoMinutos,
+    int diasTrabalhados,
+    int minutosCredito,
+    int minutosDebito,
+  }) calcularExtratoDetalhado() {
+    final hoje = DateTime.now();
+    final hojeSemHora = DateTime(hoje.year, hoje.month, hoje.day);
+    final metaDiariaMinutos = (cargaHorariaSemanal / 5.0 * 60.0).round();
+
+    int diasUteisNoMes = 0;
+    int diasTrabalhados = 0;
+    int minutosCredito = 0;
+    int minutosDebito = 0;
+    Duration totalTrabalhado = Duration.zero;
+
+    for (int d = 1; d <= totalDiasMes; d++) {
+      final dt = DateTime(mesAtual.year, mesAtual.month, d);
+      final isDiaUtil =
+          dt.weekday != DateTime.saturday && dt.weekday != DateTime.sunday;
+
+      if (isDiaUtil) {
+        diasUteisNoMes++;
+      }
+
+      final duracaoDia = calcularHorasDoDia(d);
+      final minDia = duracaoDia.inMinutes;
+      totalTrabalhado += duracaoDia;
+
+      if (minDia > 0 || (pontosPorDia[d]?.isNotEmpty ?? false)) {
+        diasTrabalhados++;
+      }
+
+      if (!dt.isAfter(hojeSemHora)) {
+        if (isDiaUtil) {
+          final diff = minDia - metaDiariaMinutos;
+          if (diff > 0) {
+            minutosCredito += diff;
+          } else if (diff < 0 && minDia > 0) {
+            minutosDebito += diff.abs();
+          }
+        } else if (minDia > 0) {
+          minutosCredito += minDia;
+        }
+      }
+    }
+
+    final horasPrevistas = (diasUteisNoMes * (cargaHorariaSemanal / 5.0)).round();
+    final saldoMinutos = minutosCredito - minutosDebito;
+
+    return (
+      horasPrevistas: horasPrevistas,
+      totalTrabalhado: totalTrabalhado,
+      saldoMinutos: saldoMinutos,
+      diasTrabalhados: diasTrabalhados,
+      minutosCredito: minutosCredito,
+      minutosDebito: minutosDebito,
     );
   }
 }

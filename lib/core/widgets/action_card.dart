@@ -1,4 +1,63 @@
 import 'package:flutter/material.dart';
+import '../../features/usuarios/models/usuario_model.dart';
+
+class ActionCardItem {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final List<TipoUsuario> cargosPermitidos;
+
+  const ActionCardItem({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    this.iconColor,
+    required this.cargosPermitidos,
+  });
+}
+
+class ActionCardGrid extends StatelessWidget {
+  final TipoUsuario tipoUsuario;
+  final List<ActionCardItem> itens;
+
+  const ActionCardGrid({
+    super.key,
+    required this.tipoUsuario,
+    required this.itens,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final itensPermitidos = itens
+        .where((item) => item.cargosPermitidos.contains(tipoUsuario))
+        .toList();
+
+    if (itensPermitidos.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: itensPermitidos.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemBuilder: (context, index) {
+        final item = itensPermitidos[index];
+        return ActionCard(
+          title: item.title,
+          icon: item.icon,
+          iconColor: item.iconColor,
+          onTap: item.onTap,
+        );
+      },
+    );
+  }
+}
 
 class ActionCard extends StatelessWidget {
   final String title;

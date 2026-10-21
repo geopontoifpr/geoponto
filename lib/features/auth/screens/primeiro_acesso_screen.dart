@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/screens/painel_unificado_screen.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
-import '../../admin/screens/painel_empresa_screen.dart';
-import '../../colaborador/screens/painel_colaborador_screen.dart';
-import '../../gestor/screens/painel_gestor_screen.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/login_controller.dart';
 import 'login_screen.dart';
@@ -42,25 +40,15 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     );
 
     if (!mounted) return;
+
     if (sucesso) {
       final usuarioAtualizado = widget.usuario.copyWith(primeiroAcesso: false);
 
-      Widget destino;
-      switch (usuarioAtualizado.tipoUsuario) {
-        case TipoUsuario.administrador:
-          destino = PainelEmpresaScreen(usuario: usuarioAtualizado);
-          break;
-        case TipoUsuario.gestor:
-          destino = PainelGestorScreen(usuario: usuarioAtualizado);
-          break;
-        case TipoUsuario.funcionario:
-          destino = PainelColaboradorScreen(usuario: usuarioAtualizado);
-          break;
-      }
-
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => destino),
+        MaterialPageRoute(
+          builder: (_) => PainelUnificadoScreen(usuario: usuarioAtualizado),
+        ),
       );
     } else {
       SnackbarUtil.showError(

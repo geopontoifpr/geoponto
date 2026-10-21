@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../controllers/login_controller.dart';
-import '../../usuarios/models/usuario_model.dart';
-import '../../admin/screens/painel_empresa_screen.dart';
-
-// Importando os widgets globais que criamos
+import '../../../core/screens/painel_unificado_screen.dart';
+import '../../../core/utils/snackbar_util.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
-import '../../../core/utils/snackbar_util.dart';
-import '../../admin/screens/painel_empresa_screen.dart';
-import '../../gestor/screens/painel_gestor_screen.dart';
-import '../../colaborador/screens/painel_colaborador_screen.dart';
+import '../controllers/login_controller.dart';
 import 'primeiro_acesso_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -45,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Chama o controller
     final sucesso = await _controller.entrar(
       email: email,
       senha: senha,
@@ -54,25 +47,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (sucesso && mounted) {
       final usuario = _controller.usuarioLogado!;
 
-      Widget destino;
-      
-      // 1. O FLUXO DE PRIMEIRO ACESSO DEVE VIR PRIMEIRO
-     if (usuario.primeiroAcesso) {
-        destino = PrimeiroAcessoScreen(usuario: usuario);
-      } else {
-          // SE NÃO FOR PRIMEIRO ACESSO, SEPARA POR CARGO
-          switch (usuario.tipoUsuario) {
-            case TipoUsuario.administrador:
-              destino = PainelEmpresaScreen(usuario: usuario);
-              break;
-            case TipoUsuario.gestor:
-              destino = PainelGestorScreen(usuario: usuario); 
-              break;
-            case TipoUsuario.funcionario:
-              destino = PainelColaboradorScreen(usuario: usuario); // <-- NOVO FLUXO!
-              break;
-          }
-        }
+      final Widget destino = usuario.primeiroAcesso
+          ? PrimeiroAcessoScreen(usuario: usuario)
+          : PainelUnificadoScreen(usuario: usuario);
 
       Navigator.pushReplacement(
         context,
@@ -101,7 +78,6 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Placeholder para a Logo corrigido
                 Align(
                   alignment: Alignment.center,
                   child: Container(
@@ -119,15 +95,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     child: const Icon(
-                      Icons.location_on, 
-                      size: 45, 
+                      Icons.location_on,
+                      size: 45,
                       color: Color(0xFFF05B5B),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                
-                // Títulos (Corrigidos: sem 'const' e sem duplicação estrutural)
                 Text(
                   'GeoPonto',
                   textAlign: TextAlign.center,
@@ -148,16 +122,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 48),
-                
-                // Input de E-mail Refatorado
                 CustomTextField(
                   controller: _emailController,
                   labelText: 'E-mail corporativo',
                   prefixIcon: Icons.email_outlined,
                 ),
                 const SizedBox(height: 24),
-                
-                // Input de Senha Refatorado
                 CustomTextField(
                   controller: _senhaController,
                   labelText: 'Senha',
@@ -165,8 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: true,
                 ),
                 const SizedBox(height: 32),
-                
-                // Exibição de Erro
                 if (_controller.erro != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -190,8 +158,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
-                
-                // Botão Acessar Sistema Refatorado
                 PrimaryButton(
                   onPressed: _controller.carregando ? null : _submeter,
                   isLoading: _controller.carregando,
