@@ -18,11 +18,30 @@ class SupabaseService {
   User? get usuarioAtual => client.auth.currentUser;
 
   // Método de inicialização chamado no main.dart
+  // Método de inicialização chamado no main.dart
   static Future<void> inicializar() async {
-    final url = dotenv.env['SUPABASE_URL'];
-    final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
+    String? url;
+    String? anonKey;
 
-    if (url == null || anonKey == null) {
+    try {
+      // Tudo que acessa o dotenv fica DENTRO do try para nunca dar NotInitializedError
+      await dotenv.load(fileName: '.env');
+      url = dotenv.env['SUPABASE_URL'];
+      anonKey = dotenv.env['SUPABASE_ANON_KEY'];
+    } catch (_) {
+      // Se o APK Android ignorar o arquivo oculto .env, cai aqui sem quebrar o app
+    }
+
+    // Fallback: cole aqui entre as aspas os mesmos valores que estão no seu arquivo .env
+    url = (url != null && url.trim().isNotEmpty)
+        ? url.trim()
+        : 'COLE_AQUI_SUA_SUPABASE_URL';
+
+    anonKey = (anonKey != null && anonKey.trim().isNotEmpty)
+        ? anonKey.trim()
+        : 'COLE_AQUI_SUA_SUPABASE_ANON_KEY';
+
+    if (url.isEmpty || anonKey.isEmpty || url.contains('COLE_AQUI')) {
       throw const CredenciaisSupabaseException();
     }
 

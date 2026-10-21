@@ -108,6 +108,8 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
         final statusDisponivel =
             _controller.precisaoValida && _controller.distanciaEmpresa != null;
         final habilitado = _controller.podeBaterPonto;
+        final processando =
+            _controller.registrando || _controller.atualizandoLocalizacao;
 
         return RefreshIndicator(
           onRefresh: () => _controller.inicializar(widget.usuario.nome),
@@ -115,7 +117,6 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             children: [
               const SizedBox(height: 8),
-              // Relógio Digital (1ª imagem do protótipo)
               Center(
                 child: Text(
                   horaMinuto,
@@ -152,44 +153,31 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
               ),
               const SizedBox(height: 8),
 
-              // Linha de Localização com clique para atualizar GPS
-              InkWell(
-                onTap: _controller.atualizandoLocalizacao
-                    ? null
-                    : _controller.atualizarLocalizacao,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 18,
-                        color: statusDisponivel && _controller.dentroDoRaio
-                            ? AppColors.progressGreen
-                            : AppColors.warning,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          _controller.atualizandoLocalizacao
-                              ? 'Atualizando localização...'
-                              : statusDisponivel
-                                  ? '${_controller.nomeEmpresa} — ${_controller.dentroDoRaio ? 'Dentro do raio' : 'Fora do raio'} (${_controller.distanciaEmpresa!.toStringAsFixed(0)}m)'
-                                  : (_controller.avisoLocalizacao ??
-                                      'Toque para atualizar localização'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
+              // Subtítulo da Empresa e Status do GPS
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 18,
+                    color: statusDisponivel && _controller.dentroDoRaio
+                        ? AppColors.progressGreen
+                        : colorScheme.onSurfaceVariant,
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      statusDisponivel
+                          ? '${_controller.nomeEmpresa} — ${_controller.dentroDoRaio ? 'Dentro do raio' : 'Fora do raio'} (${_controller.distanciaEmpresa!.toStringAsFixed(0)}m)'
+                          : _controller.nomeEmpresa,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               if ((_controller.avisoLocalizacao ?? '').contains('desativada'))
@@ -203,7 +191,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
 
               const SizedBox(height: 28),
 
-              // Botão Circular Central "Bater Ponto" (1ª imagem do protótipo)
+              // Botão Circular Central (Executa GPS + Raio + Biometria ao clicar)
               Center(
                 child: GestureDetector(
                   onTap: habilitado ? _baterPonto : null,
@@ -228,11 +216,22 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (_controller.registrando)
+                        if (processando) ...[
                           const CircularProgressIndicator(
                             color: Color(0xFF1E293B),
-                          )
-                        else ...[
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _controller.atualizandoLocalizacao
+                                ? 'Validando GPS...'
+                                : 'Registrando...',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                        ] else ...[
                           Icon(
                             Icons.access_time,
                             size: 32,
@@ -257,9 +256,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
                             child: Text(
                               habilitado
                                   ? 'Toque para registrar'
-                                  : (_controller.registros.length >= 4
-                                      ? 'Jornada concluída'
-                                      : 'Aguardando raio/GPS'),
+                                  : 'Jornada concluída hoje',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
@@ -288,7 +285,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
 
               const SizedBox(height: 32),
 
-              // Card Inferior "HOJE" (1ª imagem do protótipo)
+              // Card Inferior "HOJE"
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),

@@ -8,14 +8,22 @@ import 'features/auth/screens/login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
-  await SupabaseService.inicializar();
 
-  runApp(const MyApp());
+  String? erroInicializacao;
+
+  try {
+    await SupabaseService.inicializar();
+  } catch (e) {
+    erroInicializacao = e.toString();
+  }
+
+  runApp(MyApp(erroInicializacao: erroInicializacao));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String? erroInicializacao;
+
+  const MyApp({super.key, this.erroInicializacao});
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +35,23 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
-          themeMode: ThemeController.instance.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          home: const LoginScreen(), 
+          themeMode: ThemeController.instance.isDarkMode
+              ? ThemeMode.dark
+              : ThemeMode.light,
+          home: erroInicializacao != null
+              ? Scaffold(
+                  body: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Text(
+                        'Erro ao iniciar o app:\n\n$erroInicializacao\n\nVerifique se o arquivo .env estÃ¡ na raiz do projeto e listado no pubspec.yaml.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                )
+              : const LoginScreen(),
         );
       },
     );
@@ -615,10 +638,20 @@ class SupabaseService {
 
   // MÃ©todo de inicializaÃ§Ã£o chamado no main.dart
   static Future<void> inicializar() async {
-    final url = dotenv.env['SUPABASE_URL'];
-    final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
+    try {
+      if (!dotenv.isInitialized) {
+        await dotenv.load(fileName: '.env');
+      }
+    } catch (_) {
+      // Se o APK nÃ£o encontrar o asset .env, usa o fallback abaixo
+    }
 
-    if (url == null || anonKey == null) {
+    // Coloque a sua URL e ANON_KEY do .env dentro das aspas do "?? ''" abaixo
+    // como seguranÃ§a caso o celular nÃ£o leia o arquivo .env:
+    final url = dotenv.maybeGet('SUPABASE_URL') ?? 'COLE_SUA_SUPABASE_URL_AQUI';
+    final anonKey = dotenv.maybeGet('SUPABASE_ANON_KEY') ?? 'COLE_SUA_SUPABASE_ANON_KEY_AQUI';
+
+    if (url.isEmpty || anonKey.isEmpty || url.contains('COLE_SUA')) {
       throw const CredenciaisSupabaseException();
     }
 
@@ -2809,18 +2842,11 @@ class AuthRepository {
 === ARQUIVO: C:\Users\leonh\Desktop\geoponto\flutter\geoponto\geoponto\lib\features\auth\screens\login_screen.dart ===
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../controllers/login_controller.dart';
-import '../../usuarios/models/usuario_model.dart';
-import '../../admin/screens/painel_empresa_screen.dart';
-
-// Importando os widgets globais que criamos
 import '../../../core/screens/painel_unificado_screen.dart';
+import '../../../core/utils/snackbar_util.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
-import '../../../core/utils/snackbar_util.dart';
-import '../../admin/screens/painel_empresa_screen.dart';
-import '../../gestor/screens/painel_gestor_screen.dart';
-import '../../colaborador/screens/painel_colaborador_screen.dart';
+import '../controllers/login_controller.dart';
 import 'primeiro_acesso_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -2855,7 +2881,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Chama o controller
     final sucesso = await _controller.entrar(
       email: email,
       senha: senha,
@@ -2864,17 +2889,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (sucesso && mounted) {
       final usuario = _controller.usuarioLogado!;
 
-      Widget destino;
-      
-      // 1. O FLUXO DE PRIMEIRO ACESSO DEVE VIR PRIMEIRO
-     final Widget destino = usuario.primeiroAcesso
+      final Widget destino = usuario.primeiroAcesso
           ? PrimeiroAcessoScreen(usuario: usuario)
           : PainelUnificadoScreen(usuario: usuario);
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => destino),
-      );
 
       Navigator.pushReplacement(
         context,
@@ -2903,7 +2920,6 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Placeholder para a Logo corrigido
                 Align(
                   alignment: Alignment.center,
                   child: Container(
@@ -2921,15 +2937,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     child: const Icon(
-                      Icons.location_on, 
-                      size: 45, 
+                      Icons.location_on,
+                      size: 45,
                       color: Color(0xFFF05B5B),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                
-                // TÃ­tulos (Corrigidos: sem 'const' e sem duplicaÃ§Ã£o estrutural)
                 Text(
                   'GeoPonto',
                   textAlign: TextAlign.center,
@@ -2950,16 +2964,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 48),
-                
-                // Input de E-mail Refatorado
                 CustomTextField(
                   controller: _emailController,
                   labelText: 'E-mail corporativo',
                   prefixIcon: Icons.email_outlined,
                 ),
                 const SizedBox(height: 24),
-                
-                // Input de Senha Refatorado
                 CustomTextField(
                   controller: _senhaController,
                   labelText: 'Senha',
@@ -2967,8 +2977,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: true,
                 ),
                 const SizedBox(height: 32),
-                
-                // ExibiÃ§Ã£o de Erro
                 if (_controller.erro != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -2992,8 +3000,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
-                
-                // BotÃ£o Acessar Sistema Refatorado
                 PrimaryButton(
                   onPressed: _controller.carregando ? null : _submeter,
                   isLoading: _controller.carregando,
@@ -3009,16 +3015,13 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 === ARQUIVO: C:\Users\leonh\Desktop\geoponto\flutter\geoponto\geoponto\lib\features\auth\screens\primeiro_acesso_screen.dart ===
 import 'package:flutter/material.dart';
+import '../../../core/screens/painel_unificado_screen.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
-import '../../admin/screens/painel_empresa_screen.dart';
-import '../../colaborador/screens/painel_colaborador_screen.dart';
-import '../../gestor/screens/painel_gestor_screen.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/login_controller.dart';
 import 'login_screen.dart';
-import '../../../core/screens/painel_unificado_screen.dart';
 
 class PrimeiroAcessoScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -3053,10 +3056,8 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     );
 
     if (!mounted) return;
-    if (sucesso) {
-      final usuarioAtualizado = widget.usuario.copyWith(primeiroAcesso: false);
 
-      if (sucesso) {
+    if (sucesso) {
       final usuarioAtualizado = widget.usuario.copyWith(primeiroAcesso: false);
 
       Navigator.pushReplacement(
@@ -3064,12 +3065,6 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
         MaterialPageRoute(
           builder: (_) => PainelUnificadoScreen(usuario: usuarioAtualizado),
         ),
-      );
-    }
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => destino),
       );
     } else {
       SnackbarUtil.showError(
@@ -3457,12 +3452,12 @@ class PontoController extends ChangeNotifier {
 
   bool get precisaoValida =>
       posicaoAtual != null && posicaoAtual!.accuracy <= 50;
+
+  // Agora o botÃ£o fica liberado para clique; a validaÃ§Ã£o de GPS e raio roda AO CLICAR!
   bool get podeBaterPonto =>
       !carregando &&
       !atualizandoLocalizacao &&
       !registrando &&
-      dentroDoRaio &&
-      precisaoValida &&
       registros.length < 4;
 
   String get textoBotao => _pontoService.obterTextoBotao(registros);
@@ -3481,7 +3476,6 @@ class PontoController extends ChangeNotifier {
       longitudeEmpresa = dados['longitude_empresa'] as double;
       raioPermitido = dados['raio_permitido_m'] as double;
 
-      await atualizarLocalizacao();
       await carregarRegistros();
     } catch (e) {
       erro = _mensagemErro(e);
@@ -3491,29 +3485,42 @@ class PontoController extends ChangeNotifier {
     }
   }
 
-  Future<void> atualizarLocalizacao() async {
+  Future<bool> atualizarLocalizacao() async {
     atualizandoLocalizacao = true;
     avisoLocalizacao = null;
     erro = null;
     notifyListeners();
     try {
-      final posicao = await _locationService.obterLocalizacaoAtual();
-      if (posicao.accuracy > 50) {
-        posicaoAtual = posicao;
-        distanciaEmpresa = null;
-        dentroDoRaio = false;
-        avisoLocalizacao =
-            'A localizaÃ§Ã£o estÃ¡ imprecisa (Â±${posicao.accuracy.toStringAsFixed(0)} m). Tente novamente em um local com melhor sinal.';
-        return;
+      if (latitudeEmpresa == null || longitudeEmpresa == null || raioPermitido == null) {
+        final dados = await _pontoService.obterDadosEmpresaValidados();
+        nomeEmpresa = dados['nome_empresa'] as String;
+        latitudeEmpresa = dados['latitude_empresa'] as double;
+        longitudeEmpresa = dados['longitude_empresa'] as double;
+        raioPermitido = dados['raio_permitido_m'] as double;
       }
+
+      final posicao = await _locationService.obterLocalizacaoAtual();
+
       if (posicao.isMocked) {
         posicaoAtual = posicao;
         distanciaEmpresa = null;
         dentroDoRaio = false;
         avisoLocalizacao =
-            'O dispositivo informou uma localizaÃ§Ã£o simulada. NÃ£o Ã© possÃ­vel bater ponto com essa localizaÃ§Ã£o.';
-        return;
+            'LocalizaÃ§Ã£o simulada (Fake GPS) detectada. NÃ£o Ã© permitido bater ponto.';
+        erro = avisoLocalizacao;
+        return false;
       }
+
+      if (posicao.accuracy > 50) {
+        posicaoAtual = posicao;
+        distanciaEmpresa = null;
+        dentroDoRaio = false;
+        avisoLocalizacao =
+            'Sinal de GPS impreciso (Â±${posicao.accuracy.toStringAsFixed(0)}m). VÃ¡ para um local aberto e tente novamente.';
+        erro = avisoLocalizacao;
+        return false;
+      }
+
       posicaoAtual = posicao;
       final distancia = CalculadoraDistanciaUtil.calcularDistancia(
         latitudeOrigem: posicao.latitude,
@@ -3523,11 +3530,22 @@ class PontoController extends ChangeNotifier {
       );
       distanciaEmpresa = distancia;
       dentroDoRaio = distancia <= raioPermitido!;
+
+      if (!dentroDoRaio) {
+        avisoLocalizacao =
+            'VocÃª estÃ¡ fora do raio permitido da empresa (${distancia.toStringAsFixed(0)}m de distÃ¢ncia; mÃ¡ximo permitido: ${raioPermitido!.toStringAsFixed(0)}m).';
+        erro = avisoLocalizacao;
+        return false;
+      }
+
+      return true;
     } catch (e) {
       posicaoAtual = null;
       distanciaEmpresa = null;
       dentroDoRaio = false;
       avisoLocalizacao = _mensagemErro(e);
+      erro = avisoLocalizacao;
+      return false;
     } finally {
       atualizandoLocalizacao = false;
       notifyListeners();
@@ -3540,27 +3558,30 @@ class PontoController extends ChangeNotifier {
   }
 
   Future<bool> baterPonto() async {
-    if (registrando) return false;
-    await atualizarLocalizacao();
-    if (!dentroDoRaio || !precisaoValida || posicaoAtual == null) return false;
+    if (registrando || atualizandoLocalizacao) return false;
 
     registrando = true;
     erro = null;
     notifyListeners();
+
     try {
-      final autenticado = await _biometriaService.autenticar();
-      if (!autenticado) {
-        erro = 'AutenticaÃ§Ã£o biomÃ©trica cancelada. O ponto nÃ£o foi registrado.';
+      // 1. Executa a verificaÃ§Ã£o de GPS e Raio ao clicar no botÃ£o
+      final gpsValido = await atualizarLocalizacao();
+      if (!gpsValido || !dentroDoRaio || !precisaoValida || posicaoAtual == null) {
+        erro ??= 'NÃ£o foi possÃ­vel validar sua localizaÃ§Ã£o dentro do raio da empresa.';
         return false;
       }
 
-      await atualizarLocalizacao();
-      if (!dentroDoRaio || !precisaoValida || posicaoAtual == null) {
-        erro = avisoLocalizacao ??
-            'VocÃª estÃ¡ fora do raio permitido. O ponto nÃ£o foi registrado.';
-        return false;
+      // 2. Solicita a Biometria (apenas em dispositivos mÃ³veis; na Web pula biometria)
+      if (!kIsWeb) {
+        final autenticado = await _biometriaService.autenticar();
+        if (!autenticado) {
+          erro = 'AutenticaÃ§Ã£o biomÃ©trica cancelada. O ponto nÃ£o foi registrado.';
+          return false;
+        }
       }
 
+      // 3. Registra o ponto no Supabase
       await _pontoService.registrarPonto(
         usuarioId: usuarioId,
         latitude: posicaoAtual!.latitude,
@@ -3579,13 +3600,13 @@ class PontoController extends ChangeNotifier {
 
   String _mensagemErro(Object erro) {
     if (erro is LocalizacaoDesativadaException) {
-      return 'A localizaÃ§Ã£o do aparelho estÃ¡ desativada. Ative-a nas configuraÃ§Ãµes e tente novamente.';
+      return 'A localizaÃ§Ã£o do aparelho estÃ¡ desativada. Ative o GPS e tente novamente.';
     }
     if (erro is PermissaoLocalizacaoNegadaException) {
       return 'A permissÃ£o de localizaÃ§Ã£o foi negada. Ela Ã© necessÃ¡ria para bater ponto.';
     }
     if (erro is PermissaoLocalizacaoNegadaPermanentementeException) {
-      return 'A permissÃ£o de localizaÃ§Ã£o estÃ¡ bloqueada. Ative-a nas configuraÃ§Ãµes do aplicativo.';
+      return 'A permissÃ£o de localizaÃ§Ã£o estÃ¡ bloqueada nas configuraÃ§Ãµes do aparelho.';
     }
     return erro.toString().replaceFirst('Exception: ', '');
   }
@@ -3913,6 +3934,8 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
         final statusDisponivel =
             _controller.precisaoValida && _controller.distanciaEmpresa != null;
         final habilitado = _controller.podeBaterPonto;
+        final processando =
+            _controller.registrando || _controller.atualizandoLocalizacao;
 
         return RefreshIndicator(
           onRefresh: () => _controller.inicializar(widget.usuario.nome),
@@ -3920,7 +3943,6 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             children: [
               const SizedBox(height: 8),
-              // RelÃ³gio Digital (1Âª imagem do protÃ³tipo)
               Center(
                 child: Text(
                   horaMinuto,
@@ -3957,44 +3979,31 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
               ),
               const SizedBox(height: 8),
 
-              // Linha de LocalizaÃ§Ã£o com clique para atualizar GPS
-              InkWell(
-                onTap: _controller.atualizandoLocalizacao
-                    ? null
-                    : _controller.atualizarLocalizacao,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 18,
-                        color: statusDisponivel && _controller.dentroDoRaio
-                            ? AppColors.progressGreen
-                            : AppColors.warning,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          _controller.atualizandoLocalizacao
-                              ? 'Atualizando localizaÃ§Ã£o...'
-                              : statusDisponivel
-                                  ? '${_controller.nomeEmpresa} â€” ${_controller.dentroDoRaio ? 'Dentro do raio' : 'Fora do raio'} (${_controller.distanciaEmpresa!.toStringAsFixed(0)}m)'
-                                  : (_controller.avisoLocalizacao ??
-                                      'Toque para atualizar localizaÃ§Ã£o'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
+              // SubtÃ­tulo da Empresa e Status do GPS
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 18,
+                    color: statusDisponivel && _controller.dentroDoRaio
+                        ? AppColors.progressGreen
+                        : colorScheme.onSurfaceVariant,
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      statusDisponivel
+                          ? '${_controller.nomeEmpresa} â€” ${_controller.dentroDoRaio ? 'Dentro do raio' : 'Fora do raio'} (${_controller.distanciaEmpresa!.toStringAsFixed(0)}m)'
+                          : _controller.nomeEmpresa,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               if ((_controller.avisoLocalizacao ?? '').contains('desativada'))
@@ -4008,7 +4017,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
 
               const SizedBox(height: 28),
 
-              // BotÃ£o Circular Central "Bater Ponto" (1Âª imagem do protÃ³tipo)
+              // BotÃ£o Circular Central (Executa GPS + Raio + Biometria ao clicar)
               Center(
                 child: GestureDetector(
                   onTap: habilitado ? _baterPonto : null,
@@ -4033,11 +4042,22 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (_controller.registrando)
+                        if (processando) ...[
                           const CircularProgressIndicator(
                             color: Color(0xFF1E293B),
-                          )
-                        else ...[
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _controller.atualizandoLocalizacao
+                                ? 'Validando GPS...'
+                                : 'Registrando...',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                        ] else ...[
                           Icon(
                             Icons.access_time,
                             size: 32,
@@ -4062,9 +4082,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
                             child: Text(
                               habilitado
                                   ? 'Toque para registrar'
-                                  : (_controller.registros.length >= 4
-                                      ? 'Jornada concluÃ­da'
-                                      : 'Aguardando raio/GPS'),
+                                  : 'Jornada concluÃ­da hoje',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
@@ -4093,7 +4111,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
 
               const SizedBox(height: 32),
 
-              // Card Inferior "HOJE" (1Âª imagem do protÃ³tipo)
+              // Card Inferior "HOJE"
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
