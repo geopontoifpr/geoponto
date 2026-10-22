@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../features/admin/models/empresa_model.dart';
 import '../../features/admin/services/empresa_service.dart';
 import '../../features/admin/screens/cadastro_setor_screen.dart';
-import '../../features/admin/screens/equipe_screen.dart';
 import '../../features/admin/screens/painel_empresa_screen.dart';
 import '../../features/colaborador/screens/bater_ponto_screen.dart';
 import '../../features/colaborador/screens/historico_mensal_screen.dart';
@@ -11,6 +10,8 @@ import '../../features/ocorrencias/screens/ocorrencias_gestor_screen.dart';
 import '../../features/usuarios/models/usuario_model.dart';
 import '../constants/app_colors.dart';
 import '../widgets/custom_app_bar.dart';
+import '../screens/equipe_screen.dart';
+
 
 class _AbaItem {
   final String label;
@@ -109,7 +110,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
             ),
           ),
           _AbaItem(
-            label: 'HISTÓRICO',
+            label: 'MEU HISTÓRICO',
             icon: Icons.history,
             page: HistoricoMensalScreen(
               usuario: widget.usuario,
@@ -132,7 +133,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
             ),
           ),
           _AbaItem(
-            label: 'HISTÓRICO',
+            label: 'MEU HISTÓRICO',
             icon: Icons.history,
             page: HistoricoMensalScreen(
               usuario: widget.usuario,
@@ -140,23 +141,14 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
             ),
           ),
           _AbaItem(
-            label: 'EQUIPE',
+            label: 'GERENCIAR EQUIPE',
             icon: Icons.people_outline,
             page: EquipeScreen(
               empresaId: widget.usuario.empresaId ?? '',
               usuarioLogado: widget.usuario,
               mostrarAppBar: false,
             ),
-          ),
-          _AbaItem(
-            label: 'OCORRÊNCIAS',
-            icon: Icons.error_outline,
-            mostrarAlerta: temPendentes,
-            page: OcorrenciasGestorScreen(
-              gestor: widget.usuario,
-              controller: _ocorrenciaGestorController,
-            ),
-          ),
+          ),        
         ];
 
       // 3. ADMINISTRADOR (DONO): Painel (5ª imagem) + Setores + Equipe
@@ -174,7 +166,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
             ),
           ),
           _AbaItem(
-            label: 'SETORES',
+            label: 'CADASTRO DE SETORES',
             icon: Icons.account_tree_outlined,
             page: empId.isEmpty
                 ? const Center(
@@ -186,7 +178,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
                   ),
           ),
           _AbaItem(
-            label: 'EQUIPE',
+            label: 'GERENCIAR FUNCIONÁRIOS',
             icon: Icons.people_outline,
             page: empId.isEmpty
                 ? const Center(
@@ -209,7 +201,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
 
     return Scaffold(
       appBar: CustomAppBar(
-        nomeUsuario: widget.usuario.nome,
+        usuario: widget.usuario,
         onPerfilPressed: () {},
       ),
       body: PageView(

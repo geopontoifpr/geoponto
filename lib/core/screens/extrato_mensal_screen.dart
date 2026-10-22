@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/themes/app_themes.dart';
-import '../../../core/widgets/custom_app_bar.dart';
-import '../../colaborador/controllers/frequencia_controller.dart';
-import '../../usuarios/models/usuario_model.dart';
-import '../../colaborador/screens/relatorio_extrato_screen.dart';
+import '../constants/app_colors.dart';
+import '../themes/app_themes.dart';
+import '../widgets/custom_app_bar.dart';
+import '../utils/feriados_util.dart';
+import '../widgets/botao_imprimirpdf.dart';
+import '../widgets/lista_extrato_diario.dart';
+import '../../features/colaborador/controllers/frequencia_controller.dart';
+import '../../features/colaborador/services/frequencia_service.dart';
+import '../../features/usuarios/models/usuario_model.dart';
+import '../../features/colaborador/services/extrato_pdf_service.dart';
 
 
 class ExtratoMensalScreen extends StatefulWidget {
@@ -95,7 +99,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: CustomAppBar(nomeUsuario: widget.gestorLogado.nome),
+      appBar: CustomAppBar(usuario: widget.colaborador),
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {
@@ -346,187 +350,17 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
 
                 const SizedBox(height: 20),
 
-                // Card 2: Extrato Diário Detalhado (Requisitos 1, 2 e 3)
-                Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [AppThemes.cardShadow(context)],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Extrato Diário do Mês',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _controller.totalDiasMes,
-                        separatorBuilder: (_, __) => const Divider(height: 20),
-                        itemBuilder: (context, index) {
-                          final dia = index + 1;
-                          final info = _controller.obterDadosDia(dia);
-                          final saldoDiaPositivo = info.saldoMinutos >= 0;
-
-                          final textoBatidas = info.batidas.isEmpty
-                              ? (info.isFimDeSemana ? 'Fim de semana' : 'Sem registros')
-                              : info.batidas
-                                  .map((p) {
-                                    final dtLocal = p.dataHoraPonto.toLocal();
-                                    final h = dtLocal.hour.toString().padLeft(2, '0');
-                                    final m = dtLocal.minute.toString().padLeft(2, '0');
-                                    return '$h:$m';
-                                  })
-                                  .join(' • ');
-
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: info.isFimDeSemana
-                                      ? colorScheme.surfaceContainerHighest
-                                      : colorScheme.primary.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '$dia',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: info.isFimDeSemana
-                                          ? colorScheme.onSurfaceVariant
-                                          : colorScheme.primary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      textoBatidas,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: info.batidas.isEmpty
-                                            ? FontWeight.normal
-                                            : FontWeight.w600,
-                                        color: info.batidas.isEmpty
-                                            ? colorScheme.onSurfaceVariant
-                                            : colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Trab: ${_formatarMinutos(info.minutosTrabalhados)}  •  '
-                                      'Abono: ${_formatarMinutos(info.minutosAbonados)}  •  '
-                                      'Prev: ${_formatarMinutos(info.minutosPrevistos)}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    'Saldo',
-                                    style: TextStyle(fontSize: 10, color: Colors.grey),
-                                  ),
-                                  Text(
-                                    _formatarMinutos(
-                                      info.saldoMinutos,
-                                      mostrarSinal: true,
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: info.saldoMinutos == 0
-                                          ? colorScheme.onSurfaceVariant
-                                          : (saldoDiaPositivo
-                                              ? const Color(0xFF43A047)
-                                              : const Color(0xFFD32F2F)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                // Substitui o Card 2 inteiro e o botão de PDF por isso:
+                ListaExtratoDiarioWidget(controller: _controller),
+                const SizedBox(height: 20),
+                BotaoImprimirPdfWidget(
+                  controller: _controller,
+                  colaborador: widget.colaborador,
+                  nomeGestor: widget.gestorLogado.nome,
                 ),
 
                 const SizedBox(height: 20),
 
-                // Botão de Gerar Extrato (Documento Oficial)
-                SizedBox(
-                  height: 54,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      final extrato = _controller.calcularExtratoDetalhado();
-                      final diasInfo = List.generate(_controller.totalDiasMes, (index) {
-                        final dia = index + 1;
-                        final info = _controller.obterDadosDia(dia);
-                        return {
-                          'dia': dia,
-                          'isFimDeSemana': info.isFimDeSemana,
-                          'batidas': info.batidas,
-                          'minutosTrabalhados': info.minutosTrabalhados,
-                          'minutosAbonados': info.minutosAbonados,
-                          'saldoMinutos': info.saldoMinutos,
-                        };
-                      });
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RelatorioExtratoScreen(
-                            colaborador: widget.colaborador,
-                            nomeMes: _controller.nomeMesAtual,
-                            ano: _controller.mesAtual.year,
-                            horasPrevistas: _formatarMinutos(extrato.minutosPrevistos),
-                            horasTrabalhadas: _formatarMinutos(extrato.minutosTrabalhados),
-                            horasAbonadas: _formatarMinutos(extrato.minutosAbonados),
-                            saldoFinal: _formatarMinutos(extrato.saldoMinutos, mostrarSinal: true),
-                            saldoPositivo: extrato.saldoMinutos >= 0,
-                            dias: diasInfo,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
-                    label: const Text(
-                      'Visualizar Extrato Oficial',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colorScheme.primary,
-                      side: BorderSide(color: colorScheme.primary, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12), // Espaço entre os botões
 
                 // Botão de Fechamento de Mês (Requisitos 11 e 14)
                 SizedBox(

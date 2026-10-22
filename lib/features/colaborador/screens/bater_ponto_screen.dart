@@ -338,7 +338,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
     }
 
     return Scaffold(
-      appBar: CustomAppBar(nomeUsuario: widget.usuario.nome),
+      appBar: CustomAppBar(usuario: widget.usuario),
       body: conteudo,
     );
   }

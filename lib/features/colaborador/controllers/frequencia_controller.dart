@@ -4,6 +4,8 @@ import '../../ocorrencias/models/ocorrencia_model.dart';
 import '../models/registro_ponto_model.dart';
 import '../services/frequencia_service.dart';
 import '../../gestor/models/fechamento_mensal_model.dart';
+import '../../../core/utils/feriados_util.dart';
+
 
 class FrequenciaController extends ChangeNotifier {
   final String usuarioId;
@@ -115,9 +117,11 @@ class FrequenciaController extends ChangeNotifier {
     return cargaHorariaSemanalPadrao;
   }
 
+
   int obterMinutosPrevistosDoDia(int dia) {
     final data = DateTime(mesAtual.year, mesAtual.month, dia);
-    if (data.weekday == DateTime.saturday || data.weekday == DateTime.sunday) {
+    // Zera os minutos previstos se for sábado, domingo ou feriado
+    if (FeriadosUtil.isFimDeSemanaOuFeriado(data)) {
       return 0;
     }
     return ((obterCargaHorariaDoDia(dia) * 60) / 5).round();
@@ -136,11 +140,12 @@ class FrequenciaController extends ChangeNotifier {
     int minutosPrevistos,
     int saldoMinutos,
     bool isFimDeSemana,
+    String? nomeFeriado, // <--- ADICIONADO AQUI NO TIPO DE RETORNO
     List<RegistroPontoModel> batidas,
   }) obterDadosDia(int dia) {
     final dt = DateTime(mesAtual.year, mesAtual.month, dia);
-    final isFimDeSemana =
-        dt.weekday == DateTime.saturday || dt.weekday == DateTime.sunday;
+    final isFimDeSemana = FeriadosUtil.isFimDeSemanaOuFeriado(dt);
+    final nomeFeriado = FeriadosUtil.obterFeriado(dt);   
     final batidas = pontosPorDia[dia] ?? [];
     final ocorrencias = ocorrenciasPorDia[dia] ?? [];
 
@@ -155,6 +160,7 @@ class FrequenciaController extends ChangeNotifier {
       minutosPrevistos: previstos,
       saldoMinutos: saldo,
       isFimDeSemana: isFimDeSemana,
+      nomeFeriado: nomeFeriado, // <--- ADICIONADO AQUI NO RETURN
       batidas: batidas,
     );
   }

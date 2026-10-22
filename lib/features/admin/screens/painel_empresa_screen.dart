@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
-import '../../../core/utils/snackbar_util.dart';
-import '../../../core/widgets/action_card.dart';
 import '../../../core/widgets/custom_app_bar.dart';
+import '../../../core/screens/equipe_screen.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/empresa_controller.dart';
 import 'cadastro_empresa_screen.dart';
 import 'cadastro_setor_screen.dart';
-import 'equipe_screen.dart';
+
 
 class PainelEmpresaScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -84,6 +83,7 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Card Principal Clicável da Empresa (5ª imagem do protótipo)
+              
               Material(
                 color: theme.cardColor,
                 borderRadius: BorderRadius.circular(28),
@@ -221,85 +221,6 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-              Text(
-                'Acesso Rápido',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Grid gerido por TipoUsuario (Feedback do colega)
-              ActionCardGrid(
-                tipoUsuario: widget.usuario.tipoUsuario,
-                itens: [
-                  ActionCardItem(
-                    title: temEmpresa ? 'Dados da\nEmpresa' : 'Cadastrar\nEmpresa',
-                    icon: Icons.business_outlined,
-                    cargosPermitidos: const [TipoUsuario.administrador],
-                    onTap: _abrirDadosEmpresa,
-                  ),
-                  ActionCardItem(
-                    title: 'Gerenciar\nSetores',
-                    icon: Icons.account_tree_outlined,
-                    cargosPermitidos: const [TipoUsuario.administrador],
-                    onTap: () async {
-                      if (!temEmpresa) {
-                        SnackbarUtil.showError(
-                          context,
-                          'Por favor, cadastre a empresa primeiro.',
-                        );
-                        return;
-                      }
-                      if (widget.onIrParaSetores != null) {
-                        widget.onIrParaSetores!();
-                      } else {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                CadastroSetorScreen(empresaId: empresa.id),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  ActionCardItem(
-                    title: 'Gerenciar\nEquipe',
-                    icon: Icons.people_alt_outlined,
-                    cargosPermitidos: const [
-                      TipoUsuario.administrador,
-                      TipoUsuario.gestor,
-                    ],
-                    onTap: () async {
-                      if (!temEmpresa) {
-                        SnackbarUtil.showError(
-                          context,
-                          'Por favor, cadastre a empresa primeiro.',
-                        );
-                        return;
-                      }
-                      if (widget.onIrParaEquipe != null) {
-                        widget.onIrParaEquipe!();
-                      } else {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EquipeScreen(
-                              empresaId: empresa.id,
-                              usuarioLogado: widget.usuario,
-                            ),
-                          ),
-                        );
-                        _carregarPainel();
-                      }
-                    },
-                  ),
-                ],
-              ),
             ],
           ),
         );
@@ -312,7 +233,7 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
 
     return Scaffold(
       appBar: CustomAppBar(
-        nomeUsuario: widget.usuario.nome,
+        usuario: widget.usuario,
         onPerfilPressed: () {},
       ),
       body: conteudo,

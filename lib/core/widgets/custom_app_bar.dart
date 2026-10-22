@@ -3,19 +3,21 @@ import '../services/supabase_service.dart';
 import '../themes/theme_controller.dart';
 import 'user_header.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/usuarios/models/usuario_model.dart'; 
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String nomeUsuario;
+  final UsuarioModel usuario; // Recebe o objeto completo
   final VoidCallback? onPerfilPressed;
 
   const CustomAppBar({
     super.key,
-    required this.nomeUsuario,
+    required this.usuario,
     this.onPerfilPressed,
   });
 
+  // Altura aumentada para acomodar o Card com Avatar
   @override
-  Size get preferredSize => const Size.fromHeight(60.0);
+  Size get preferredSize => const Size.fromHeight(110.0);
 
   void _confirmarLogout(BuildContext context) {
     showDialog(
@@ -53,9 +55,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       automaticallyImplyLeading: false,
-      title: UserHeader(nome: nomeUsuario),
+      toolbarHeight: 110.0, // Reflete a nova altura
+      title: UserHeader(
+        nome: usuario.nome,
+        tipoUsuario: usuario.tipoUsuario,
+        setorNome: usuario.setorNome,
+      ),
       actions: [
-        // Botão Alternar Tema (Claro / Escuro)
         ListenableBuilder(
           listenable: themeController,
           builder: (context, _) {
@@ -70,13 +76,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             );
           },
         ),
-        // Botão Perfil
         IconButton(
           tooltip: 'Meu Perfil',
           icon: const Icon(Icons.person_outline),
           onPressed: onPerfilPressed ?? () {},
         ),
-        // Botão Logout
         IconButton(
           tooltip: 'Sair',
           icon: const Icon(Icons.logout),

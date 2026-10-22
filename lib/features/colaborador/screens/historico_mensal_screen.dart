@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_app_bar.dart';
+import '../../../core/widgets/lista_extrato_diario.dart';
+import '../../../core/widgets/botao_imprimirpdf.dart';
 import '../../ocorrencias/screens/ocorrencias_dia_screen.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/frequencia_controller.dart';
 import '../services/frequencia_service.dart';
-import 'relatorio_extrato_screen.dart';
 
 
 class HistoricoMensalScreen extends StatefulWidget {
@@ -263,72 +264,25 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                           mostrarAlerta: mostrarAlerta,
                         );
                       },
-                    ),
-                    const SizedBox(height: 20),
-
-                  // NOVO BOTÃO: Visualizar Extrato Oficial
-                  SizedBox(
-                    height: 54,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Aproveita o mesmo método de formatação que usamos na tela do gestor
-                        String formataMin(int totalMinutos, {bool mostrarSinal = false}) {
-                          if (totalMinutos == 0) return '00h00';
-                          final abs = totalMinutos.abs();
-                          final h = (abs ~/ 60).toString().padLeft(2, '0');
-                          final m = (abs % 60).toString().padLeft(2, '0');
-                          final sinal = mostrarSinal ? (totalMinutos < 0 ? '-' : '+') : '';
-                          return '$sinal${h}h$m';
-                        }
-
-                        final extrato = _controller.calcularExtratoDetalhado();
-                        final diasInfo = List.generate(_controller.totalDiasMes, (index) {
-                          final dia = index + 1;
-                          final info = _controller.obterDadosDia(dia);
-                          return {
-                            'dia': dia,
-                            'isFimDeSemana': info.isFimDeSemana,
-                            'batidas': info.batidas,
-                            'minutosTrabalhados': info.minutosTrabalhados,
-                            'minutosAbonados': info.minutosAbonados,
-                            'saldoMinutos': info.saldoMinutos,
-                          };
-                        });
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => RelatorioExtratoScreen(
-                              colaborador: widget.usuario,
-                              nomeMes: _controller.nomeMesAtual,
-                              ano: _controller.mesAtual.year,
-                              horasPrevistas: formataMin(extrato.minutosPrevistos),
-                              horasTrabalhadas: formataMin(extrato.minutosTrabalhados),
-                              horasAbonadas: formataMin(extrato.minutosAbonados),
-                              saldoFinal: formataMin(extrato.saldoMinutos, mostrarSinal: true),
-                              saldoPositivo: extrato.saldoMinutos >= 0,
-                              dias: diasInfo,
-                            ),
-                          ),
-                        );
-                      },
-                        icon: const Icon(Icons.assignment_outlined),
-                        label: const Text(
-                          'Visualizar Extrato Mensal',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: colorScheme.primary,
-                          side: BorderSide(color: colorScheme.primary, width: 1.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                      ),
-                    ),
+                    ),                               
+                  
                   ],
                 ),
               ),
+                // Abaixo do Card do Calendário:
+              const SizedBox(height: 20),    
+
+              ListaExtratoDiarioWidget(controller: _controller),
+                const SizedBox(height: 20),
+                BotaoImprimirPdfWidget(
+                  controller: _controller,
+                  colaborador: widget.usuario,
+                  // A lógica vai direto aqui dentro da chamada do botão:
+                  nomeGestor: (widget.usuario.tipoUsuario == 'GESTOR') 
+                      ? 'Administrador' 
+                      : 'Gestor(a) ${widget.usuario.setorNome ?? 'Não informado'}',
+              ),
+
             ],
           ),
         );
@@ -341,7 +295,7 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
 
     return Scaffold(
       appBar: CustomAppBar(
-        nomeUsuario: widget.usuario.nome,
+        usuario: widget.usuario,
         onPerfilPressed: () {},
       ),
       body: conteudo,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/themes/app_themes.dart';
-import '../../../core/utils/snackbar_util.dart';
-import '../../../core/widgets/usuario_list.dart';
-import '../../gestor/screens/extrato_mensal_screen.dart';
-import '../../usuarios/controllers/usuario_controller.dart';
-import '../../usuarios/models/usuario_model.dart';
-import '../../usuarios/screens/cadastro_usuario_screen.dart';
+import '../themes/app_themes.dart';
+import '../utils/snackbar_util.dart';
+import '../widgets/usuario_list.dart';
+import '../../features/gestor/screens/extrato_mensal_screen.dart';
+import '../../features/usuarios/controllers/usuario_controller.dart';
+import '../../features/usuarios/models/usuario_model.dart';
+import '../../features/usuarios/screens/cadastro_usuario_screen.dart';
 
 class EquipeScreen extends StatefulWidget {
   final String empresaId;
