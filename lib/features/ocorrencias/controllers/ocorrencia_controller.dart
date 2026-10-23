@@ -12,7 +12,7 @@ class OcorrenciaController extends ChangeNotifier {
   bool carregando = false;
   bool salvando = false;
   String? erroMensagem;
-
+  List<OcorrenciaModel> ocorrenciasDoMes = [];
   List<OcorrenciaModel> ocorrenciasGestor = [];
 
   List<TipoOcorrenciaEnum> get tiposOcorrencia => TipoOcorrenciaEnum.values;
@@ -71,6 +71,7 @@ class OcorrenciaController extends ChangeNotifier {
       salvando = false;
       notifyListeners();
     }
+
   }
 
   Future<bool> excluirOcorrencia(OcorrenciaModel ocorrencia) async {
@@ -119,6 +120,32 @@ class OcorrenciaController extends ChangeNotifier {
       return false;
     } finally {
       salvando = false;
+      notifyListeners();
+    }
+  }
+  Future<void> carregarDoMes(String usuarioId, DateTime mes) async {
+    carregando = true;
+    erroMensagem = null;
+    notifyListeners();
+
+    try {
+      final lista = await _service.listarPorMes(
+        usuarioId: usuarioId,
+        ano: mes.year,
+        mes: mes.month,
+      );
+
+      // o repository ordena ascendente; no gestor é mais útil ver o mais recente primeiro
+      lista.sort((a, b) => b.dataInicio.compareTo(a.dataInicio));
+      ocorrenciasDoMes = lista;
+    } on ServidorException catch (e) {
+      erroMensagem = e.toString();
+      ocorrenciasDoMes = [];
+    } catch (_) {
+      erroMensagem = 'Erro ao carregar ocorrências.';
+      ocorrenciasDoMes = [];
+    } finally {
+      carregando = false;
       notifyListeners();
     }
   }

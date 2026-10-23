@@ -4,15 +4,15 @@ import '../themes/app_themes.dart';
 
 class UsuarioList extends StatelessWidget {
   final UsuarioModel membro;
-  final VoidCallback onEdit;
-  final VoidCallback onToggleStatus;
+  final VoidCallback? onEdit;
+  final VoidCallback? onToggleStatus;
   final VoidCallback? onTap;
 
   const UsuarioList({
     super.key,
     required this.membro,
-    required this.onEdit,
-    required this.onToggleStatus,
+    this.onEdit,
+    this.onToggleStatus,
     this.onTap,
   });
 
@@ -24,6 +24,8 @@ class UsuarioList extends StatelessWidget {
     String subtitulo = isGestor ? 'Gestor' : 'Funcionário';
     subtitulo += ' • ${membro.setorNome ?? 'Setor não vinculado'}';
     if (!membro.ativo) subtitulo += ' • Inativo';
+
+    final temAcoes = onEdit != null || onToggleStatus != null;
 
     return ListTile(
       onTap: onTap,
@@ -45,22 +47,26 @@ class UsuarioList extends StatelessWidget {
         ),
       ),
       subtitle: Text(subtitulo),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: Icon(Icons.edit, color: theme.primaryColor),
-            onPressed: onEdit,
-          ),
-          IconButton(
-            icon: Icon(
-              membro.ativo ? Icons.block : Icons.check_circle,
-              color: membro.ativo ? AppThemes.errorColor : Colors.green,
-            ),
-            onPressed: onToggleStatus,
-          ),
-        ],
-      ),
+      trailing: temAcoes
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onEdit != null)
+                  IconButton(
+                    icon: Icon(Icons.edit, color: theme.primaryColor),
+                    onPressed: onEdit,
+                  ),
+                if (onToggleStatus != null)
+                  IconButton(
+                    icon: Icon(
+                      membro.ativo ? Icons.block : Icons.check_circle,
+                      color: membro.ativo ? AppThemes.errorColor : Colors.green,
+                    ),
+                    onPressed: onToggleStatus,
+                  ),
+              ],
+            )
+          : (onTap != null ? const Icon(Icons.chevron_right) : null),
     );
   }
 }
