@@ -9,6 +9,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final UsuarioModel usuario; // Recebe o objeto completo
   final VoidCallback? onPerfilPressed;
 
+
   const CustomAppBar({
     super.key,
     required this.usuario,
@@ -20,6 +21,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(110.0);
 
   void _confirmarLogout(BuildContext context) {
+    final loginController = LoginController();
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -33,7 +36,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await SupabaseService.instance.auth.signOut();
+              await loginController.sair();
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,

@@ -258,7 +258,6 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
               const SizedBox(height: 24),
               _buildCardStatusAtual(context, _ocorrenciaExistente!),
             ],
-
             const SizedBox(height: 24),
             Text(
               _ocorrenciaExistente == null
