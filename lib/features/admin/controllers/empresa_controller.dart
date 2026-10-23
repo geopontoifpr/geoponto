@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../usuarios/models/usuario_model.dart';
+import '../../usuarios/services/usuario_service.dart';
 import '../models/empresa_model.dart';
 import '../services/empresa_service.dart';
-import '../../usuarios/models/usuario_model.dart';
 
 class EmpresaController extends ChangeNotifier {
   final EmpresaService _service;
+  final UsuarioService _usuarioService;
   final UsuarioModel usuario;
 
   bool isLoading = false;
   EmpresaModel? empresaAtual;
+  int totalGestores = 0;
+  int totalColaboradores = 0;
 
   EmpresaController({
     required this.usuario,
     EmpresaService? service,
-  }) : _service = service ?? EmpresaService(usuario: usuario);
+    UsuarioService? usuarioService,
+  })  : _service = service ?? EmpresaService(usuario: usuario),
+        _usuarioService = usuarioService ?? UsuarioService();
 
   Future<void> submeterFormulario({
     required String? idAtual,
@@ -47,7 +53,6 @@ class EmpresaController extends ChangeNotifier {
 
     _setLoading(true);
     try {
-      // Se idAtual vier preenchido, é edição. Se for nulo, é criação.
       await _service.salvarEmpresa(empresa, ehEdicao: idAtual != null);
     } finally {
       _setLoading(false);
@@ -60,12 +65,21 @@ class EmpresaController extends ChangeNotifier {
       final empresas = await _service.buscarMinhasEmpresas();
       if (empresas.isNotEmpty) {
         empresaAtual = empresas.first;
+        final membros = await _usuarioService.listarUsuarios(
+          empresaId: empresaAtual!.id,
+        );
+        totalGestores = membros
+            .where((u) => u.tipoUsuario == TipoUsuario.gestor && u.ativo)
+            .length;
+        totalColaboradores = membros
+            .where((u) => u.tipoUsuario == TipoUsuario.funcionario && u.ativo)
+            .length;
       } else {
         empresaAtual = null;
+        totalGestores = 0;
+        totalColaboradores = 0;
       }
-    } catch (e) {
-      // ADICIONE ESTE PRINT PARA VER SE A TELA ESTÁ ESCONDENDO O ERRO
-      print('DEBUG CONTROLLER: Erro ao carregar painel: $e');
+    } catch (_) {
     } finally {
       _setLoading(false);
     }
