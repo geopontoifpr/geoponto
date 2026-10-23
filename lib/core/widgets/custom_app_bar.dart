@@ -4,6 +4,7 @@ import '../themes/theme_controller.dart';
 import 'user_header.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/usuarios/models/usuario_model.dart'; 
+import '../../features/auth/controllers/login_controller.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final UsuarioModel usuario; // Recebe o objeto completo
