@@ -143,5 +143,14 @@ class UsuarioRepository {
     
     return null;
   }
-  
+  Future<void> limparDispositivo(String usuarioId) async {
+    try {
+      await _client
+          .from('usuarios')
+          .update({'dispositivo_usuario': null})
+          .eq('id', usuarioId);
+    } catch (e) {
+      throw ServidorException('Erro ao remover o vínculo do dispositivo no banco.');
+    }
+  }
 }

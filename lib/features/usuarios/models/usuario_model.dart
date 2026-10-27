@@ -1,3 +1,4 @@
+
 // Enum padronizado para evitar erros de digitação e facilitar o uso
 enum TipoUsuario {
   administrador,
@@ -31,6 +32,8 @@ class UsuarioModel {
   final bool ativo;
   final bool primeiroAcesso;
   final String? setorNome; // Apenas para exibição (Join)
+  final String? dispositivoUsuario;
+
 
   UsuarioModel({
     required this.id,
@@ -42,6 +45,8 @@ class UsuarioModel {
     this.ativo = true,
     this.primeiroAcesso = true,
     this.setorNome,
+    this.dispositivoUsuario,
+
   });
 
   factory UsuarioModel.fromMap(Map<String, dynamic> map) {
@@ -57,6 +62,8 @@ class UsuarioModel {
       // Garante que se vier null do banco, tratamos como ativo (true)
       ativo: map['ativo'] == true || map['ativo'] == null,
       primeiroAcesso: map['primeiro_acesso'] ?? false,
+      dispositivoUsuario: map['dispositivo_usuario']?.toString(),
+
     );
   }
 
@@ -70,7 +77,7 @@ class UsuarioModel {
       'tipo_usuario': tipoUsuario.toDbValue(),
       'ativo': ativo,
       'primeiro_acesso': primeiroAcesso,
-      // IMPORTANTE: 'setor_nome' removido. O banco não aceita inserir dados numa coluna que não existe na tabela usuarios.
+      'dispositivo_usuario': dispositivoUsuario,
     };
   }
 
@@ -85,6 +92,8 @@ class UsuarioModel {
     bool? ativo,
     bool? primeiroAcesso,
     String? setorNome,
+    String? dispositivoUsuario,
+
   }) {
     return UsuarioModel(
       id: id ?? this.id,
@@ -95,7 +104,8 @@ class UsuarioModel {
       tipoUsuario: tipoUsuario ?? this.tipoUsuario,
       ativo: ativo ?? this.ativo,
       setorNome: setorNome ?? this.setorNome,
-      primeiroAcesso: primeiroAcesso ?? this.primeiroAcesso
+      primeiroAcesso: primeiroAcesso ?? this.primeiroAcesso,
+      dispositivoUsuario: dispositivoUsuario ?? this.dispositivoUsuario
     );
   }
 }

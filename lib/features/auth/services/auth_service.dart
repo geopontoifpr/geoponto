@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import '../repositories/auth_repository.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../core/utils/device_util.dart';
 
 class AuthService {
   final AuthRepository _repository;
@@ -18,17 +20,44 @@ class AuthService {
       throw const CamposObrigatoriosException();
     }
 
-    // CORREÇÃO: Enviando os parâmetros de forma posicional, sem "email:" e "senha:"
     final usuario = await _repository.buscarPorCredenciais(emailTratado, senha);
 
     if (usuario == null) {
-      // CORREÇÃO: Removido o 'const' caso a exceção não tenha construtor constante
       throw AuthExceptionApp('E-mail ou senha inválidos. Verifique suas credenciais.');
     }
 
     if (!usuario.ativo) {
       throw UsuarioInativoException('Usuário inativo. Entre em contato com a administração.');
     }
+
+    // === INÍCIO DA VALIDAÇÃO DO DISPOSITIVO ===
+    
+    // 1. Pega o ID da placa do celular atual
+    if (!kDebugMode) {
+      final String? dispositivoAtual = await DeviceUtil.getDeviceId();
+
+      if (dispositivoAtual == null || dispositivoAtual.isEmpty) {
+        throw AuthExceptionApp('Erro de segurança: Não foi possível identificar o hardware deste aparelho.');
+      }
+
+      final String? dispositivoCadastrado = usuario.dispositivoUsuario;
+
+      if (dispositivoCadastrado == null || dispositivoCadastrado.isEmpty) {
+        // 2. Primeiro acesso neste aparelho: Vincula no banco
+        await _repository.vincularDispositivo(usuario.id, dispositivoAtual);
+        
+        // Atualiza o objeto na memória e segue o baile
+        return usuario.copyWith(dispositivoUsuario: dispositivoAtual);
+        
+      } else if (dispositivoCadastrado != dispositivoAtual) {
+        // 3. Celular diferente do que está no banco: Bloqueia!
+        throw AuthExceptionApp(
+          'Acesso negado.\nSua conta já está vinculada a outro celular.\n'
+          'Solicite ao RH ou Gestor a liberação do seu novo aparelho.'
+        );
+      }
+    }
+    // === FIM DA VALIDAÇÃO ===
 
     return usuario;
   }

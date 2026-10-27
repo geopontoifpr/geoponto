@@ -58,4 +58,15 @@ class AuthRepository {
       throw ServidorException('Erro ao atualizar o status de primeiro acesso.');
     }
   }
+  // Vincula o dispositivo ao usuário na tabela pública
+  Future<void> vincularDispositivo(String usuarioId, String dispositivoId) async {
+    try {
+      await _client
+          .from('usuarios')
+          .update({'dispositivo_usuario': dispositivoId})
+          .eq('id', usuarioId);
+    } catch (e) {
+      throw ServidorException('Erro ao vincular o dispositivo ao usuário.');
+    }
+  }
 }

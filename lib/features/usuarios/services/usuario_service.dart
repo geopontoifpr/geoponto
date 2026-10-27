@@ -108,4 +108,8 @@ class UsuarioService {
       throw ValidacaoException('Erro ao buscar o ID do usuário: $e'); 
     }
   }
+  Future<void> desvincularDispositivo(String usuarioId) async {
+    // repository é a sua instância de UsuarioRepository
+    await _repository.limparDispositivo(usuarioId);
+  }
 }

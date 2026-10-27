@@ -99,5 +99,19 @@ class UsuarioController extends ChangeNotifier {
       return null;
     }
   }
+  Future<bool> desvincularDispositivo(String usuarioId) async {
+    _setLoading(true);
+    erroMensagem = null;
+    
+    try {
+      await _service.desvincularDispositivo(usuarioId);
+      return true;
+    } catch (e) {
+      erroMensagem = e.toString();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
   
 }

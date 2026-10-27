@@ -136,6 +136,45 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
       );
     }
   }
+  Future<void> _confirmarDesvinculacao() async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Desvincular Aparelho?'),
+        content: const Text(
+          'O celular atual deste funcionário será removido. '
+          'Ele precisará vincular o novo aparelho no próximo login.\n\nDeseja continuar?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Desvincular', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmou == true && mounted) {
+      final sucesso = await _usuarioController.desvincularDispositivo(widget.membroEmEdicao!.id);
+      
+      if (!mounted) return;
+
+      if (sucesso) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dispositivo desvinculado com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        SnackbarUtil.showError(context, _usuarioController.erroMensagem ?? 'Erro ao desvincular dispositivo.');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -274,7 +313,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
               ),
               const SizedBox(height: 32),
 
-              ListenableBuilder(
+             ListenableBuilder(
                 listenable: _usuarioController,
                 builder: (context, _) {
                   if (_usuarioController.isLoading) {
@@ -282,18 +321,68 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                   }
                   
                   final botaoBloqueado = ehAdmin && _setorController.setores.isEmpty;
+                  final temDispositivo = widget.membroEmEdicao?.dispositivoUsuario != null && 
+                                         widget.membroEmEdicao!.dispositivoUsuario!.trim().isNotEmpty;
 
-                  return ElevatedButton(
-                    onPressed: botaoBloqueado ? null : _salvar,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: theme.primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ElevatedButton(
+                        onPressed: botaoBloqueado ? null : _salvar,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: theme.primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Salvar Membro da Equipe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
-                    ),
-                    child: const Text('Salvar Membro da Equipe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      
+                      // Exibe os controles de dispositivo APENAS se for edição
+                      if (ehEdicao) ...[
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed: _usuarioController.isLoading 
+                            ? null 
+                            : () {
+                                if (!temDispositivo) {
+                                  SnackbarUtil.showError(context, 'Este usuário não possui nenhum dispositivo cadastrado no momento.');
+                                  return;
+                                }
+                                _confirmarDesvinculacao();
+                              },
+                          icon: const Icon(Icons.phonelink_erase, color: Colors.red),
+                          label: const Text(
+                            'Desvincular Dispositivo', 
+                            style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 8),
+                        
+                        // Novo: Texto informando o status do dispositivo
+                        Text(
+                          temDispositivo 
+                              ? 'Dispositivo vinculado: ${widget.membroEmEdicao!.dispositivoUsuario}'
+                              : 'Nenhum dispositivo vinculado a esta conta.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: temDispositivo ? theme.textTheme.bodySmall?.color : Colors.orange[700],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ],
                   );
                 },
               ),
