@@ -69,4 +69,11 @@ class AuthRepository {
       throw ServidorException('Erro ao vincular o dispositivo ao usuário.');
     }
   }
+  Future<void> enviarEmailRecuperacao(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email);
+    } catch (e) {
+      throw ServidorException('Erro ao processar a solicitação de recuperação.');
+    }
+  }
 }

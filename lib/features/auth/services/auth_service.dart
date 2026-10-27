@@ -79,4 +79,13 @@ class AuthService {
     await _repository.atualizarSenha(novaSenha);
     await _repository.removerFlagPrimeiroAcesso(usuarioId);
   }
+  Future<void> recuperarSenha(String email) async {
+    final emailTratado = email.trim();
+
+    if (emailTratado.isEmpty || !emailTratado.contains('@')) {
+      throw ValidacaoException('Informe um e-mail válido para recuperar a senha.');
+    }
+
+    await _repository.enviarEmailRecuperacao(emailTratado);
+  }
 }

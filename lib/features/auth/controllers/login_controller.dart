@@ -71,4 +71,22 @@ class LoginController extends ChangeNotifier {
   Future<void> sair() async {
     await _authService.logout();
   }
+
+  Future<bool> recuperarSenha(String email) async {
+    _carregando = true;
+    _erro = null;
+    notifyListeners();
+
+    try {
+      await _authService.recuperarSenha(email);
+      _carregando = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _erro = e.toString().replaceAll('Exception: ', '');
+      _carregando = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }

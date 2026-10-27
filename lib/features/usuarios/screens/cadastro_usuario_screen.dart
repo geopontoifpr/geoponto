@@ -338,47 +338,118 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                           ),
                         ),
                         child: const Text('Salvar Membro da Equipe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
-                      
+                      ),                      
                       // Exibe os controles de dispositivo APENAS se for edição
                       if (ehEdicao) ...[
-                        const SizedBox(height: 16),
-                        OutlinedButton.icon(
-                          onPressed: _usuarioController.isLoading 
-                            ? null 
-                            : () {
-                                if (!temDispositivo) {
-                                  SnackbarUtil.showError(context, 'Este usuário não possui nenhum dispositivo cadastrado no momento.');
-                                  return;
-                                }
-                                _confirmarDesvinculacao();
-                              },
-                          icon: const Icon(Icons.phonelink_erase, color: Colors.red),
-                          label: const Text(
-                            'Desvincular Dispositivo', 
-                            style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(color: Colors.red),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 24),
+                        
+                        // Banner Interativo de Dispositivo
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _usuarioController.isLoading || !temDispositivo
+                                ? null 
+                                : _confirmarDesvinculacao,
+                            borderRadius: BorderRadius.circular(20),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Stack(
+                                children: [
+                                  // Círculo decorativo de fundo (Design)
+                                  Positioned(
+                                    top: -40,
+                                    right: -40,
+                                    child: Container(
+                                      width: 130,
+                                      height: 130,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: temDispositivo 
+                                            ? Colors.red.withOpacity(0.08)
+                                            : theme.disabledColor.withOpacity(0.08),
+                                      ),
+                                    ),
+                                  ),
+                                  
+                                  // Conteúdo do Banner
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(20.0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: temDispositivo 
+                                            ? Colors.red.withOpacity(0.3) 
+                                            : theme.dividerColor,
+                                        width: 1.5,
+                                      ),
+                                      color: theme.cardColor,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              temDispositivo ? Icons.phonelink_setup : Icons.phonelink_erase,
+                                              size: 26,
+                                              color: temDispositivo ? Colors.red[700] : theme.disabledColor,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                temDispositivo ? 'Aparelho Vinculado' : 'Sem Dispositivo',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: temDispositivo ? Colors.red[700] : theme.disabledColor,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        
+                                        Text(
+                                          temDispositivo 
+                                              ? widget.membroEmEdicao!.dispositivoUsuario!
+                                              : 'Nenhum aparelho celular vinculado a esta conta de usuário no momento.',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: temDispositivo ? FontWeight.w600 : FontWeight.normal,
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        
+                                        if (temDispositivo) ...[
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.touch_app, 
+                                                size: 16, 
+                                                color: Colors.red[400]
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  'Toque neste banner para descadastrar o dispositivo.',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.red[400],
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 8),
-                        
-                        // Novo: Texto informando o status do dispositivo
-                        Text(
-                          temDispositivo 
-                              ? 'Dispositivo vinculado: ${widget.membroEmEdicao!.dispositivoUsuario}'
-                              : 'Nenhum dispositivo vinculado a esta conta.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: temDispositivo ? theme.textTheme.bodySmall?.color : Colors.orange[700],
-                            fontStyle: FontStyle.italic,
                           ),
                         ),
                       ],

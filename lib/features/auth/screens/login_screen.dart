@@ -57,6 +57,66 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
+  
+  Future<void> _abrirModalRecuperacao() async {
+    final emailRecuperacaoController = TextEditingController();
+    
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recuperar Senha'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Informe seu e-mail corporativo para receber o link de redefinição de senha.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailRecuperacaoController,
+              decoration: InputDecoration(
+                labelText: 'E-mail',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = emailRecuperacaoController.text.trim();
+              if (email.isEmpty || !email.contains('@')) {
+                SnackbarUtil.showError(ctx, 'Informe um e-mail válido.');
+                return;
+              }
+              
+              // Chama o método que criamos no LoginController
+              final sucesso = await _controller.recuperarSenha(email);
+              
+              if (!ctx.mounted) return;
+              
+              if (sucesso) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('E-mail de recuperação enviado com sucesso!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                SnackbarUtil.showError(ctx, _controller.erro ?? 'Erro ao enviar e-mail');
+              }
+            },
+            child: const Text('Enviar Link'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -134,7 +194,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: Icons.lock_outline,
                   obscureText: true,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                // Botão "Esqueci minha senha" alinhado à direita
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _abrirModalRecuperacao,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Esqueci minha senha',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
                 if (_controller.erro != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
