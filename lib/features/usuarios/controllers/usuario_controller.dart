@@ -127,7 +127,7 @@ class UsuarioController extends ChangeNotifier {
           .update({'nome': novoNome.trim()})
           .eq('id', usuarioAtual.id!);
           
-      
+      usuarioAtual.nome = novoNome.trim(); // Atualiza o nome localmente
       return true;
     } catch (e) {
       erroMensagem = 'Erro ao atualizar o nome.';
