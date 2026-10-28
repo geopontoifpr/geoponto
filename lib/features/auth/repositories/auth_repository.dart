@@ -71,7 +71,7 @@ class AuthRepository {
   }
   Future<void> enviarEmailRecuperacao(String email) async {
     try {
-      await _client.auth.resetPasswordForEmail(email);
+      await _client.auth.resetPasswordForEmail(email,redirectTo: 'io.supabase.geoponto://login-callback/',);
     } catch (e) {
       throw ServidorException('Erro ao processar a solicitação de recuperação.');
     }
