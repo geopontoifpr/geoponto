@@ -26,7 +26,7 @@ class UsuarioModel {
   final String id;
   final String? empresaId;
   final String? setorId;
-  final String nome;
+  String nome;
   final String email;
   final TipoUsuario tipoUsuario;
   final bool ativo;

@@ -201,8 +201,11 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
 
     return Scaffold(
       appBar: CustomAppBar(
+        key: ValueKey(widget.usuario.nome),
         usuario: widget.usuario,
-        onPerfilPressed: () {},
+        onPerfilPressed: () {
+          setState(() {}); 
+        },
       ),
       body: PageView(
         controller: _pageController,

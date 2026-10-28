@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../services/usuario_service.dart';
@@ -108,6 +109,28 @@ class UsuarioController extends ChangeNotifier {
       return true;
     } catch (e) {
       erroMensagem = e.toString();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  Future<bool> atualizarNome(UsuarioModel usuarioAtual, String novoNome) async {
+    _setLoading(true);
+    erroMensagem = null;
+
+    try {
+      if (novoNome.trim() == usuarioAtual.nome) return true;
+
+      // Importe o supabase_flutter caso não esteja importado no controller
+      await Supabase.instance.client
+          .from('usuarios')
+          .update({'nome': novoNome.trim()})
+          .eq('id', usuarioAtual.id!);
+          
+      
+      return true;
+    } catch (e) {
+      erroMensagem = 'Erro ao atualizar o nome.';
       return false;
     } finally {
       _setLoading(false);

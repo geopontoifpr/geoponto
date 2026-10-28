@@ -84,22 +84,24 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
 
-      // Se o evento for de recuperação de senha e o usuário estiver validado
+      // Log para visualizarmos no console do VS Code qual evento o Supabase disparou
+      debugPrint('🚨 Evento Supabase capturado: ${event.name}');
+
+      // Se capturar o evento de recuperação E tiver uma sessão válida
       if (event == AuthChangeEvent.passwordRecovery && session != null) {
+        debugPrint('✅ Iniciando redirecionamento para troca de senha...');
+        
         try {
-          // 1. Busca os dados completos do usuário na tabela do Supabase
           final resposta = await Supabase.instance.client
               .from('usuarios')
               .select()
               .eq('id', session.user.id)
               .single();
 
-          // 2. Converte o mapa recebido para o seu UsuarioModel 
-          // (Verifique se o seu método de conversão se chama fromMap ou fromJson)
           final usuario = UsuarioModel.fromMap(resposta);
 
-          // 3. Redireciona o usuário para a tela onde ele cadastra a nova senha
           if (mounted) {
+            // Força a ida para a tela de criar nova senha (PrimeiroAcessoScreen)
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -108,7 +110,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             );
           }
         } catch (e) {
-          debugPrint('Erro ao buscar dados do usuário na recuperação: $e');
+          debugPrint('❌ Erro ao buscar dados do usuário na recuperação: $e');
         }
       }
     });
@@ -122,7 +124,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // Por padrão, exibe a tela de login. O redirecionamento ocorre via listen() acima se necessário.
     return const LoginScreen();
   }
 }
