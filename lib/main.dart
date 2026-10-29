@@ -1,16 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'core/services/supabase_service.dart';
 import 'core/themes/app_themes.dart';
 import 'core/themes/theme_controller.dart';
 import 'features/auth/screens/login_screen.dart';
-
-// Importe o seu modelo de usuário e a tela de destino
-// Ajuste os caminhos abaixo conforme a sua estrutura de pastas real
 import 'features/usuarios/models/usuario_model.dart'; 
 import 'features/auth/screens/primeiro_acesso_screen.dart';
+import 'core/widgets/animacao_abertura.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,8 +54,37 @@ class MyApp extends StatelessWidget {
                     ),
                   ),
                 )
-              : const AuthWrapper(), // Alterado de LoginScreen() para AuthWrapper()
+                
+              : const AberturaGeoPonto(), //
         );
+      },
+    );
+  }
+}
+
+class AberturaGeoPonto extends StatefulWidget {
+  const AberturaGeoPonto({super.key});
+
+  @override
+  State<AberturaGeoPonto> createState() => _AberturaGeoPontoState();
+}
+
+class _AberturaGeoPontoState extends State<AberturaGeoPonto> {
+  bool _animacaoConcluida = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_animacaoConcluida) {
+      return const AuthWrapper();
+    }
+
+    return AnimacaoAbertura(
+      onFinished: () {
+        if (!mounted) return;
+
+        setState(() {
+          _animacaoConcluida = true;
+        });
       },
     );
   }

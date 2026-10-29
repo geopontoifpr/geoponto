@@ -27,6 +27,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
+  final _cpfController = TextEditingController();
   
   // Controllers
   final _usuarioController = UsuarioController();
@@ -36,9 +37,10 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   String? _tipoSelecionado;
   String? _setorSelecionado;
   String? _jornadaSelecionada;  
-
+  bool _dadosAlterados = false;
   bool get ehEdicao => widget.membroEmEdicao != null;
   bool get ehAdmin => widget.usuarioLogado.tipoUsuario == TipoUsuario.administrador;
+
 
   @override
   void initState() {
@@ -47,6 +49,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
     if (ehEdicao) {
       _nomeController.text = widget.membroEmEdicao!.nome;
       _emailController.text = widget.membroEmEdicao!.email;
+      _cpfController.text = widget.membroEmEdicao!.cpf;
       _tipoSelecionado = widget.membroEmEdicao!.tipoUsuario.name.toUpperCase();
       _setorSelecionado = widget.membroEmEdicao!.setorId;
     }
@@ -73,11 +76,28 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   void dispose() {
     _nomeController.dispose();
     _emailController.dispose();
+    _cpfController.dispose();
     _usuarioController.dispose();
     _setorController.dispose();
     super.dispose();
   }
+  void _verificarAlteracoes() {
+    if (!ehEdicao) return;
 
+    final membro = widget.membroEmEdicao!;
+
+    final alterado =
+        _nomeController.text.trim() != membro.nome.trim() ||
+        _cpfController.text.trim() != membro.cpf.trim() ||
+        _tipoSelecionado != membro.tipoUsuario.name.toUpperCase() ||
+        _setorSelecionado != membro.setorId;
+
+    if (_dadosAlterados != alterado) {
+      setState(() {
+        _dadosAlterados = alterado;
+      });
+    }
+  }
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -96,7 +116,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
       idEdicao: widget.membroEmEdicao?.id,
       empresaId: widget.empresaId,
       usuarioLogado: widget.usuarioLogado,
-      nome: _nomeController.text,
+      nome: _nomeController.text, 
+      cpf: _cpfController.text,
       email: _emailController.text,
       tipoUsuario: tipoAEnviar,
       setorId: setorAEnviar,
@@ -195,10 +216,23 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 controller: _nomeController,
                 labelText: 'Nome Completo',
                 prefixIcon: Icons.person,
+                onChanged: (_) => _verificarAlteracoes(),
                 validator: (value) => value == null || value.trim().length < 3 ? 'Informe um nome válido' : null,
               ),
               const SizedBox(height: 16),
-
+              CustomTextField(
+                controller: _cpfController,
+                labelText: 'CPF',
+                prefixIcon: Icons.badge,
+                onChanged: (_) => _verificarAlteracoes(),                              
+                validator: (value) {
+                  if (value == null || value.trim().length != 11) {
+                    return 'Informe um CPF válido (11 dígitos)';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               CustomTextField(
                 controller: _emailController,
                 labelText: 'E-mail',
@@ -206,6 +240,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 enabled: !ehEdicao,
                 validator: (value) => value == null || !value.contains('@') ? 'Informe um e-mail válido' : null,
               ),
+              const SizedBox(height: 16),
               if (ehEdicao) 
                 Padding(
                   padding: const EdgeInsets.only(top: 4, left: 12),
@@ -230,7 +265,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                     DropdownMenuItem(value: 'GESTOR', child: Text('Gestor (Admin do Setor)')),
                     DropdownMenuItem(value: 'FUNCIONARIO', child: Text('Funcionário')),
                   ],
-                  onChanged: (value) => setState(() => _tipoSelecionado = value),
+                  onChanged: (value) {setState(() {_tipoSelecionado = value; }); _verificarAlteracoes();},
                   validator: (value) => value == null ? 'Selecione o tipo de acesso' : null,
                 ),
                 const SizedBox(height: 16),
@@ -264,7 +299,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                           child: Text(setor.nome),
                         );
                       }).toList(),
-                      onChanged: (value) => setState(() => _setorSelecionado = value),
+                      onChanged: (value) {setState(() {_setorSelecionado = value; }); _verificarAlteracoes();},
                       validator: (value) => value == null ? 'Selecione um setor' : null,
                     );
                   },

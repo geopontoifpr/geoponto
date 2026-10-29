@@ -27,11 +27,13 @@ class UsuarioService {
     String? idEdicao,
     required String empresaId,
     required String nome,
+    required String cpf,
     required String email,
     required String tipoUsuario,
     required String? setorId,
   }) async {
     if (nome.trim().length < 3) throw ValidacaoException('Nome muito curto.');
+    if (cpf.trim().length != 11) throw ValidacaoException('CPF inválido. Deve conter 11 dígitos.');
     if (!email.contains('@')) throw ValidacaoException('E-mail inválido.');
     if (setorId == null || setorId.isEmpty) throw ValidacaoException('Selecione um setor.');
 
@@ -47,6 +49,7 @@ class UsuarioService {
       await _repository.criarUsuario({
         'nome': nome.trim(),
         'email': email.trim().toLowerCase(),
+        'cpf': cpf.trim(),
         'tipo_usuario': tipoUsuario,
         'empresa_id': empresaId,
         'setor_id': setorId,
@@ -55,6 +58,7 @@ class UsuarioService {
       // EDIÇÃO
       await _repository.atualizarUsuario(idEdicao, {
         'nome': nome.trim(),
+        'cpf': cpf.trim(),
         'tipo_usuario': tipoUsuario,
         'setor_id': setorId,
       });

@@ -69,6 +69,7 @@ class UsuarioRepository {
       final response = await _client.rpc('criar_membro_equipe', params: {
         'p_email': dados['email'],
         'p_nome': dados['nome'],
+        'p_cpf': dados['cpf'],
         'p_tipo': dados['tipo_usuario'],
         'p_empresa_id': dados['empresa_id'],
         'p_setor_id': dados['setor_id'],

@@ -31,6 +31,7 @@ class FrequenciaController extends ChangeNotifier {
   bool folhaFechada = false;
   FechamentoMensalModel? fechamentoSalvo;
   String? erroMensagem;
+  bool _isDisposed = false;
 
   List<Map<String, dynamic>> jornadasDoMes = [];
   Map<int, List<RegistroPontoModel>> pontosPorDia = {};
@@ -48,6 +49,12 @@ class FrequenciaController extends ChangeNotifier {
   }
 
   bool get podeFecharFolha => isMesAnteriorAoAtual && !folhaFechada;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
 
   Future<void> carregarDadosMes() async {
     carregando = true;
@@ -86,6 +93,7 @@ class FrequenciaController extends ChangeNotifier {
       erroMensagem = 'Não foi possível carregar os dados do mês: $e';
     } finally {
       carregando = false;
+      if (_isDisposed) return;
       notifyListeners();
     }
   }

@@ -48,6 +48,7 @@ class UsuarioController extends ChangeNotifier {
     required String empresaId,
     required UsuarioModel usuarioLogado,
     required String nome,
+    required String cpf,
     required String email,
     required String tipoUsuario,
     required String? setorId,
@@ -55,7 +56,7 @@ class UsuarioController extends ChangeNotifier {
     _setLoading(true);
     try {
       await _service.salvarUsuario(
-        idEdicao: idEdicao, empresaId: empresaId, nome: nome, 
+        idEdicao: idEdicao, empresaId: empresaId, nome: nome, cpf: cpf,  
         email: email, tipoUsuario: tipoUsuario, setorId: setorId
       );
       await carregarUsuarios(usuarioLogado, empresaId); // Recarrega a lista após salvar

@@ -27,6 +27,7 @@ class UsuarioModel {
   final String? empresaId;
   final String? setorId;
   String nome;
+  final String cpf;
   final String email;
   final TipoUsuario tipoUsuario;
   final bool ativo;
@@ -40,6 +41,7 @@ class UsuarioModel {
     this.empresaId,
     this.setorId,
     required this.nome,
+    required this.cpf,
     required this.email,
     required this.tipoUsuario,
     this.ativo = true,
@@ -55,6 +57,7 @@ class UsuarioModel {
       empresaId: map['empresa_id']?.toString(),
       setorId: map['setor_id']?.toString(),
       nome: map['nome']?.toString() ?? '',
+      cpf: map['cpf']?.toString() ?? '',
       email: map['email']?.toString() ?? '',
       tipoUsuario: TipoUsuario.fromString(map['tipo_usuario']?.toString() ?? 'FUNCIONARIO'),
       // Navega no JSON aninhado que o Supabase retorna no join
@@ -73,6 +76,7 @@ class UsuarioModel {
       'empresa_id': empresaId,
       'setor_id': setorId,
       'nome': nome,
+      'cpf': cpf,
       'email': email,
       'tipo_usuario': tipoUsuario.toDbValue(),
       'ativo': ativo,
@@ -87,6 +91,7 @@ class UsuarioModel {
     String? empresaId,
     String? setorId,
     String? nome,
+    String? cpf,
     String? email,
     TipoUsuario? tipoUsuario,
     bool? ativo,
@@ -100,6 +105,7 @@ class UsuarioModel {
       empresaId: empresaId ?? this.empresaId,
       setorId: setorId ?? this.setorId,
       nome: nome ?? this.nome,
+      cpf: cpf ?? this.cpf,
       email: email ?? this.email,
       tipoUsuario: tipoUsuario ?? this.tipoUsuario,
       ativo: ativo ?? this.ativo,

@@ -35,8 +35,6 @@
             </intent-filter>
             
         </activity>
-
-        <!-- Desativa o Impeller para corrigir o bug de tela preta no Android -->
         <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"
             android:value="false" />

@@ -196,6 +196,17 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   ),
                 ),
                 const Divider(),
+
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.transparent,
+                    child: Icon(Icons.badge_outlined, color: Colors.grey),
+                  ),
+                  title: Text(widget.usuario.cpf),
+                  subtitle: const Text('CPF'),
+                ),
+                const Divider(),
                 
                 ListTile(
                   contentPadding: EdgeInsets.zero,
