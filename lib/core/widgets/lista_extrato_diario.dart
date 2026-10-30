@@ -63,7 +63,7 @@ class ListaExtratoDiarioWidget extends StatelessWidget {
                       final h = dtLocal.hour.toString().padLeft(2, '0');
                       final m = dtLocal.minute.toString().padLeft(2, '0');
                       return '$h:$m';
-                    }).join(' • ');
+                    }).join(' - ');
 
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.center,

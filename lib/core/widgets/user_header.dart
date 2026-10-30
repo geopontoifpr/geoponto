@@ -33,7 +33,7 @@ class UserHeader extends StatelessWidget {
     final setor = (setorNome == null || setorNome!.trim().isEmpty)
         ? 'Setor não informado'
         : setorNome!;
-    return '$_perfil • $setor';
+    return '$_perfil do setor - $setor';
   }
 
   @override

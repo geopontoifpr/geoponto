@@ -10,6 +10,7 @@ import '../../features/ocorrencias/screens/ocorrencias_gestor_screen.dart';
 import '../../features/usuarios/models/usuario_model.dart';
 import '../constants/app_colors.dart';
 import '../widgets/custom_app_bar.dart';
+import '../widgets/efeito_agua.dart';
 import '../screens/equipe_screen.dart';
 
 
@@ -242,9 +243,10 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
                 final corInativa = theme.colorScheme.onSurfaceVariant;
 
                 return Expanded(
-                  child: InkWell(
+                  child: EfeitoAgua(
                     onTap: () => _irParaAba(index),
                     borderRadius: BorderRadius.circular(12),
+                    cor: corAtiva.withOpacity(0.2),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Column(

@@ -1,5 +1,3 @@
-
-// Enum padronizado para evitar erros de digitação e facilitar o uso
 enum TipoUsuario {
   administrador,
   gestor,
@@ -33,7 +31,7 @@ class UsuarioModel {
   final bool ativo;
   final bool primeiroAcesso;
   final String? setorNome; // Apenas para exibição (Join)
-  final String? dispositivoUsuario;
+  String? dispositivoUsuario;
 
 
   UsuarioModel({
