@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/comprovante_dialog.dart';
+import '../../../core/utils/snackbar_util.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../admin/controllers/empresa_controller.dart';
 import '../controllers/ponto_controller.dart';
@@ -88,17 +89,11 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
       );
       
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _controller.erro ??
-                _controller.avisoLocalizacao ??
-                'Não foi possível registrar o ponto.',
-          ),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+     SnackbarUtil.showError(
+          context,
+          _controller.erro ?? _controller.avisoLocalizacao ?? 'Não foi possível registrar o ponto.',
+        );
+     
     }
   } 
 

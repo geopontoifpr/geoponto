@@ -43,23 +43,35 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   Future<void> _confirmarDesvinculacao() async {
     final confirmou = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Desvincular Aparelho?'),
-        content: const Text(
-          'O celular atual deste funcionário será removido. '
-          'Ele precisará vincular o novo aparelho no próximo login.\n\nDeseja continuar?'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+      builder: (ctx) {
+        // Verifica se é tema escuro ou claro
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        
+        // Define uma cor ABSOLUTAMENTE sólida ignorando qualquer transparência do sistema
+        final corFundo = isDark 
+            ? AppColors.cardDark.withOpacity(1.0) // Força 100% de opacidade
+            : AppColors.cardLight.withOpacity(1.0); // (Ou Colors.white)
+
+        return AlertDialog(
+          title: const Text('Desvincular Aparelho?'),
+          backgroundColor: corFundo, // <--- APLICA A COR SÓLIDA AQUI
+          surfaceTintColor: Colors.transparent, // Remove sobreposição de cor do Material 3
+          content: const Text(
+            'O celular atual deste funcionário será removido. '
+            'Ele precisará vincular o novo aparelho no próximo login.\n\nDeseja continuar?'
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Desvincular', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Desvincular', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmou == true && mounted) {
@@ -68,14 +80,16 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       if (!mounted) return;
 
       if (sucesso) {
-        // ADICIONE ESTE BLOCO PARA A TELA REAGIR IMEDIATAMENTE
         setState(() {
-          widget.usuario.dispositivoUsuario = ''; // ou '' dependendo de como está no seu model
+          widget.usuario.dispositivoUsuario = '';
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Dispositivo desvinculado com sucesso!'),
+            content: Text(
+              'Dispositivo desvinculado com sucesso!',
+              style: TextStyle(color: Colors.white), // Mantido branco para leitura perfeita
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -83,7 +97,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
         SnackbarUtil.showError(context, _usuarioController.erroMensagem ?? 'Erro ao desvincular dispositivo.');
       }
     }
-
   }
 
   // --- MODAL PARA EDITAR O NOME ---

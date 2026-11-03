@@ -11,7 +11,9 @@ import '../../features/usuarios/models/usuario_model.dart';
 import '../constants/app_colors.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/efeito_agua.dart';
+import '../widgets/fundo_futurista.dart';
 import '../screens/equipe_screen.dart';
+
 
 
 class _AbaItem {
@@ -198,6 +200,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final escuro = theme.brightness == Brightness.dark;
     final abas = _construirAbasPorCargo();
 
     return Scaffold(
@@ -205,20 +208,33 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
         key: ValueKey(widget.usuario.nome),
         usuario: widget.usuario,
         onPerfilPressed: () {
-          setState(() {}); 
+          setState(() {});
         },
       ),
-      body: PageView(
-        controller: _pageController,
-        physics: const BouncingScrollPhysics(),
-        onPageChanged: (index) {
-          setState(() => _abaAtual = index);
-          if (widget.usuario.tipoUsuario == TipoUsuario.administrador &&
-              _empresaIdAdmin == null) {
-            _carregarEmpresaAdmin();
-          }
-        },
-        children: abas.map((a) => a.page).toList(),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Fundo: só no tema escuro. Fica sempre na posição 0 do Stack.
+          if (escuro)
+            const FundoFuturista(child: SizedBox.shrink())
+          else
+            const SizedBox.shrink(),
+
+          // O PageView fica sempre na posição 1, então não é recriado
+          // quando o usuário alterna o tema.
+          PageView(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: (index) {
+              setState(() => _abaAtual = index);
+              if (widget.usuario.tipoUsuario == TipoUsuario.administrador &&
+                  _empresaIdAdmin == null) {
+                _carregarEmpresaAdmin();
+              }
+            },
+            children: abas.map((a) => a.page).toList(),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

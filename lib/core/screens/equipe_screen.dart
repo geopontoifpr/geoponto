@@ -130,6 +130,7 @@ class _EquipeScreenState extends State<EquipeScreen>
     final modoCadastro = _modo == ModoEquipe.cadastrar;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,   // <- adicione
       appBar: widget.mostrarAppBar
           ? AppBar(title: const Text('Gestão de Equipe'))
           : null,

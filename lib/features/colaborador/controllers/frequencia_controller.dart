@@ -237,17 +237,6 @@ class FrequenciaController extends ChangeNotifier {
 
   /// Requisitos 11, 12, 13 e 16: Fechamento de folha com validação e bloqueio de duplicidade
   Future<bool> fecharFolhaMes() async {
-    if (!isMesAnteriorAoAtual) {
-      erroMensagem = 'Apenas meses anteriores ao mês atual podem ser fechados.';
-      notifyListeners();
-      return false;
-    }
-    if (folhaFechada) {
-      erroMensagem = 'Esta folha mensal já se encontra fechada.';
-      notifyListeners();
-      return false;
-    }
-
     try {
       final extrato = calcularExtratoDetalhado();
       final novoFechamento = FechamentoMensalModel(
@@ -260,7 +249,7 @@ class FrequenciaController extends ChangeNotifier {
         fechada: true,
       );
 
-      await _service.inserirFechamentoMensal(novoFechamento);
+      await _service.validarEInserirFechamento(novoFechamento, folhaFechada);
       fechamentoSalvo = novoFechamento;
       folhaFechada = true;
       erroMensagem = null;
@@ -276,7 +265,8 @@ class FrequenciaController extends ChangeNotifier {
       notifyListeners();
       return false;
     } catch (e) {
-      erroMensagem = 'Erro ao fechar folha: $e';
+      // Exceptions de regra de negócio lançadas pelo Service
+      erroMensagem = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       return false;
     }

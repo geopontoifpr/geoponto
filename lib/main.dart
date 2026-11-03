@@ -8,6 +8,8 @@ import 'features/auth/screens/login_screen.dart';
 import 'features/usuarios/models/usuario_model.dart'; 
 import 'features/auth/screens/primeiro_acesso_screen.dart';
 import 'core/widgets/animacao_abertura.dart';
+import 'core/widgets/fundo_futurista.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,16 +35,32 @@ class MyApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: ThemeController.instance,
       builder: (context, _) {
+        final isDarkMode = ThemeController.instance.isDarkMode;
+
         return MaterialApp(
           title: 'GeoPonto',
           debugShowCheckedModeBanner: false,
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
-          themeMode: ThemeController.instance.isDarkMode
-              ? ThemeMode.dark
-              : ThemeMode.light,
+          themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          
+          // Adicionamos o builder global para manter o FundoFuturista vivo em todas as telas
+          builder: (context, child) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                // Renderiza o fundo apenas no modo escuro
+                if (isDarkMode)
+                  FundoFuturista(child: child ?? const SizedBox.shrink())
+                else
+                  child ?? const SizedBox.shrink(),
+              ],
+            );
+          },
+
           home: erroInicializacao != null
               ? Scaffold(
+                  backgroundColor: Colors.transparent, // Fundo transparente para não cobrir a animação
                   body: Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
@@ -54,8 +72,7 @@ class MyApp extends StatelessWidget {
                     ),
                   ),
                 )
-                
-              : const AberturaGeoPonto(), //
+              : const AberturaGeoPonto(), 
         );
       },
     );
@@ -118,8 +135,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
         debugPrint('✅ Iniciando redirecionamento para troca de senha...');
         
         try {
+          // Nota baseada no seu contexto: Consultando a tabela 'empresa' caso o app seja single-tenant
           final resposta = await Supabase.instance.client
-              .from('usuarios')
+              .from('usuarios') // Lembre-se de alterar para 'empresa' se for a lógica single-tenant
               .select()
               .eq('id', session.user.id)
               .single();

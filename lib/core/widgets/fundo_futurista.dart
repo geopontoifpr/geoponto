@@ -120,7 +120,7 @@ class _FundoPainter extends CustomPainter {
     );
 
     // Linha de varredura
-    final y = h * ((t * 2) % 1.0);
+    final y = h * ((t * 4) % 1.0);
     final faixa = Rect.fromLTWH(0, y - 40, w, 80);
     canvas.drawRect(
       faixa,

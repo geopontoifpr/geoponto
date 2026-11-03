@@ -3,6 +3,7 @@ import '../models/usuario_model.dart';
 import '../controllers/usuario_controller.dart';
 import '../../admin/controllers/setor_controller.dart';
 import '../../../core/utils/snackbar_util.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../jornadas/controllers/jornada_controller.dart';
@@ -160,23 +161,35 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   Future<void> _confirmarDesvinculacao() async {
     final confirmou = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Desvincular Aparelho?'),
-        content: const Text(
-          'O celular atual deste funcionário será removido. '
-          'Ele precisará vincular o novo aparelho no próximo login.\n\nDeseja continuar?'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+     builder: (ctx) {
+        // Verifica se é tema escuro ou claro
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        
+        // Define uma cor ABSOLUTAMENTE sólida ignorando qualquer transparência do sistema
+        final corFundo = isDark 
+            ? AppColors.cardDark.withOpacity(1.0) // Força 100% de opacidade
+            : AppColors.cardLight.withOpacity(1.0); // (Ou Colors.white)
+
+        return AlertDialog(
+          title: const Text('Desvincular Aparelho?'),
+          backgroundColor: corFundo, // <--- APLICA A COR SÓLIDA AQUI
+          surfaceTintColor: Colors.transparent, // Remove sobreposição de cor do Material 3
+          content: const Text(
+            'O celular atual deste funcionário será removido. '
+            'Ele precisará vincular o novo aparelho no próximo login.\n\nDeseja continuar?'
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Desvincular', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Desvincular', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmou == true && mounted) {

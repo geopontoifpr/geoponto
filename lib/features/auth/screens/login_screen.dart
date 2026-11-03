@@ -67,11 +67,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     await showDialog(
       context: context,
+      
       // O dialog fica fora da árvore do Theme local, então reaplicamos o tema escuro
       builder: (ctx) => Theme(
-        data: AppThemes.darkTheme,
+        data: AppThemes.darkTheme,       
         child: AlertDialog(
           title: const Text('Recuperar Senha'),
+          backgroundColor: Theme.of(context).cardColor,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -339,7 +341,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: CustomPaint(
-          foregroundPainter: const _CantosPainter(),
+          // foregroundPainter: const _CantosPainter(),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(

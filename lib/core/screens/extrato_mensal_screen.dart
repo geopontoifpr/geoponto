@@ -86,6 +86,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
                 ? 'Folha de ${_controller.nomeMesAtual} fechada com sucesso!'
                 : (_controller.erroMensagem ?? 'Erro ao salvar fechamento.'),
           ),
+          style: const TextStyle(color: Colors.white),
           backgroundColor: sucesso ? AppColors.success : AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/usuarios/models/usuario_model.dart';
+import 'circle_avatar.dart';
 
 class UserHeader extends StatelessWidget {
   final String nome;
@@ -44,15 +45,18 @@ class UserHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: cs.primary.withOpacity(0.12),
-            child: Text(
-              _inicial,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: cs.primary,
+          AvatarComLuzCirculante(
+            corLuz: cs.primary, // Altere para _ciano ou outra cor da sua paleta se preferir
+            avatar: CircleAvatar(
+              radius: 20,
+              backgroundColor: cs.primary.withOpacity(0.12),
+              child: Text(
+                _inicial,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
               ),
             ),
           ),
