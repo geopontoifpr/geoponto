@@ -79,14 +79,14 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
       final sucesso = await _controller.fecharFolhaMes();
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             sucesso
                 ? 'Folha de ${_controller.nomeMesAtual} fechada com sucesso!'
                 : (_controller.erroMensagem ?? 'Erro ao salvar fechamento.'),
+            style: const TextStyle(color: Colors.white), // <-- Força o texto a ficar branco
           ),
-          style: const TextStyle(color: Colors.white),
           backgroundColor: sucesso ? AppColors.success : AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
