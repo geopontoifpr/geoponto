@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 
-
-// Popup de erro na parte inferior da tela, com fundo vermelho e texto branco
-// para reaproveitamento em toda a aplicação.
 class SnackbarUtil {
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
      SnackBar(
         content: Text(
           message,
-          style: const TextStyle(color: Colors.white), // <-- Força o texto a ficar branco
+          style: const TextStyle(color: AppColors.cardLight), 
         ),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        behavior: SnackBarBehavior.floating, // Fica mais elegante
+        // Fundo 100% sólido
+        backgroundColor: AppColors.error.withOpacity(1.0),
+        behavior: SnackBarBehavior.floating, 
+      )
+    );
+  }
+
+  static void showSuccess(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.cardLight), 
+        ),
+        // Fundo 100% sólido
+        backgroundColor: AppColors.success.withOpacity(1.0),
+        behavior: SnackBarBehavior.floating, 
       )
     );
   }

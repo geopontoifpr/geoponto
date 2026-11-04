@@ -4,6 +4,7 @@ import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/lista_extrato_diario.dart';
 import '../../../core/widgets/botao_imprimirpdf.dart';
+import '../../../core/utils/snackbar_util.dart';
 import '../../ocorrencias/screens/ocorrencias_dia_screen.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/frequencia_controller.dart';
@@ -41,13 +42,9 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
   }
 
   Future<void> _abrirDia(int dia) async {
-    if (_controller.folhaFechada) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('A folha deste mês já foi fechada. Não é possível registrar novas ocorrências.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (_controller.folhaFechada) {     
+      SnackbarUtil.showError(context, 'A folha deste mês já foi fechada. Não é possível registrar novas ocorrências.');
+    
       return;
     }
 

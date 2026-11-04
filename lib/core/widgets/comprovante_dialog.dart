@@ -37,10 +37,14 @@ class ComprovanteDialog extends StatelessWidget {
           ),
         ],
       ),
+      // 1. FORÇA A COR DE FUNDO SÓLIDA AQUI
+      backgroundColor: Theme.of(context).cardColor.withOpacity(1.0), 
+      // 2. REMOVE A PELÍCULA DE COR DO MATERIAL 3
+      surfaceTintColor: Colors.transparent,
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,          
           children: [
             const Text(
               'Comprovante de Registro (CRPT)',

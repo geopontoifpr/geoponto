@@ -84,15 +84,9 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           widget.usuario.dispositivoUsuario = '';
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Dispositivo desvinculado com sucesso!',
-              style: TextStyle(color: Colors.white), // Mantido branco para leitura perfeita
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+        final mensagemSucesso = 'Dispositivo desvinculado com sucesso!'; 
+        SnackbarUtil.showSuccess(context, mensagemSucesso);
+
       } else {
         SnackbarUtil.showError(context, _usuarioController.erroMensagem ?? 'Erro ao desvincular dispositivo.');
       }
@@ -133,9 +127,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
               
               if (sucesso) {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nome atualizado!'), backgroundColor: Colors.green),
-                );
+                SnackbarUtil.showSuccess(ctx, 'Nome atualizado com sucesso!');
               } else {
                 SnackbarUtil.showError(ctx, _usuarioController.erroMensagem ?? 'Erro ao salvar');
               }
@@ -203,9 +195,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
 
               if (sucesso) {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Senha alterada com sucesso!'), backgroundColor: Colors.green),
-                );
+                SnackbarUtil.showSuccess(ctx, 'Senha alterada com sucesso!');
               } else {
                 SnackbarUtil.showError(ctx, _loginController.erro ?? 'Erro ao alterar senha');
               }

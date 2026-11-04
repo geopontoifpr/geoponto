@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/usuario_model.dart';
 import '../controllers/usuario_controller.dart';
 import '../../admin/controllers/setor_controller.dart';
@@ -82,6 +83,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
     _setorController.dispose();
     super.dispose();
   }
+
   void _verificarAlteracoes() {
     if (!ehEdicao) return;
 
@@ -142,15 +144,17 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
         }
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ehEdicao ? 'Dados atualizados com sucesso!' : 'Membro cadastrado com sucesso!\nSenha padrão: 123456'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+          // 1. Define a mensagem
+      final mensagemSucesso = ehEdicao 
+          ? 'Dados atualizados com sucesso!' 
+          : 'Membro cadastrado com sucesso!\nSenha padrão: 123456';
+
+      // 2. Dispara a SnackBar usando o seu Util
+      SnackbarUtil.showSuccess(context, mensagemSucesso);
+
+      // 3. Fecha a tela
       Navigator.pop(context);
+
     } else {
       SnackbarUtil.showError(
         context, 
@@ -198,12 +202,10 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
       if (!mounted) return;
 
       if (sucesso) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dispositivo desvinculado com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        final mensagemSucesso = 'Dispositivo desvinculado com sucesso!'; 
+      
+        SnackbarUtil.showSuccess(context, mensagemSucesso);
+        
       } else {
         SnackbarUtil.showError(context, _usuarioController.erroMensagem ?? 'Erro ao desvincular dispositivo.');
       }
@@ -237,10 +239,14 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 controller: _cpfController,
                 labelText: 'CPF',
                 prefixIcon: Icons.badge,
+                keyboardType: TextInputType.number, // Abre o teclado numérico
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly, // Bloqueia qualquer caractere que não seja número
+                ],
                 onChanged: (_) => _verificarAlteracoes(),                              
                 validator: (value) {
                   if (value == null || value.trim().length != 11) {
-                    return 'Informe um CPF válido (11 dígitos)';
+                    return 'Informe um CPF válido com 11 números';
                   }
                   return null;
                 },
@@ -267,6 +273,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
               if (ehAdmin) ...[
                 DropdownButtonFormField<String>(
                   value: _tipoSelecionado,
+                  dropdownColor: theme.cardColor.withOpacity(1.0),
                   decoration: InputDecoration(
                     labelText: 'Tipo de Acesso',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -299,6 +306,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
 
                     return DropdownButtonFormField<String>(
                       value: _setorSelecionado,
+                      dropdownColor: theme.cardColor.withOpacity(1.0),
                       decoration: InputDecoration(
                         labelText: 'Setor',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -341,6 +349,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
 
                   return DropdownButtonFormField<String>(
                     value: _jornadaSelecionada,
+                    dropdownColor: theme.cardColor.withOpacity(1.0),
                     decoration: InputDecoration(
                       labelText: 'Jornada de Trabalho',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

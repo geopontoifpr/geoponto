@@ -34,7 +34,7 @@ class UserHeader extends StatelessWidget {
     final setor = (setorNome == null || setorNome!.trim().isEmpty)
         ? 'Setor não informado'
         : setorNome!;
-    return '$_perfil do setor - $setor';
+    return '$_perfil do setor:\n$setor';
   }
 
   @override
@@ -83,7 +83,7 @@ class UserHeader extends StatelessWidget {
                     fontSize: 12.5,
                     color: cs.onSurfaceVariant,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
