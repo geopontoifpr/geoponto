@@ -42,8 +42,11 @@ class _OcorrenciaDoUsuarioScreenState extends State<OcorrenciaDoUsuarioScreen> {
     super.dispose();
   }
 
-  Future<void> _carregar() =>
-      _controller.carregarDoMes(widget.colaborador.id, _mes);
+  Future<void> _carregar() => _controller.carregarDoMes(
+        widget.colaborador.id,
+        _mes,
+        usuarioLogado: widget.gestorLogado,
+      );
 
   String _fmtData(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';

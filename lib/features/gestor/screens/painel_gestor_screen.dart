@@ -14,7 +14,7 @@ class PainelGestorScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: CustomAppBar(
-        usuario: widget.usuario,
+        usuario: usuario,
       ),      
     );
   }

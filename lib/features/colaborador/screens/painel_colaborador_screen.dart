@@ -13,6 +13,13 @@ class PainelColaboradorScreen extends StatefulWidget {
     required this.usuario,
   });
 
+@override
+  State<PainelColaboradorScreen> createState() =>
+      _PainelColaboradorScreenState();
+}
+
+class _PainelColaboradorScreenState
+    extends State<PainelColaboradorScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

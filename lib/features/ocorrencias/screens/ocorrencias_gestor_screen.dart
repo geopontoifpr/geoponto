@@ -1,110 +1,177 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/themes/app_themes.dart';
-import '../../../core/utils/snackbar_util.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/ocorrencia_controller.dart';
 import '../models/ocorrencia_model.dart';
+import '../widgets/ocorrencia_card.dart';
+import '../widgets/pessoa_pendencia_tile.dart';
 
 class OcorrenciasGestorScreen extends StatefulWidget {
-  final UsuarioModel gestor;
+  final UsuarioModel usuarioLogado;
   final OcorrenciaController? controller;
 
   const OcorrenciasGestorScreen({
     super.key,
-    required this.gestor,
+    required this.usuarioLogado,
     this.controller,
   });
 
   @override
-  State<OcorrenciasGestorScreen> createState() => _OcorrenciasGestorScreenState();
+  State<OcorrenciasGestorScreen> createState() =>
+      _OcorrenciasGestorScreenState();
 }
 
 class _OcorrenciasGestorScreenState extends State<OcorrenciasGestorScreen> {
   late final OcorrenciaController _controller;
   late final bool _possuiControllerExterno;
+  bool _mostrarPendentes = true;
 
   @override
   void initState() {
     super.initState();
     _possuiControllerExterno = widget.controller != null;
     _controller = widget.controller ?? OcorrenciaController();
-    _controller.carregarOcorrenciasGestor(widget.gestor.id);
+    _controller.carregarPessoasComPendencias(widget.usuarioLogado);
   }
 
   @override
   void dispose() {
-    if (!_possuiControllerExterno) {
-      _controller.dispose();
-    }
+    if (!_possuiControllerExterno) _controller.dispose();
     super.dispose();
   }
 
-  String _formatarData(DateTime d) {
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  String _formatarData(DateTime data) =>
+      '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
+
+  String get _tituloPessoas =>
+      widget.usuarioLogado.tipoUsuario == TipoUsuario.administrador
+          ? 'Gestores com ocorrências neste mês'
+          : 'Colaboradores com ocorrências neste mês';
+
+  String get _tituloOcorrencias =>
+      widget.usuarioLogado.tipoUsuario == TipoUsuario.administrador
+          ? 'Ocorrências do gestor'
+          : 'Ocorrências do colaborador';
+
+  Future<void> _abrirPessoa(UsuarioModel pessoa) async {
+    setState(() => _mostrarPendentes = true);
+    await _controller.selecionarPessoa(
+      usuarioLogado: widget.usuarioLogado,
+      pessoa: pessoa,
+    );
   }
 
-  Future<void> _confirmarAvaliacao({
-    required OcorrenciaModel ocorrencia,
-    required bool aprovar,
-    required String observacaoGestor,
-  }) async {
-    final acaoTexto = aprovar ? 'aceitar' : 'recusar';
-
+  Future<void> _avaliarOcorrencia(
+    OcorrenciaModel ocorrencia,
+    UsuarioModel pessoa,
+    bool aprovar,
+  ) async {
+    final observacaoController = TextEditingController();
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(aprovar ? 'Aceitar Ocorrência?' : 'Recusar Ocorrência?'),
-        content: Text(
-          'Tem certeza que deseja $acaoTexto esta ocorrência'
-          '${aprovar && ocorrencia.minutosPropostos > 0 ? ' e abonar ${ocorrencia.minutosPropostos} minutos' : ''}?',
+      builder: (dialogContext) => AlertDialog(
+        title: Text(aprovar ? 'Aprovar ocorrência' : 'Recusar ocorrência'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(aprovar
+                ? 'Confirmar abono de ${ocorrencia.minutosPropostos} minutos?'
+                : 'Confirma a recusa desta ocorrência?'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: observacaoController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Observação (opcional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: aprovar ? AppColors.success : AppColors.error,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(aprovar ? 'Sim, Aceitar' : 'Sim, Recusar'),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(aprovar ? 'Aprovar' : 'Recusar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true && mounted) {
+      final sucesso = await _controller.avaliarOcorrencia(
+        ocorrencia: ocorrencia,
+        aprovar: aprovar,
+        usuarioLogado: widget.usuarioLogado,
+        pessoaSelecionada: pessoa,
+        observacaoGestor: observacaoController.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(sucesso
+              ? (aprovar ? 'Ocorrência aprovada.' : 'Ocorrência recusada.')
+              : _controller.erroMensagem ?? 'Não foi possível avaliar a ocorrência.'),
+        ),
+      );
+    }
+    observacaoController.dispose();
+  }
+
+  Future<void> _reabrirOcorrencia(
+    OcorrenciaModel ocorrencia,
+    UsuarioModel pessoa,
+  ) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Tornar ocorrência pendente?'),
+        content: const Text(
+          'A avaliação será desfeita. Os minutos abonados deixarão de contar no extrato até que a ocorrência seja avaliada novamente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Tornar pendente'),
           ),
         ],
       ),
     );
 
     if (confirmar != true || !mounted) return;
-
-    final sucesso = await _controller.avaliarOcorrencia(
+    final sucesso = await _controller.reabrirOcorrencia(
       ocorrencia: ocorrencia,
-      aprovar: aprovar,
-      observacaoGestor: observacaoGestor,
-      gestorId: widget.gestor.id,
+      usuarioLogado: widget.usuarioLogado,
+      pessoaSelecionada: pessoa,
     );
-
     if (!mounted) return;
+    if (sucesso) setState(() => _mostrarPendentes = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(sucesso
+            ? 'Ocorrência voltou para pendente.'
+            : _controller.erroMensagem ?? 'Não foi possível reabrir a ocorrência.'),
+      ),
+    );
+  }
 
-    if (sucesso) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            aprovar
-                ? 'Ocorrência aprovada com sucesso!'
-                : 'Ocorrência recusada.',
+  Widget _mensagemVazia(String mensagem, Color cor) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            mensagem,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: cor, fontSize: 15),
           ),
-          backgroundColor: aprovar ? AppColors.success : AppColors.warning,
         ),
       );
-    } else {
-      SnackbarUtil.showError(
-        context,
-        _controller.erroMensagem ?? 'Erro ao avaliar ocorrência.',
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,282 +181,189 @@ class _OcorrenciasGestorScreenState extends State<OcorrenciasGestorScreen> {
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
-        if (_controller.carregando) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (_controller.ocorrenciasGestor.isEmpty) {
-          return Center(
-            child: Text(
-              'Nenhuma ocorrência enviada pela equipe.',
-              style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 16),
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () => _controller.carregarOcorrenciasGestor(widget.gestor.id),
-          child: ListView.separated(
-            padding: const EdgeInsets.all(20),
-            itemCount: _controller.ocorrenciasGestor.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              final oc = _controller.ocorrenciasGestor[index];
-              return _OcorrenciaGestorCard(
-                ocorrencia: oc,
-                dataFormatada: _formatarData(oc.dataInicio),
-                onAvaliar: (aprovar, obs) => _confirmarAvaliacao(
-                  ocorrencia: oc,
-                  aprovar: aprovar,
-                  observacaoGestor: obs,
+        final pessoa = _controller.pessoaSelecionada;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (pessoa == null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                child: Text(
+                  _tituloPessoas,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _OcorrenciaGestorCard extends StatefulWidget {
-  final OcorrenciaModel ocorrencia;
-  final String dataFormatada;
-  final void Function(bool aprovar, String observacao) onAvaliar;
-
-  const _OcorrenciaGestorCard({
-    required this.ocorrencia,
-    required this.dataFormatada,
-    required this.onAvaliar,
-  });
-
-  @override
-  State<_OcorrenciaGestorCard> createState() => _OcorrenciaGestorCardState();
-}
-
-class _OcorrenciaGestorCardState extends State<_OcorrenciaGestorCard> {
-  late final TextEditingController _obsGestorController;
-
-  @override
-  void initState() {
-    super.initState();
-    _obsGestorController = TextEditingController(
-      text: widget.ocorrencia.observacaoGestor ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _obsGestorController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final oc = widget.ocorrencia;
-
-    final Color badgeBg;
-    final Color badgeText;
-    final String labelStatus;
-
-    if (oc.aprovada) {
-      badgeBg = const Color(0xFFE8F5E9);
-      badgeText = const Color(0xFF2E7D32);
-      labelStatus = 'Aprovada';
-    } else if (oc.isRecusada) {
-      badgeBg = const Color(0xFFFFEBEE);
-      badgeText = const Color(0xFFC62828);
-      labelStatus = 'Recusada';
-    } else {
-      badgeBg = const Color(0xFFFFF3E0);
-      badgeText = const Color(0xFFD97757);
-      labelStatus = 'Pendente';
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [AppThemes.cardShadow(context)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 20, 8),
+                child: Row(
                   children: [
-                    Text(
-                      widget.dataFormatada,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: colorScheme.onSurface,
+                    IconButton(
+                      tooltip: 'Voltar para a lista',
+                      onPressed: _controller.voltarParaPessoas,
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pessoa.nome,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          Text(
+                            _tituloOcorrencias,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      oc.nomeUsuario != null
-                          ? '${oc.nomeUsuario} • ${oc.tipoOcorrencia.titulo}'
-                          : oc.tipoOcorrencia.titulo,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    if (oc.minutosPropostos > 0) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        'Abono solicitado: ${oc.minutosPropostos} min (${oc.horarioProposto ?? ''})',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: theme.primaryColor,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  labelStatus,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: badgeText,
+            if (_controller.carregando)
+              const Expanded(child: Center(child: CircularProgressIndicator()))
+            else if (_controller.erroMensagem != null)
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _controller.erroMensagem!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: colorScheme.error, height: 1.4),
+                        ),
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed: pessoa == null
+                              ? () => _controller.carregarPessoasComPendencias(
+                                    widget.usuarioLogado,
+                                  )
+                              : () => _controller.selecionarPessoa(
+                                    usuarioLogado: widget.usuarioLogado,
+                                    pessoa: pessoa!,
+                                  ),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Tentar novamente'),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+              )
+            else if (pessoa == null)
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => _controller.carregarPessoasComPendencias(
+                    widget.usuarioLogado,
+                  ),
+                  child: _controller.pessoasComPendencias.isEmpty
+                      ? ListView(
+                          children: [
+                            SizedBox(
+                              height: 280,
+                              child: _mensagemVazia(
+                                'Nenhuma pessoa possui ocorrências neste mês.',
+                                colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                          itemCount: _controller.pessoasComPendencias.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final pessoaPendencia =
+                                _controller.pessoasComPendencias[index];
+                            return PessoaPendenciaTile(
+                              pessoa: pessoaPendencia,
+                              onTap: () => _abrirPessoa(pessoaPendencia),
+                            );
+                          },
+                        ),
+                ),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Pendentes'),
+                      selected: _mostrarPendentes,
+                      onSelected: (selecionado) {
+                        if (selecionado) setState(() => _mostrarPendentes = true);
+                      },
+                    ),
+                    ChoiceChip(
+                      label: const Text('Respondidas'),
+                      selected: !_mostrarPendentes,
+                      onSelected: (selecionado) {
+                        if (selecionado) setState(() => _mostrarPendentes = false);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    final lista = _controller.ocorrenciasDaPessoa
+                        .where((ocorrencia) => _mostrarPendentes
+                            ? ocorrencia.isPendente
+                            : ocorrencia.foiAvaliada)
+                        .toList();
+                    if (lista.isEmpty) {
+                      return _mensagemVazia(
+                        _mostrarPendentes
+                            ? 'Esta pessoa não possui ocorrências pendentes neste mês.'
+                            : 'Esta pessoa não possui ocorrências respondidas neste mês.',
+                        colorScheme.onSurfaceVariant,
+                      );
+                    }
+                    return RefreshIndicator(
+                      onRefresh: () => _controller.selecionarPessoa(
+                        usuarioLogado: widget.usuarioLogado,
+                        pessoa: pessoa!,
+                      ),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                        itemCount: lista.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) => OcorrenciaCard(
+                          ocorrencia: lista[index],
+                          dataFormatada: _formatarData(lista[index].dataInicio),
+                          onAvaliar: (ocorrencia, aprovar) =>
+                              _avaliarOcorrencia(ocorrencia, pessoa!, aprovar),
+                          onReabrir: (ocorrencia) =>
+                              _reabrirOcorrencia(ocorrencia, pessoa!),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-
-          // Quadro de Observação do Colaborador (igual à 4ª imagem)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Observação',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  oc.justificativa,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: colorScheme.onSurface,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Quadro para Observação do Gestor (observacao_gestor)
-          TextField(
-            controller: _obsGestorController,
-            enabled: oc.isPendente,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-            decoration: InputDecoration(
-              labelText: 'Observação do gestor (opcional)',
-              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-              filled: true,
-              fillColor: theme.scaffoldBackgroundColor,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: colorScheme.outline),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: colorScheme.outline),
-              ),
-            ),
-          ),
-
-          if (oc.isPendente) ...[
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          widget.onAvaliar(false, _obsGestorController.text),
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: const Color(0xFFFDE8E8),
-                        foregroundColor: const Color(0xFFE02424),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Recusar',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          widget.onAvaliar(true, _obsGestorController.text),
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: const Color(0xFFE8F5E9),
-                        foregroundColor: const Color(0xFF2E7D32),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Aceitar',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ],
-        ],
-      ),
+        );
+      },
     );
   }
 }

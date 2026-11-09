@@ -35,10 +35,12 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
 
   TipoOcorrenciaEnum? _tipoSelecionado;
   OcorrenciaModel? _ocorrenciaExistente;
+  late DateTime _dataReferencia;
 
   @override
   void initState() {
     super.initState();
+    _dataReferencia = widget.dataSelecionada;
     // Se já houver ocorrência no dia, carrega para edição (1 por dia)
     if (widget.ocorrenciasDoDia.isNotEmpty) {
       _ocorrenciaExistente = widget.ocorrenciasDoDia.first;
@@ -77,11 +79,25 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
     return '${horas}h$minutos';
   }
 
+  Future<void> _selecionarDataReferencia() async {
+    if (_ocorrenciaExistente?.foiAvaliada == true) return;
+    final selecionada = await showDatePicker(
+      context: context,
+      initialDate: _dataReferencia,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: 'Selecione a data da ocorrência',
+    );
+    if (selecionada != null && mounted) {
+      setState(() => _dataReferencia = selecionada);
+    }
+  }
+
   Future<void> _salvarOcorrencia() async {
     final sucesso = await _controller.salvarOcorrencia(
       idEdicao: _ocorrenciaExistente?.id,
       usuarioId: widget.usuario.id,
-      dataReferencia: widget.dataSelecionada,
+      dataReferencia: _dataReferencia,
       tipoSelecionado: _tipoSelecionado,
       justificativa: _justificativaController.text,
       minutosTexto: _minutosController.text,
@@ -280,6 +296,21 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Data da ocorrência',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: jaAvaliada ? null : _selecionarDataReferencia,
+                    icon: const Icon(Icons.calendar_today),
+                    label: Text(_formatarDataSubtitulo(_dataReferencia)),
+                  ),
+                  const SizedBox(height: 18),
                   Text(
                     'Tipo de ocorrência',
                     style: TextStyle(

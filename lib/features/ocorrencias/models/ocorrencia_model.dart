@@ -54,12 +54,8 @@ class OcorrenciaModel {
     this.criadoEm,
   });
 
-  /// Quando criada, aprovada é false e minutosAbonados é null.
-  /// Quando recusada pelo gestor, aprovada continua false e minutosAbonados vira 0.
-  bool get foiAvaliada =>
-      aprovada ||
-      minutosAbonados != null ||
-      (observacaoGestor != null && observacaoGestor!.trim().isNotEmpty);
+  /// Pendentes possuem minutosAbonados nulo. Aprovações e recusas persistidas possuem valor não nulo.
+  bool get foiAvaliada => aprovada || minutosAbonados != null;
 
   bool get isPendente => !foiAvaliada;
   bool get isRecusada => foiAvaliada && !aprovada;

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../features/admin/models/empresa_model.dart';
-import '../../features/admin/services/empresa_service.dart';
+import '../controllers/painel_unificado_controller.dart';
 import '../../features/admin/screens/cadastro_setor_screen.dart';
 import '../../features/admin/screens/painel_empresa_screen.dart';
 import '../../features/colaborador/screens/bater_ponto_screen.dart';
 import '../../features/colaborador/screens/historico_mensal_screen.dart';
-import '../../features/ocorrencias/controllers/ocorrencia_controller.dart';
 import '../../features/ocorrencias/screens/ocorrencias_gestor_screen.dart';
 import '../../features/usuarios/models/usuario_model.dart';
 import '../constants/app_colors.dart';
@@ -43,46 +41,24 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
   final PageController _pageController = PageController();
   int _abaAtual = 0;
 
-  OcorrenciaController? _ocorrenciaGestorController;
-  String? _empresaIdAdmin;
+  late final PainelUnificadoController _controller;
 
   @override
   void initState() {
     super.initState();
-
-    // Se for Gestor, carrega as ocorrências para acender o alerta (!) na navbar
-    if (widget.usuario.tipoUsuario == TipoUsuario.gestor) {
-      _ocorrenciaGestorController = OcorrenciaController()
-        ..addListener(_aoAtualizarNotificacoes)
-        ..carregarOcorrenciasGestor(widget.usuario.id);
-    }
-
-    // Se for Administrador, descobre o ID da empresa para alimentar as abas de Setores e Equipe
-    if (widget.usuario.tipoUsuario == TipoUsuario.administrador) {
-      _carregarEmpresaAdmin();
-    }
+    _controller = PainelUnificadoController(usuario: widget.usuario)
+      ..addListener(_aoAtualizarPainel);
+    _controller.inicializar();
   }
 
-  Future<void> _carregarEmpresaAdmin() async {
-    try {
-      final List<EmpresaModel> empresas =
-          await EmpresaService(usuario: widget.usuario).buscarMinhasEmpresas();
-      if (empresas.isNotEmpty && mounted) {
-        setState(() {
-          _empresaIdAdmin = empresas.first.id;
-        });
-      }
-    } catch (_) {}
-  }
-
-  void _aoAtualizarNotificacoes() {
+  void _aoAtualizarPainel() {
     if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _ocorrenciaGestorController?.removeListener(_aoAtualizarNotificacoes);
-    _ocorrenciaGestorController?.dispose();
+    _controller.removeListener(_aoAtualizarPainel);
+    _controller.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -121,8 +97,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
 
       // 2. GESTOR: Ponto + Histórico + Minha Equipe (clicar abre Extrato/Fechar Mês) + Ocorrências (!)
       case TipoUsuario.gestor:
-        final temPendentes =
-            (_ocorrenciaGestorController?.quantidadePendentes ?? 0) > 0;
+        final temPendentes = _controller.temOcorrenciasPendentes;
         return [
           _AbaItem(
             label: 'PONTO',
@@ -148,12 +123,18 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
               usuarioLogado: widget.usuario,
               mostrarAppBar: false,
             ),
-          ),        
+          ),
+          _AbaItem(
+            label: 'OCORRÊNCIAS',
+            icon: Icons.fact_check_outlined,
+            page: OcorrenciasGestorScreen(usuarioLogado: widget.usuario),
+            mostrarAlerta: temPendentes,
+          ),
         ];
 
       // 3. ADMINISTRADOR (DONO): Painel (5ª imagem) + Setores + Equipe
       case TipoUsuario.administrador:
-        final empId = _empresaIdAdmin ?? widget.usuario.empresaId ?? '';
+        final empId = _controller.empresaIdAdmin ?? widget.usuario.empresaId ?? ''; 
         return [
           _AbaItem(
             label: 'PAINEL',
@@ -190,6 +171,11 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
                     mostrarAppBar: false,
                   ),
           ),
+          _AbaItem(
+            label: 'OCORRÊNCIAS',
+            icon: Icons.fact_check_outlined,
+            page: OcorrenciasGestorScreen(usuarioLogado: widget.usuario),
+          ),
         ];
     }
   }
@@ -209,10 +195,6 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
         physics: const BouncingScrollPhysics(),
         onPageChanged: (index) {
           setState(() => _abaAtual = index);
-          if (widget.usuario.tipoUsuario == TipoUsuario.administrador &&
-              _empresaIdAdmin == null) {
-            _carregarEmpresaAdmin();
-          }
         },
         children: abas.map((a) => a.page).toList(),
       ),
