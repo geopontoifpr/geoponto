@@ -1,53 +1,96 @@
 import 'package:flutter/material.dart';
+import '../../features/usuarios/models/usuario_model.dart';
+import 'circle_avatar.dart';
 
 class UserHeader extends StatelessWidget {
   final String nome;
+  final String? setorNome;
+  final TipoUsuario tipoUsuario;
 
   const UserHeader({
     super.key,
     required this.nome,
+    this.setorNome,
+    required this.tipoUsuario,
   });
 
   String get _primeiroNome => nome.trim().split(' ').first;
+  String get _inicial =>
+      _primeiroNome.isNotEmpty ? _primeiroNome[0].toUpperCase() : 'U';
+
+  String get _perfil {
+    switch (tipoUsuario) {
+      case TipoUsuario.administrador:
+        return 'Administrador(a)';
+      case TipoUsuario.gestor:
+        return 'Gestor(a)';
+      default:
+        return 'Funcionário(a)';
+    }
+  }
+
+  String get _complemento {
+    if (tipoUsuario == TipoUsuario.administrador) return _perfil;
+    final setor = (setorNome == null || setorNome!.trim().isEmpty)
+        ? 'Setor não informado'
+        : setorNome!;
+    return '$_perfil do setor:\n$setor';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'GEOPONTO',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-            color: isDark ? Colors.blueGrey[200] : const Color(0xFF94A3B8),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Olá, $_primeiroNome',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF1E293B),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Row(
+        children: [
+          AvatarComLuzCirculante(
+            corLuz: cs.primary, // Altere para _ciano ou outra cor da sua paleta se preferir
+            avatar: CircleAvatar(
+              radius: 20,
+              backgroundColor: cs.primary.withOpacity(0.12),
+              child: Text(
+                _inicial,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
               ),
             ),
-            const SizedBox(width: 4),
-            const Text(
-              '👋',
-              style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Olá, $_primeiroNome 👋',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _complemento,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

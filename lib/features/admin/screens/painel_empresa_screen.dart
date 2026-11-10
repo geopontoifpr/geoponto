@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
-import '../../usuarios/models/usuario_model.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_app_bar.dart';
-import '../../../core/utils/snackbar_util.dart'; // <-- Import do novo utilitário adicionado
+import '../../../core/screens/equipe_screen.dart';
+import '../../usuarios/models/usuario_model.dart';
 import '../controllers/empresa_controller.dart';
 import 'cadastro_empresa_screen.dart';
 import 'cadastro_setor_screen.dart';
-import 'equipe_screen.dart';
+
 
 class PainelEmpresaScreen extends StatefulWidget {
   final UsuarioModel usuario;
+  final bool mostrarAppBar;
+  final VoidCallback? onIrParaSetores;
+  final VoidCallback? onIrParaEquipe;
 
-  const PainelEmpresaScreen({super.key, required this.usuario});
+  const PainelEmpresaScreen({
+    super.key,
+    required this.usuario,
+    this.mostrarAppBar = true,
+    this.onIrParaSetores,
+    this.onIrParaEquipe,
+  });
 
   @override
   State<PainelEmpresaScreen> createState() => _PainelEmpresaScreenState();
@@ -22,218 +33,210 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
   @override
   void initState() {
     super.initState();
-
-    _controller = EmpresaController(
-      usuario: widget.usuario,
-    );
-
+    _controller = EmpresaController(usuario: widget.usuario);
     _carregarPainel();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarPainel() async {
     await _controller.carregarDadosDoPainel();
   }
 
+  Future<void> _abrirDadosEmpresa() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CadastroEmpresaScreen(
+          empresa: _controller.empresaAtual,
+          usuario: widget.usuario,
+        ),
+      ),
+    );
+    _carregarPainel();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        nomeUsuario: widget.usuario.nome,
-        onPerfilPressed: () {
-          // Futuramente abrirá a edição de perfil
-        },
-      ),
-      body: ListenableBuilder(
-        listenable: _controller,
-        builder: (context, _) {
-          
-          if (_controller.isLoading) {
-            return Center(child: CircularProgressIndicator(color: theme.primaryColor));
-          }
-
-          final empresa = _controller.empresaAtual;
-          final temEmpresa = empresa != null;
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // --- Card Principal da Empresa ---
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24.0),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Painel do Administrador',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: isDark ? Colors.blueGrey[300] : Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      Text(
-                        temEmpresa ? (empresa.nome ?? 'Sem nome') : 'Nenhuma empresa vinculada',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      
-                      Text(
-                        temEmpresa ? 'CNPJ: ${empresa.cnpj}' : 'Cadastre sua empresa no botão abaixo',
-                        style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-                const Text(
-                  'Acesso Rápido',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-
-                // --- Grid de Funcionalidades ---
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  children: [
-                    _buildActionCard(
-                      context: context,
-                      title: temEmpresa ? 'Dados da\nEmpresa' : 'Cadastrar\nEmpresa',
-                      icon: Icons.business_outlined,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CadastroEmpresaScreen(empresa: empresa, usuario: widget.usuario),
-                          ),
-                        );
-                        _carregarPainel();
-                      },
-                    ),
-                    _buildActionCard(
-                      context: context,
-                      title: 'Gerenciar\nSetores',
-                      icon: Icons.account_tree_outlined,
-                      onTap: () async { 
-                        if (!temEmpresa) {
-                          // <-- UTILIZAÇÃO DO SNACKBAR_UTIL
-                          SnackbarUtil.showError(context, 'Por favor, cadastre a empresa primeiro.');
-                          return;                        
-                        } else {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CadastroSetorScreen(empresaId: empresa.id), 
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                   _buildActionCard(
-                      context: context,
-                      title: 'Gerenciar\nEquipe',
-                      icon: Icons.people_alt_outlined, 
-                      onTap: () async { 
-                        if (!temEmpresa) {
-                          // <-- UTILIZAÇÃO DO SNACKBAR_UTIL
-                          SnackbarUtil.showError(context, 'Por favor, cadastre a empresa primeiro.');
-                          return;                        
-                        } else {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => EquipeScreen(empresaId: empresa.id, usuarioLogado: widget.usuario), 
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
+    final conteudo = ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) {
+        if (_controller.isLoading) {
+          return Center(
+            child: CircularProgressIndicator(color: theme.primaryColor),
           );
         }
-      ),
-    );
-  }
 
-  Widget _buildActionCard({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+        final empresa = _controller.empresaAtual;
+        final temEmpresa = empresa != null;
 
-    return Material(
-      color: theme.cardColor,
-      borderRadius: BorderRadius.circular(20),
-      elevation: isDark ? 2 : 0,
-      shadowColor: Colors.black.withOpacity(0.2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
-            ),
-          ),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 32, color: theme.primaryColor),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+              // Card Principal Clicável da Empresa (5ª imagem do protótipo)
+              
+              Material(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(28),
+                child: InkWell(
+                  onTap: _abrirDadosEmpresa,
+                  borderRadius: BorderRadius.circular(28),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: -40,
+                          right: -40,
+                          child: Container(
+                            width: 150,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.progressGreen.withOpacity(0.12),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(26.0),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [AppThemes.cardShadow(context)],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                temEmpresa
+                                    ? (empresa.nome ?? 'Sem nome')
+                                    : 'Cadastrar Empresa',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                temEmpresa
+                                    ? 'CNPJ: ${empresa.cnpj}'
+                                    : 'Toque neste cartão para configurar os dados da empresa',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              if (temEmpresa) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      size: 16,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Raio permitido: ${empresa.raioPermitido ?? 50}m',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 28),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${_controller.totalGestores}',
+                                          style: const TextStyle(
+                                            fontSize: 34,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF4CAF50),
+                                            height: 1.0,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'GESTORES',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 1.0,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${_controller.totalColaboradores}',
+                                          style: const TextStyle(
+                                            fontSize: 34,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF64A6BD),
+                                            height: 1.0,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'COLABORADORES',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 1.0,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+        );
+      },
+    );
+
+    if (!widget.mostrarAppBar) {
+      return conteudo;
+    }
+
+    return Scaffold(
+      appBar: CustomAppBar(
+        usuario: widget.usuario,
+        onPerfilPressed: () {},
       ),
+      body: conteudo,
     );
   }
 }

@@ -3,24 +3,33 @@ import '../services/supabase_service.dart';
 import '../themes/theme_controller.dart';
 import 'user_header.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/usuarios/models/usuario_model.dart'; 
+import '../../features/auth/controllers/login_controller.dart';
+import '../../features/usuarios/screens/perfil_usuario_screen.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String nomeUsuario;
+  final UsuarioModel usuario; // Recebe o objeto completo
   final VoidCallback? onPerfilPressed;
+  final void Function(String)? onNomeAlterado; // 1. Novo callback opcional
 
   const CustomAppBar({
     super.key,
-    required this.nomeUsuario,
+    required this.usuario,
     this.onPerfilPressed,
+    this.onNomeAlterado, // 2. Inicializa o callback
   });
 
+  // Altura aumentada para acomodar o Card com Avatar
   @override
-  Size get preferredSize => const Size.fromHeight(60.0);
+  Size get preferredSize => const Size.fromHeight(110.0);
 
   void _confirmarLogout(BuildContext context) {
+    final loginController = LoginController();
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
         title: const Text('Encerrar Sessão'),
         content: const Text('Deseja realmente sair da aplicação?'),
         actions: [
@@ -31,7 +40,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await SupabaseService.instance.auth.signOut();
+              await loginController.sair();
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -53,9 +62,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       automaticallyImplyLeading: false,
-      title: UserHeader(nome: nomeUsuario),
+      toolbarHeight: 110.0, // Reflete a nova altura
+      title: UserHeader(
+        nome: usuario.nome,
+        tipoUsuario: usuario.tipoUsuario,
+        setorNome: usuario.setorNome,
+      ),
       actions: [
-        // Botão Alternar Tema (Claro / Escuro)
         ListenableBuilder(
           listenable: themeController,
           builder: (context, _) {
@@ -70,18 +83,30 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             );
           },
         ),
-        // Botão Perfil
-        IconButton(
-          tooltip: 'Meu Perfil',
-          icon: const Icon(Icons.person_outline),
-          onPressed: onPerfilPressed ?? () {},
-        ),
-        // Botão Logout
-        IconButton(
-          tooltip: 'Sair',
-          icon: const Icon(Icons.logout),
-          onPressed: () => _confirmarLogout(context),
-        ),
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () async {
+              // Aguarda a tela de perfil abrir e ser fechada
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PerfilUsuarioScreen(usuario: usuario),
+                ),
+              );
+
+              // Ao retornar para cá (seja pela seta ou gesto do celular), 
+              // a variável 'usuario.nome' já foi atualizada na memória pelo Controller.
+              // Basta acionar o callback incondicionalmente para a tela principal dar setState.
+              if (onPerfilPressed != null) {
+                onPerfilPressed!();
+              }
+            },
+          ),
+          IconButton(
+            tooltip: 'Sair',
+            icon: const Icon(Icons.logout),
+            onPressed: () => _confirmarLogout(context),
+          ),
         const SizedBox(width: 8),
       ],
     );
