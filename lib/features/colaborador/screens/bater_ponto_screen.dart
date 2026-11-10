@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-
 import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_app_bar.dart';
+import '../../../core/widgets/comprovante_dialog.dart';
+import '../../../core/utils/snackbar_util.dart';
 import '../../usuarios/models/usuario_model.dart';
+import '../../admin/controllers/empresa_controller.dart';
 import '../controllers/ponto_controller.dart';
 import '../models/registro_ponto_model.dart';
+
 
 class BaterPontoScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -25,6 +28,7 @@ class BaterPontoScreen extends StatefulWidget {
 
 class _BaterPontoScreenState extends State<BaterPontoScreen> {
   late final PontoController _controller;
+  late final EmpresaController _empresaController;
   Timer? _relogioTimer;
   DateTime _agora = DateTime.now();
 
@@ -33,6 +37,9 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
     super.initState();
     _controller = PontoController(usuarioId: widget.usuario.id);
     _controller.inicializar(widget.usuario.nome);
+    _empresaController = EmpresaController(usuario: widget.usuario);  
+    _empresaController.carregarDadosDoPainel();
+
     _relogioTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() => _agora = DateTime.now());
@@ -63,24 +70,32 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
     ];
     return '${diasSemana[dt.weekday - 1]}, ${dt.day} de ${mesesAbrev[dt.month - 1]}';
   }
-
   Future<void> _baterPonto() async {
     final sucesso = await _controller.baterPonto();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          sucesso
-              ? 'Ponto registrado com sucesso!'
-              : _controller.erro ??
-                  _controller.avisoLocalizacao ??
-                  'Não foi possível registrar o ponto.',
+
+    if (sucesso) {
+      final ultimoRegistro = _controller.registros.first; 
+      
+      // Chamando o widget isolado
+      showDialog(
+        context: context,
+        barrierDismissible: false, // Força clicar no fechar
+        builder: (context) => ComprovanteDialog(
+          usuario: widget.usuario,
+          empresa: _empresaController.empresaAtual!,
+          registro: ultimoRegistro,
         ),
-        backgroundColor: sucesso ? AppColors.success : AppColors.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+      );
+      
+    } else {
+     SnackbarUtil.showError(
+          context,
+          _controller.erro ?? _controller.avisoLocalizacao ?? 'Não foi possível registrar o ponto.',
+        );
+     
+    }
+  } 
 
   Future<void> _abrirConfiguracoesLocalizacao() async {
     final aberto = await Geolocator.openLocationSettings();

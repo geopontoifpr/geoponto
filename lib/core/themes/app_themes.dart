@@ -31,23 +31,33 @@ class AppThemes {
     ),
     useMaterial3: true,
   );
-
+ 
   // Tema Escuro
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     primaryColor: AppColors.primary,
-    scaffoldBackgroundColor: AppColors.backgroundDark,
+    
+    // 1. FUNDOS DEVEM SER TRANSPARENTES
+    scaffoldBackgroundColor: Colors.transparent,
+    
     cardColor: AppColors.cardDark,
     dividerColor: AppColors.borderDark,
     shadowColor: Colors.black.withOpacity(0.3),
+    
+    // 2. A APP BAR TAMBÉM DEVE SER TRANSPARENTE
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.cardDark,
+      backgroundColor: Colors.transparent, // Mudou de AppColors.cardDark
       foregroundColor: AppColors.textPrimaryDark,
-      elevation: 0.5,
+      elevation: 0.0, // Remover a sombra para não desenhar uma linha cortando o fundo
+      scrolledUnderElevation: 0.0, // Impede que o Material 3 pinte o fundo ao dar scroll
     ),
+    
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primary,
-      surface: AppColors.cardDark,
+      
+      // 3. A SUPERFÍCIE TAMBÉM DEVE SER TRANSPARENTE (Material 3 usa surface frequentemente)
+      surface: Colors.transparent, // Mudou de AppColors.cardDark
+      
       onSurface: AppColors.textPrimaryDark,
       onSurfaceVariant: AppColors.textSecondaryDark,
       outline: AppColors.borderDark,

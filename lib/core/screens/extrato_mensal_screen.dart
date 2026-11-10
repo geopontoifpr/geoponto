@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../themes/app_themes.dart';
 import '../widgets/custom_app_bar.dart';
 import '../utils/feriados_util.dart';
+import '../utils/snackbar_util.dart';
 import '../widgets/botao_imprimirpdf.dart';
 import '../widgets/lista_extrato_diario.dart';
 import '../../features/colaborador/controllers/frequencia_controller.dart';
@@ -79,17 +80,9 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
       final sucesso = await _controller.fecharFolhaMes();
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            sucesso
-                ? 'Folha de ${_controller.nomeMesAtual} fechada com sucesso!'
-                : (_controller.erroMensagem ?? 'Erro ao salvar fechamento.'),
-          ),
-          backgroundColor: sucesso ? AppColors.success : AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    SnackbarUtil.showSuccess(context, sucesso
+          ? 'Folha de ${_controller.nomeMesAtual} fechada com sucesso!'
+          : (_controller.erroMensagem ?? 'Erro ao salvar fechamento.'));    
     }
   }
 

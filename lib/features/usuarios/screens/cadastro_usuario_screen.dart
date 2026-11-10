@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/usuario_model.dart';
 import '../controllers/usuario_controller.dart';
 import '../../admin/controllers/setor_controller.dart';
 import '../../../core/utils/snackbar_util.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../jornadas/controllers/jornada_controller.dart';
@@ -27,6 +29,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
+  final _cpfController = TextEditingController();
   
   // Controllers
   final _usuarioController = UsuarioController();
@@ -36,9 +39,10 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   String? _tipoSelecionado;
   String? _setorSelecionado;
   String? _jornadaSelecionada;  
-
+  bool _dadosAlterados = false;
   bool get ehEdicao => widget.membroEmEdicao != null;
   bool get ehAdmin => widget.usuarioLogado.tipoUsuario == TipoUsuario.administrador;
+
 
   @override
   void initState() {
@@ -47,6 +51,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
     if (ehEdicao) {
       _nomeController.text = widget.membroEmEdicao!.nome;
       _emailController.text = widget.membroEmEdicao!.email;
+      _cpfController.text = widget.membroEmEdicao!.cpf;
       _tipoSelecionado = widget.membroEmEdicao!.tipoUsuario.name.toUpperCase();
       _setorSelecionado = widget.membroEmEdicao!.setorId;
     }
@@ -73,11 +78,29 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
   void dispose() {
     _nomeController.dispose();
     _emailController.dispose();
+    _cpfController.dispose();
     _usuarioController.dispose();
     _setorController.dispose();
     super.dispose();
   }
 
+  void _verificarAlteracoes() {
+    if (!ehEdicao) return;
+
+    final membro = widget.membroEmEdicao!;
+
+    final alterado =
+        _nomeController.text.trim() != membro.nome.trim() ||
+        _cpfController.text.trim() != membro.cpf.trim() ||
+        _tipoSelecionado != membro.tipoUsuario.name.toUpperCase() ||
+        _setorSelecionado != membro.setorId;
+
+    if (_dadosAlterados != alterado) {
+      setState(() {
+        _dadosAlterados = alterado;
+      });
+    }
+  }
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -96,7 +119,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
       idEdicao: widget.membroEmEdicao?.id,
       empresaId: widget.empresaId,
       usuarioLogado: widget.usuarioLogado,
-      nome: _nomeController.text,
+      nome: _nomeController.text, 
+      cpf: _cpfController.text,
       email: _emailController.text,
       tipoUsuario: tipoAEnviar,
       setorId: setorAEnviar,
@@ -120,20 +144,71 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
         }
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ehEdicao ? 'Dados atualizados com sucesso!' : 'Membro cadastrado com sucesso!\nSenha padrão: 123456'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+          // 1. Define a mensagem
+      final mensagemSucesso = ehEdicao 
+          ? 'Dados atualizados com sucesso!' 
+          : 'Membro cadastrado com sucesso!\nSenha padrão: 123456';
+
+      // 2. Dispara a SnackBar usando o seu Util
+      SnackbarUtil.showSuccess(context, mensagemSucesso);
+
+      // 3. Fecha a tela
       Navigator.pop(context);
+
     } else {
       SnackbarUtil.showError(
         context, 
         _usuarioController.erroMensagem ?? 'Erro ao salvar',
       );
+    }
+  }
+  Future<void> _confirmarDesvinculacao() async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+     builder: (ctx) {
+        // Verifica se é tema escuro ou claro
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        
+        // Define uma cor ABSOLUTAMENTE sólida ignorando qualquer transparência do sistema
+        final corFundo = isDark 
+            ? AppColors.cardDark.withOpacity(1.0) // Força 100% de opacidade
+            : AppColors.cardLight.withOpacity(1.0); // (Ou Colors.white)
+
+        return AlertDialog(
+          title: const Text('Desvincular Aparelho?'),
+          backgroundColor: corFundo, // <--- APLICA A COR SÓLIDA AQUI
+          surfaceTintColor: Colors.transparent, // Remove sobreposição de cor do Material 3
+          content: const Text(
+            'O celular atual deste funcionário será removido. '
+            'Ele precisará vincular o novo aparelho no próximo login.\n\nDeseja continuar?'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Desvincular', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmou == true && mounted) {
+      final sucesso = await _usuarioController.desvincularDispositivo(widget.membroEmEdicao!.id);
+      
+      if (!mounted) return;
+
+      if (sucesso) {
+        final mensagemSucesso = 'Dispositivo desvinculado com sucesso!'; 
+      
+        SnackbarUtil.showSuccess(context, mensagemSucesso);
+        
+      } else {
+        SnackbarUtil.showError(context, _usuarioController.erroMensagem ?? 'Erro ao desvincular dispositivo.');
+      }
     }
   }
 
@@ -156,10 +231,27 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 controller: _nomeController,
                 labelText: 'Nome Completo',
                 prefixIcon: Icons.person,
+                onChanged: (_) => _verificarAlteracoes(),
                 validator: (value) => value == null || value.trim().length < 3 ? 'Informe um nome válido' : null,
               ),
               const SizedBox(height: 16),
-
+              CustomTextField(
+                controller: _cpfController,
+                labelText: 'CPF',
+                prefixIcon: Icons.badge,
+                keyboardType: TextInputType.number, // Abre o teclado numérico
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly, // Bloqueia qualquer caractere que não seja número
+                ],
+                onChanged: (_) => _verificarAlteracoes(),                              
+                validator: (value) {
+                  if (value == null || value.trim().length != 11) {
+                    return 'Informe um CPF válido com 11 números';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               CustomTextField(
                 controller: _emailController,
                 labelText: 'E-mail',
@@ -167,6 +259,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                 enabled: !ehEdicao,
                 validator: (value) => value == null || !value.contains('@') ? 'Informe um e-mail válido' : null,
               ),
+              const SizedBox(height: 16),
               if (ehEdicao) 
                 Padding(
                   padding: const EdgeInsets.only(top: 4, left: 12),
@@ -180,6 +273,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
               if (ehAdmin) ...[
                 DropdownButtonFormField<String>(
                   value: _tipoSelecionado,
+                  dropdownColor: theme.cardColor.withOpacity(1.0),
                   decoration: InputDecoration(
                     labelText: 'Tipo de Acesso',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -191,7 +285,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                     DropdownMenuItem(value: 'GESTOR', child: Text('Gestor (Admin do Setor)')),
                     DropdownMenuItem(value: 'FUNCIONARIO', child: Text('Funcionário')),
                   ],
-                  onChanged: (value) => setState(() => _tipoSelecionado = value),
+                  onChanged: (value) {setState(() {_tipoSelecionado = value; }); _verificarAlteracoes();},
                   validator: (value) => value == null ? 'Selecione o tipo de acesso' : null,
                 ),
                 const SizedBox(height: 16),
@@ -212,6 +306,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
 
                     return DropdownButtonFormField<String>(
                       value: _setorSelecionado,
+                      dropdownColor: theme.cardColor.withOpacity(1.0),
                       decoration: InputDecoration(
                         labelText: 'Setor',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -225,7 +320,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                           child: Text(setor.nome),
                         );
                       }).toList(),
-                      onChanged: (value) => setState(() => _setorSelecionado = value),
+                      onChanged: (value) {setState(() {_setorSelecionado = value; }); _verificarAlteracoes();},
                       validator: (value) => value == null ? 'Selecione um setor' : null,
                     );
                   },
@@ -254,6 +349,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
 
                   return DropdownButtonFormField<String>(
                     value: _jornadaSelecionada,
+                    dropdownColor: theme.cardColor.withOpacity(1.0),
                     decoration: InputDecoration(
                       labelText: 'Jornada de Trabalho',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -274,7 +370,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
               ),
               const SizedBox(height: 32),
 
-              ListenableBuilder(
+             ListenableBuilder(
                 listenable: _usuarioController,
                 builder: (context, _) {
                   if (_usuarioController.isLoading) {
@@ -282,18 +378,139 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                   }
                   
                   final botaoBloqueado = ehAdmin && _setorController.setores.isEmpty;
+                  final temDispositivo = widget.membroEmEdicao?.dispositivoUsuario != null && 
+                                         widget.membroEmEdicao!.dispositivoUsuario!.trim().isNotEmpty;
 
-                  return ElevatedButton(
-                    onPressed: botaoBloqueado ? null : _salvar,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: theme.primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text('Salvar Membro da Equipe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ElevatedButton(
+                        onPressed: botaoBloqueado ? null : _salvar,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: theme.primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Salvar Membro da Equipe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),                      
+                      // Exibe os controles de dispositivo APENAS se for edição
+                      if (ehEdicao) ...[
+                        const SizedBox(height: 24),
+                        
+                        // Banner Interativo de Dispositivo
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _usuarioController.isLoading || !temDispositivo
+                                ? null 
+                                : _confirmarDesvinculacao,
+                            borderRadius: BorderRadius.circular(20),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Stack(
+                                children: [
+                                  // Círculo decorativo de fundo (Design)
+                                  Positioned(
+                                    top: -40,
+                                    right: -40,
+                                    child: Container(
+                                      width: 130,
+                                      height: 130,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: temDispositivo 
+                                            ? Colors.red.withOpacity(0.08)
+                                            : theme.disabledColor.withOpacity(0.08),
+                                      ),
+                                    ),
+                                  ),
+                                  
+                                  // Conteúdo do Banner
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(20.0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: temDispositivo 
+                                            ? Colors.red.withOpacity(0.3) 
+                                            : theme.dividerColor,
+                                        width: 1.5,
+                                      ),
+                                      color: theme.cardColor,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              temDispositivo ? Icons.phonelink_setup : Icons.phonelink_erase,
+                                              size: 26,
+                                              color: temDispositivo ? Colors.red[700] : theme.disabledColor,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                temDispositivo ? 'Aparelho Vinculado' : 'Sem Dispositivo',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: temDispositivo ? Colors.red[700] : theme.disabledColor,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        
+                                        Text(
+                                          temDispositivo 
+                                              ? widget.membroEmEdicao!.dispositivoUsuario!
+                                              : 'Nenhum aparelho celular vinculado a esta conta de usuário no momento.',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: temDispositivo ? FontWeight.w600 : FontWeight.normal,
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        
+                                        if (temDispositivo) ...[
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.touch_app, 
+                                                size: 16, 
+                                                color: Colors.red[400]
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  'Toque neste banner para descadastrar o dispositivo.',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.red[400],
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   );
                 },
               ),

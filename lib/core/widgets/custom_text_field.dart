@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String labelText;
   final IconData prefixIcon;
   final bool obscureText;
+  final ValueChanged<String>? onChanged;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
   
   // Novos parâmetros adicionados para suportar formulários!
   final bool enabled;
@@ -18,6 +23,9 @@ class CustomTextField extends StatelessWidget {
     this.obscureText = false,
     this.enabled = true,
     this.validator,
+    this.onChanged,
+    this.keyboardType,
+    this.inputFormatters,
   });
 
   @override
@@ -30,6 +38,9 @@ class CustomTextField extends StatelessWidget {
       obscureText: obscureText,
       enabled: enabled,
       validator: validator,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: Icon(prefixIcon, color: enabled ? theme.primaryColor : theme.disabledColor),

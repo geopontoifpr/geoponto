@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ocorrencias/models/ocorrencia_model.dart';
 import '../../ocorrencias/repositories/ocorrencia_repository.dart';
 import '../models/registro_ponto_model.dart';
@@ -46,6 +47,38 @@ class FrequenciaService {
 
   Future<void> inserirFechamentoMensal(FechamentoMensalModel fechamento) =>
       _frequenciaRepo.inserirFechamentoMensal(fechamento);
+
+  /// Valida as regras de negócio do fechamento mensal e, se todas passarem,
+  /// insere o fechamento. Lança [Exception] em caso de violação.
+  Future<void> validarEInserirFechamento(
+    FechamentoMensalModel fechamento,
+    bool folhaJaFechada,
+  ) async {
+    final agora = DateTime.now();
+    final inicioMesAtual = DateTime(agora.year, agora.month, 1);
+    final inicioMesFechamento = DateTime(
+      fechamento.mesReferencia.year,
+      fechamento.mesReferencia.month,
+      1,
+    );
+
+    if (!inicioMesFechamento.isBefore(inicioMesAtual)) {
+      throw Exception(
+        'Apenas meses anteriores ao mês atual podem ser fechados.',
+      );
+    }
+
+    if (folhaJaFechada) {
+      throw Exception('Esta folha mensal já se encontra fechada.');
+    }
+
+    final idUsuarioLogado = Supabase.instance.client.auth.currentUser?.id;
+    if (idUsuarioLogado == fechamento.usuarioId) {
+      throw Exception('O gestor não pode fechar a própria folha.');
+    }
+
+    await _frequenciaRepo.inserirFechamentoMensal(fechamento);
+  }
 
   /// Agrupa por dia local da batida e garante ordem cronológica (Requisitos 2 e 6)
   Future<Map<int, List<RegistroPontoModel>>> obterPontosAgrupadosPorDia({

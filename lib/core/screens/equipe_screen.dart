@@ -4,6 +4,7 @@ import '../utils/snackbar_util.dart';
 import '../widgets/usuario_list.dart';
 import 'extrato_mensal_screen.dart';
 import '../../features/ocorrencias/screens/ocorrencia_do_usuario_screen.dart';
+import '../../features/ocorrencias/screens/ocorrencias_gestor_screen.dart';
 import '../../features/usuarios/controllers/usuario_controller.dart';
 import '../../features/usuarios/models/usuario_model.dart';
 import '../../features/usuarios/screens/cadastro_usuario_screen.dart';
@@ -33,17 +34,25 @@ class _EquipeScreenState extends State<EquipeScreen>
 
   ModoEquipe get _modo => ModoEquipe.values[_tabController.index];
 
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: ModoEquipe.values.length, vsync: this)
-      ..addListener(() {
-        // reconstrói só quando a troca de aba termina (evita rebuild duplo)
-        if (!_tabController.indexIsChanging) setState(() {});
+
+    _tabController = TabController(
+      length: ModoEquipe.values.length,
+      vsync: this,
+    )..addListener(() {
+        if (!_tabController.indexIsChanging) {
+          setState(() {});
+        }
       });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _recarregar());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recarregar();
+    });
   }
+
 
   @override
   void dispose() {
@@ -56,6 +65,9 @@ class _EquipeScreenState extends State<EquipeScreen>
     if (widget.empresaId.isNotEmpty) {
       _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId);
     }
+  }
+  void _aoAtualizarPainel() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _irParaCadastro({UsuarioModel? membroEmEdicao}) async {
@@ -84,17 +96,19 @@ class _EquipeScreenState extends State<EquipeScreen>
     );
   }
 
+
   void _abrirOcorrencias(UsuarioModel membro) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => OcorrenciaDoUsuarioScreen(
-          colaborador: membro,
-          gestorLogado: widget.usuarioLogado,
+        builder: (_) => OcorrenciasGestorScreen(
+          usuarioLogado: widget.usuarioLogado,
+          pessoaInicial: membro,
         ),
       ),
     );
   }
+
 
   void _aoTocarNoMembro(UsuarioModel membro) {
     switch (_modo) {
@@ -130,6 +144,7 @@ class _EquipeScreenState extends State<EquipeScreen>
     final modoCadastro = _modo == ModoEquipe.cadastrar;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,   // <- adicione
       appBar: widget.mostrarAppBar
           ? AppBar(title: const Text('Gestão de Equipe'))
           : null,

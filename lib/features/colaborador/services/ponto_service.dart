@@ -65,7 +65,7 @@ class PontoService {
       throw StateError('Não é permitido registrar ponto para outro usuário.');
     }
 
-    // 🔴 NOVA VERIFICAÇÃO: Checa se a folha do mês atual já está fechada
+    // Checa se a folha do mês atual já está fechada
     final agora = DateTime.now();
     final fechamento = await _frequenciaRepo.buscarFechamentoMensal(
       usuarioId: usuarioId,
@@ -81,6 +81,37 @@ class PontoService {
     if (registros.length >= 4) {
       throw StateError('O limite de 4 registros de ponto por dia foi atingido.');
     }
+
+    // === INÍCIO DAS VALIDAÇÕES DE INTERVALO DE TEMPO ===
+    if (registros.isNotEmpty) {
+      // Pega o horário da última batida de ponto de hoje
+      // Se o seu model usar outro nome em vez de 'dataHora' (ex: criadoEm), altere aqui:
+      final ultimoRegistro = registros.last.dataHoraPonto; 
+      final diferencaTempo = agora.difference(ultimoRegistro);
+
+      // Regra 1: Intervalo Intrajornada (Retorno do almoço)
+      // Se já tem 2 registros (Entrada e Saída Almoço), o próximo é o Retorno (Entrada 2)
+      if (registros.length == 2) {
+        if (diferencaTempo.inMinutes < 60) {
+          final minutosRestantes = 60 - diferencaTempo.inMinutes;
+          throw StateError(
+            'Intervalo intrajornada incompleto. '
+            'Aguarde mais $minutosRestantes minuto(s) para registrar o retorno do almoço.'
+          );
+        }
+      } 
+      // Regra 2: Trava anti-spam / anti-duplicidade para as demais batidas (ex: 5 minutos)
+      else {
+        if (diferencaTempo.inMinutes < 5) {
+          final minutosRestantes = 5 - diferencaTempo.inMinutes;
+          throw StateError(
+            'Muito cedo para um novo registro. '
+            'Aguarde $minutosRestantes minuto(s) antes de bater o ponto novamente.'
+          );
+        }
+      }
+    }
+    // === FIM DAS VALIDAÇÕES ===
 
     final proximoTipo = obterProximoTipo(registros);
 

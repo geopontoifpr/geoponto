@@ -2,10 +2,12 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/registro_ponto_model.dart';
+import '../../ocorrencias/models/ocorrencia_model.dart';
 
 class ExtratoPdfService {
   static Future<void> gerarEImprimirPdf({
     required String nomeColaborador,
+    required String cpf,
     required String nomeGestor,
     required String nomeSetor,
     required List<String> jornadasText,
@@ -19,27 +21,41 @@ class ExtratoPdfService {
   }) async {
     final pdf = pw.Document();
 
+    final font = await PdfGoogleFonts.robotoRegular();
+    final fontBold = await PdfGoogleFonts.robotoBold();
+   
+
     pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.symmetric(vertical: 24, horizontal: 32),
-        build: (context) => [
-          _buildCabecalho(nomeMes, ano),
-          pw.SizedBox(height: 12),
-          _buildResumo(
-            nomeSetor,
-            nomeColaborador, 
-            jornadasText, 
-            horasPrevistas, 
-            horasTrabalhadas, 
-            horasAbonadas, 
-            saldoFinal,
-          ),
-          pw.SizedBox(height: 12),
-          _buildTabela(dias),
-          pw.SizedBox(height: 40),
-          _buildAssinaturas(nomeColaborador, nomeGestor),
-        ],
+      // 1. Trocamos MultiPage por Page
+      pw.Page(
+        pageFormat: PdfPageFormat.a4, 
+        margin: const pw.EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+        theme: pw.ThemeData.withFont(
+          base: font,
+          bold: fontBold,
+        ),
+        build: (context) {
+          // 2. Envolvemos tudo no FittedBox
+          return pw.FittedBox(
+            fit: pw.BoxFit.fill, // Escala o conteúdo para baixo se for maior que a página
+            child: pw.Container(
+              // 3. Fixamos a largura do container para a área útil do A4 em modo paisagem
+              width: PdfPageFormat.a4.width - 48, // 48 é a soma das margens (24 + 24)
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                children: [
+                  _buildCabecalho(nomeMes, ano),
+                  pw.SizedBox(height: 12),
+                  _buildResumo(nomeSetor, cpf, nomeColaborador, jornadasText, horasPrevistas, horasTrabalhadas, horasAbonadas, saldoFinal),
+                  pw.SizedBox(height: 12),
+                  _buildTabela(dias, ano, nomeMes), 
+                  pw.SizedBox(height: 40),
+                  _buildAssinaturas(nomeColaborador, nomeGestor),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
 
@@ -66,6 +82,7 @@ class ExtratoPdfService {
 
   static pw.Widget _buildResumo(
     String nomeSetor,
+    String cpf,
     String nome, 
     List<String> jornadas, 
     String prev, 
@@ -81,7 +98,11 @@ class ExtratoPdfService {
               
         children: [
           pw.Text(
-                'Colaborador(a): $nome', 
+                'CPF: $cpf', 
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                'Funcionário(a): $nome', 
                 style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
               pw.Text(
@@ -99,16 +120,16 @@ class ExtratoPdfService {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('Horas Previstas: $prev', style: const pw.TextStyle(fontSize: 10)),
-              pw.Text('Horas Trabalhadas: $trab', style: const pw.TextStyle(fontSize: 10)),
-              pw.Text('Horas Abonadas: $abon', style: const pw.TextStyle(fontSize: 10)),
+              pw.Text('Horas Previstas no mês: $prev', style: const pw.TextStyle(fontSize: 10)),
+              pw.Text('Horas Trabalhadas no mês: $trab', style: const pw.TextStyle(fontSize: 10)),
+              pw.Text('Horas Abonadas pelo gestor: $abon', style: const pw.TextStyle(fontSize: 10)),
             ],
           ),
           pw.SizedBox(height: 4),
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('Saldo do Mês:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Saldo Final do Mês:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
               pw.Text(saldo, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
             ],
           ),
@@ -117,23 +138,109 @@ class ExtratoPdfService {
     );
   }
 
-  static pw.Widget _buildTabela(List<Map<String, dynamic>> dias) {
-    return pw.TableHelper.fromTextArray(
-      headers: ['Dia', 'Registros', 'Trab.', 'Saldo'],
-      cellPadding: const pw.EdgeInsets.symmetric(vertical: 3, horizontal: 4),
-      cellStyle: const pw.TextStyle(fontSize: 9),
-      headerStyle: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-      cellAlignment: pw.Alignment.centerLeft,
-      data: dias.map((info) {
-        final diaStr = info['dia'].toString().padLeft(2, '0');
-        final batidas = info['batidas'] as List<RegistroPontoModel>;
-        final txtBatidas = batidas.isEmpty
-            ? (info['isFimDeSemana'] ? (info['nomeFeriado'] ?? 'Fim de semana') : '-')
-            : batidas.map((p) => '${p.dataHoraPonto.toLocal().hour.toString().padLeft(2, '0')}:${p.dataHoraPonto.toLocal().minute.toString().padLeft(2, '0')}').join(' • ');
+  static pw.Widget _buildTabela(List<Map<String, dynamic>> dias, int ano, String mesNome) {
+    // Definimos os cabeçalhos
+    final headers = [
+      'Data', 
+      'Horários Registrados\n(Batidas / Ocorrências)', 
+      'Carga\nHorária\nDiária', 
+      'Horas\nTrabalhadas', 
+      'Horas\nAbonadas', 
+      'Débito\n(Atraso)', 
+      'Crédito\n(Extra)', 
+      'Saldo\ndo Dia', 
+      'Saldo\nAcumulado'
+    ];
 
-        return [diaStr, txtBatidas, info['horasTrabalhadas'], info['saldoMinutos']];
-      }).toList(),
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+      columnWidths: {
+        0: const pw.FixedColumnWidth(50),
+        1: const pw.FlexColumnWidth(2),
+        2: const pw.FlexColumnWidth(1),
+        3: const pw.FlexColumnWidth(1),
+        4: const pw.FlexColumnWidth(1),
+        5: const pw.FlexColumnWidth(1),
+        6: const pw.FlexColumnWidth(1),
+        7: const pw.FlexColumnWidth(1),
+        8: const pw.FlexColumnWidth(1),
+      },
+      children: [
+        // 1. CABEÇALHO DA TABELA
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF3B4A6B)),
+          children: headers.map((h) => pw.Container(
+            padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            alignment: pw.Alignment.center,
+            child: pw.Text(
+              h,
+              textAlign: pw.TextAlign.center,
+              style: pw.TextStyle(
+                fontSize: 9,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white, // Fonte branca no fundo azul
+              ),
+            ),
+          )).toList(),
+        ),
+        
+        // 2. LINHAS DOS DIAS
+        ...dias.map((info) {
+          final diaStr = '${info['dia'].toString().padLeft(2, '0')}/${mesNome == "Setembro" ? "09" : "10"}/$ano';
+          
+          final batidas = info['batidas'] as List<RegistroPontoModel>;
+          final ocorrencias = info['ocorrencias'] as List<dynamic>;
+
+          String txtRegistros = '';
+
+          // Verifica se é final de semana ou se tem nome de feriado
+          final bool isFimDeSemana = info['isFimDeSemana'] == true;
+          final bool isFeriado = info['nomeFeriado'] != null;
+
+          if (batidas.isEmpty && ocorrencias.isEmpty) {
+              txtRegistros = isFimDeSemana 
+                  ? (info['nomeFeriado'] ?? 'Fim de semana') 
+                  : (info['nomeFeriado'] ?? '---');
+          } else {
+              if (batidas.isNotEmpty) {
+                txtRegistros = batidas.map((p) => '${p.dataHoraPonto.toLocal().hour.toString().padLeft(2, '0')}:${p.dataHoraPonto.toLocal().minute.toString().padLeft(2, '0')}').join(' - ');
+              }
+              if (ocorrencias.isNotEmpty) {
+                 final textoOcorrencia = ocorrencias.map((o) => '${o.tipoOcorrencia.titulo}').join(', ');
+                 txtRegistros += txtRegistros.isEmpty ? textoOcorrencia : '\n($textoOcorrencia)';
+              }
+          }
+
+          // LÓGICA DA COR: Se for fim de semana ou feriado, pinta de vermelho escuro
+          final textColor = (isFimDeSemana || isFeriado) ? PdfColors.red800 : PdfColors.black;
+          final textStyle = pw.TextStyle(fontSize: 8, color: textColor);
+
+          // Dados exatos que irão preencher a linha
+          final rowData = [
+            diaStr,
+            txtRegistros,
+            info['hrPrevistas'],
+            info['hrTrabalhadas'],
+            info['hrAbonadas'],
+            info['atrasosFaltas'],
+            info['hrExtras'],
+            info['saldoDia'],
+            info['saldoAcumulado'],
+          ];
+
+          return pw.TableRow(
+            children: rowData.map((cellData) => pw.Container(
+              padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+              alignment: pw.Alignment.center,
+              child: pw.Text(
+                cellData.toString(),
+                textAlign: pw.TextAlign.center,
+                style: textStyle, // Aplica o estilo colorido na célula
+              ),
+            )).toList(),
+          );
+        }),
+      ],
     );
   }
 

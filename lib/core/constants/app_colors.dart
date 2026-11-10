@@ -32,4 +32,8 @@ class AppColors {
   static const Color progressGreen = Color(0xFF74B49B);
   static const Color accentOrange = Color(0xFFD97757);
   static const Color white = Colors.white;
+
+    // Tema Futurista (abertura e login)
+  static const Color neonCyan = Color(0xFF22D3EE);
+  static const Color backgroundDeep = Color(0xFF050B1A);
 }
