@@ -69,6 +69,7 @@ class UsuarioRepository {
       final response = await _client.rpc('criar_membro_equipe', params: {
         'p_email': dados['email'],
         'p_nome': dados['nome'],
+        'p_cpf': dados['cpf'],
         'p_tipo': dados['tipo_usuario'],
         'p_empresa_id': dados['empresa_id'],
         'p_setor_id': dados['setor_id'],
@@ -129,5 +130,28 @@ class UsuarioRepository {
       throw ServidorException('Erro ao vincular gestor ao setor.');
     }
   }
-  
+
+  Future<String?> buscarIdPorEmail(String email) async {
+    final response = await _client
+        .from('usuarios') // Verifique se o nome da sua tabela é esse mesmo
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+        
+    if (response != null && response['id'] != null) {
+      return response['id'].toString();
+    }
+    
+    return null;
+  }
+  Future<void> limparDispositivo(String usuarioId) async {
+    try {
+      await _client
+          .from('usuarios')
+          .update({'dispositivo_usuario': null})
+          .eq('id', usuarioId);
+    } catch (e) {
+      throw ServidorException('Erro ao remover o vínculo do dispositivo no banco.');
+    }
+  }
 }

@@ -58,4 +58,22 @@ class AuthRepository {
       throw ServidorException('Erro ao atualizar o status de primeiro acesso.');
     }
   }
+  // Vincula o dispositivo ao usuário na tabela pública
+  Future<void> vincularDispositivo(String usuarioId, String dispositivoId) async {
+    try {
+      await _client
+          .from('usuarios')
+          .update({'dispositivo_usuario': dispositivoId})
+          .eq('id', usuarioId);
+    } catch (e) {
+      throw ServidorException('Erro ao vincular o dispositivo ao usuário.');
+    }
+  }
+  Future<void> enviarEmailRecuperacao(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email,redirectTo: 'io.supabase.geoponto://login-callback/',);
+    } catch (e) {
+      throw ServidorException('Erro ao processar a solicitação de recuperação.');
+    }
+  }
 }

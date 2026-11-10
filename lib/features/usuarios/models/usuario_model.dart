@@ -1,4 +1,3 @@
-// Enum padronizado para evitar erros de digitação e facilitar o uso
 enum TipoUsuario {
   administrador,
   gestor,
@@ -25,23 +24,29 @@ class UsuarioModel {
   final String id;
   final String? empresaId;
   final String? setorId;
-  final String nome;
+  String nome;
+  final String cpf;
   final String email;
   final TipoUsuario tipoUsuario;
   final bool ativo;
   final bool primeiroAcesso;
   final String? setorNome; // Apenas para exibição (Join)
+  String? dispositivoUsuario;
+
 
   UsuarioModel({
     required this.id,
     this.empresaId,
     this.setorId,
     required this.nome,
+    required this.cpf,
     required this.email,
     required this.tipoUsuario,
     this.ativo = true,
     this.primeiroAcesso = true,
     this.setorNome,
+    this.dispositivoUsuario,
+
   });
 
   factory UsuarioModel.fromMap(Map<String, dynamic> map) {
@@ -50,6 +55,7 @@ class UsuarioModel {
       empresaId: map['empresa_id']?.toString(),
       setorId: map['setor_id']?.toString(),
       nome: map['nome']?.toString() ?? '',
+      cpf: map['cpf']?.toString() ?? '',
       email: map['email']?.toString() ?? '',
       tipoUsuario: TipoUsuario.fromString(map['tipo_usuario']?.toString() ?? 'FUNCIONARIO'),
       // Navega no JSON aninhado que o Supabase retorna no join
@@ -57,6 +63,8 @@ class UsuarioModel {
       // Garante que se vier null do banco, tratamos como ativo (true)
       ativo: map['ativo'] == true || map['ativo'] == null,
       primeiroAcesso: map['primeiro_acesso'] ?? false,
+      dispositivoUsuario: map['dispositivo_usuario']?.toString(),
+
     );
   }
 
@@ -66,11 +74,12 @@ class UsuarioModel {
       'empresa_id': empresaId,
       'setor_id': setorId,
       'nome': nome,
+      'cpf': cpf,
       'email': email,
       'tipo_usuario': tipoUsuario.toDbValue(),
       'ativo': ativo,
       'primeiro_acesso': primeiroAcesso,
-      // IMPORTANTE: 'setor_nome' removido. O banco não aceita inserir dados numa coluna que não existe na tabela usuarios.
+      'dispositivo_usuario': dispositivoUsuario,
     };
   }
 
@@ -80,22 +89,27 @@ class UsuarioModel {
     String? empresaId,
     String? setorId,
     String? nome,
+    String? cpf,
     String? email,
     TipoUsuario? tipoUsuario,
     bool? ativo,
     bool? primeiroAcesso,
     String? setorNome,
+    String? dispositivoUsuario,
+
   }) {
     return UsuarioModel(
       id: id ?? this.id,
       empresaId: empresaId ?? this.empresaId,
       setorId: setorId ?? this.setorId,
       nome: nome ?? this.nome,
+      cpf: cpf ?? this.cpf,
       email: email ?? this.email,
       tipoUsuario: tipoUsuario ?? this.tipoUsuario,
       ativo: ativo ?? this.ativo,
       setorNome: setorNome ?? this.setorNome,
-      primeiroAcesso: primeiroAcesso ?? this.primeiroAcesso
+      primeiroAcesso: primeiroAcesso ?? this.primeiroAcesso,
+      dispositivoUsuario: dispositivoUsuario ?? this.dispositivoUsuario
     );
   }
 }
