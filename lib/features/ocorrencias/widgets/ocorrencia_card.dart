@@ -6,14 +6,17 @@ import '../models/ocorrencia_model.dart';
 class OcorrenciaCard extends StatelessWidget {
   final OcorrenciaModel ocorrencia;
   final String dataFormatada;
-  final Future<void> Function(OcorrenciaModel ocorrencia, bool aprovar) onAvaliar;
+  final Future<void> Function(OcorrenciaModel ocorrencia, bool aprovar)? onAvaliar;
   final Future<void> Function(OcorrenciaModel ocorrencia)? onReabrir;
+  final VoidCallback? onEditar; // NOVO
 
   const OcorrenciaCard({
+    super.key,
     required this.ocorrencia,
     required this.dataFormatada,
-    required this.onAvaliar,
+    this.onAvaliar,
     this.onReabrir,
+    this.onEditar,
   });
 
   @override
@@ -116,6 +119,18 @@ class OcorrenciaCard extends StatelessWidget {
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
             ),
           ],
+          if (onEditar != null && ocorrencia.isPendente)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onEditar,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar Ocorrência'),
+              ),
+            ),
+          ),
           if (oc.isPendente) ...[
             const SizedBox(height: 14),
             Wrap(
@@ -123,12 +138,12 @@ class OcorrenciaCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 FilledButton.icon(
-                  onPressed: () => onAvaliar(oc, true),
+                  onPressed: () => onAvaliar!(oc, true),
                   icon: const Icon(Icons.check),
                   label: const Text('Aprovar'),
                 ),
                 OutlinedButton.icon(
-                  onPressed: () => onAvaliar(oc, false),
+                  onPressed: () => onAvaliar!(oc, false),
                   icon: const Icon(Icons.close),
                   label: const Text('Recusar'),
                 ),

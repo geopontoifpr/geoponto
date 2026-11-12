@@ -4,6 +4,7 @@ import '../../../core/services/supabase_service.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../models/ocorrencia_model.dart';
 import '../repositories/ocorrencia_repository.dart';
+import 'package:flutter/foundation.dart';
 
 class OcorrenciaService {
   final OcorrenciaRepository _repository;

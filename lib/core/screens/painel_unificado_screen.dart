@@ -7,6 +7,7 @@ import '../../features/colaborador/screens/bater_ponto_screen.dart';
 import '../../features/colaborador/screens/historico_mensal_screen.dart';
 import '../../features/ocorrencias/controllers/ocorrencia_controller.dart';
 import '../../features/ocorrencias/screens/ocorrencias_gestor_screen.dart';
+import '../../features/ocorrencias/screens/minhas_ocorrencias_screen.dart';
 import '../../features/usuarios/models/usuario_model.dart';
 import '../constants/app_colors.dart';
 import '../widgets/custom_app_bar.dart';
@@ -120,9 +121,17 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
               mostrarAppBar: false,
             ),
           ),
+           _AbaItem(
+            label: 'MINHAS OCORRÊNCIAS',
+            icon: Icons.history,
+            page: MinhasOcorrenciasScreen(
+              usuario: widget.usuario,
+              mostrarAppBar: false,
+            ),
+          ),
         ];
 
-      // 2. GESTOR: Ponto + Histórico + Minha Equipe (clicar abre Extrato/Fechar Mês) + Ocorrências (!)
+      // 2. GESTOR: Ponto + Histórico + Minhas Ocorrências + Equipe
       case TipoUsuario.gestor:
         final temPendentes =
             (_ocorrenciaGestorController?.quantidadePendentes ?? 0) > 0;
@@ -136,7 +145,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
             ),
           ),
           _AbaItem(
-            label: 'MEU HISTÓRICO',
+            label: 'MEU HISTÓRICO', // Encurtado
             icon: Icons.history,
             page: HistoricoMensalScreen(
               usuario: widget.usuario,
@@ -144,8 +153,17 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
             ),
           ),
           _AbaItem(
-            label: 'GERENCIAR EQUIPE',
+            label: 'MINHAS OCORRÊNCIAS', // Encurtado
+            icon: Icons.report_problem_outlined, // Ícone correto
+            page: MinhasOcorrenciasScreen(
+              usuario: widget.usuario,
+              mostrarAppBar: false,
+            ),
+          ),
+          _AbaItem(
+            label: 'EQUIPE', // Encurtado
             icon: Icons.people_outline,
+            mostrarAlerta: temPendentes, // <-- Devolve o balãozinho de notificação (!)
             page: EquipeScreen(
               empresaId: widget.usuario.empresaId ?? '',
               usuarioLogado: widget.usuario,
@@ -266,70 +284,81 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Icon(
-                                aba.icon,
-                                size: 24,
-                                color: ativo ? corAtiva : corInativa,
-                              ),
-                              // Símbolo de alerta (!) no cantinho acima de Ocorrências
-                              if (aba.mostrarAlerta)
-                                Positioned(
-                                  top: -5,
-                                  right: -8,
-                                  child: Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.error,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: theme.cardColor,
-                                        width: 1.5,
-                                      ),
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(
+                              aba.icon,
+                              size: 24,
+                              color: ativo ? corAtiva : corInativa,
+                            ),
+
+                            // Símbolo de alerta
+                            if (aba.mostrarAlerta)
+                              Positioned(
+                                top: -5,
+                                right: -8,
+                                child: Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: theme.cardColor,
+                                      width: 1.5,
                                     ),
-                                    child: const Center(
-                                      child: Text(
-                                        '!',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                          height: 1.0,
-                                        ),
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      '!',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        height: 1.0,
                                       ),
                                     ),
                                   ),
                                 ),
-                            ],
+                              ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          aba.label,
+                          textAlign: TextAlign.center,
+                          softWrap: true,
+                          maxLines: 2,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight:
+                                ativo ? FontWeight.w800 : FontWeight.w600,
+                            letterSpacing: 0.4,
+                            color: ativo ? corAtiva : corInativa,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            aba.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight:
-                                  ativo ? FontWeight.w800 : FontWeight.w600,
-                              letterSpacing: 0.4,
-                              color: ativo ? corAtiva : corInativa,
-                            ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: ativo ? corAtiva : Colors.transparent,
                           ),
-                          const SizedBox(height: 4),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 5,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: ativo ? corAtiva : Colors.transparent,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
                     ),
                   ),
                 );

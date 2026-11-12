@@ -7,6 +7,7 @@ import '../../colaborador/models/registro_ponto_model.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/ocorrencia_controller.dart';
 import '../models/ocorrencia_model.dart';
+import '../widgets/ocorrencia_form_widget.dart';
 
 class OcorrenciasDiaScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -275,17 +276,6 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
               _buildCardStatusAtual(context, _ocorrenciaExistente!),
             ],
             const SizedBox(height: 24),
-            Text(
-              _ocorrenciaExistente == null
-                  ? 'Registrar ocorrência'
-                  : (jaAvaliada ? 'Detalhes da ocorrência' : 'Editar ocorrência do dia'),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -293,169 +283,12 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [AppThemes.cardShadow(context)],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Data da ocorrência',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: jaAvaliada ? null : _selecionarDataReferencia,
-                    icon: const Icon(Icons.calendar_today),
-                    label: Text(_formatarDataSubtitulo(_dataReferencia)),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Tipo de ocorrência',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<TipoOcorrenciaEnum>(
-                    value: _tipoSelecionado,
-                    dropdownColor: theme.cardColor,
-                    style: TextStyle(color: colorScheme.onSurface, fontSize: 16),
-                    hint: Text(
-                      'Selecione uma ocorrência',
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                    decoration: InputDecoration(
-                      fillColor: theme.scaffoldBackgroundColor,
-                      filled: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline),
-                      ),
-                    ),
-                    items: _controller.tiposOcorrencia
-                        .map((tipo) => DropdownMenuItem(
-                              value: tipo,
-                              child: Text(tipo.titulo),
-                            ))
-                        .toList(),
-                    onChanged: jaAvaliada
-                        ? null
-                        : (val) => setState(() => _tipoSelecionado = val),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Minutos solicitados para abono',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _minutosController,
-                    enabled: !jaAvaliada,
-                    keyboardType: TextInputType.number,
-                    style: TextStyle(color: colorScheme.onSurface),
-                    decoration: InputDecoration(
-                      fillColor: theme.scaffoldBackgroundColor,
-                      filled: true,
-                      hintText: 'Ex: 60 (será salvo como 01:00 em horário proposto)',
-                      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                      suffixText: 'min',
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Observações / Justificativa',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _justificativaController,
-                    enabled: !jaAvaliada,
-                    style: TextStyle(color: colorScheme.onSurface),
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      fillColor: theme.scaffoldBackgroundColor,
-                      filled: true,
-                      hintText: 'Descreva a ocorrência...',
-                      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                      contentPadding: const EdgeInsets.all(16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline),
-                      ),
-                    ),
-                  ),
-                  if (!jaAvaliada) ...[
-                    const SizedBox(height: 20),
-                    ListenableBuilder(
-                      listenable: _controller,
-                      builder: (context, _) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            PrimaryButton(
-                              onPressed: _controller.salvando ? null : _salvarOcorrencia,
-                              isLoading: _controller.salvando,
-                              text: _ocorrenciaExistente == null
-                                  ? 'Enviar Ocorrência'
-                                  : 'Salvar Alterações',
-                            ),
-                            if (_ocorrenciaExistente != null) ...[
-                              const SizedBox(height: 12),
-                              OutlinedButton.icon(
-                                onPressed: _controller.salvando ? null : _confirmarExclusao,
-                                icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                                label: const Text(
-                                  'Excluir Ocorrência',
-                                  style: TextStyle(
-                                    color: AppColors.error,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  side: const BorderSide(color: AppColors.error),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ],
+              child: OcorrenciaFormWidget(
+                usuario: widget.usuario,
+                dataReferencia: _dataReferencia,
+                ocorrenciaExistente: _ocorrenciaExistente,
+                permitirAlterarData: !jaAvaliada, 
+                onConcluido: () => Navigator.pop(context, true),
               ),
             ),
           ],
