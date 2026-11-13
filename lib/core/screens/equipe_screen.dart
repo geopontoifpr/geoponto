@@ -3,8 +3,8 @@ import '../themes/app_themes.dart';
 import '../utils/snackbar_util.dart';
 import '../widgets/usuario_list.dart';
 import 'extrato_mensal_screen.dart';
-import '../../features/ocorrencias/screens/ocorrencia_do_usuario_screen.dart';
 import '../../features/ocorrencias/screens/ocorrencias_gestor_screen.dart';
+import '../../features/ocorrencias/controllers/ocorrencia_controller.dart';
 import '../../features/usuarios/controllers/usuario_controller.dart';
 import '../../features/usuarios/models/usuario_model.dart';
 import '../../features/usuarios/screens/cadastro_usuario_screen.dart';
@@ -15,12 +15,16 @@ class EquipeScreen extends StatefulWidget {
   final String empresaId;
   final UsuarioModel usuarioLogado;
   final bool mostrarAppBar;
+  final VoidCallback? onAtualizarNotificacoes;
+  final bool temPendencias; 
 
   const EquipeScreen({
     super.key,
     required this.empresaId,
     required this.usuarioLogado,
     this.mostrarAppBar = true,
+    this.onAtualizarNotificacoes,
+    this.temPendencias = false,
   });
 
   @override
@@ -30,6 +34,7 @@ class EquipeScreen extends StatefulWidget {
 class _EquipeScreenState extends State<EquipeScreen>
     with SingleTickerProviderStateMixin {
   final _controller = UsuarioController();
+  final _ocorrenciaController = OcorrenciaController();
   late final TabController _tabController;
 
   ModoEquipe get _modo => ModoEquipe.values[_tabController.index];
@@ -58,6 +63,7 @@ class _EquipeScreenState extends State<EquipeScreen>
   void dispose() {
     _tabController.dispose();
     _controller.dispose();
+    _ocorrenciaController.dispose();
     super.dispose();
   }
 
@@ -65,9 +71,23 @@ class _EquipeScreenState extends State<EquipeScreen>
     if (widget.empresaId.isNotEmpty) {
       _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId);
     }
+    _ocorrenciaController.carregarPessoasComPendencias(widget.usuarioLogado);
   }
   void _aoAtualizarPainel() {
     if (mounted) setState(() {});
+  }
+
+  List<UsuarioModel> _obterListaExibicao(bool isAbaOcorrencias) {
+    if (isAbaOcorrencias) {
+      final idsPendentes = _ocorrenciaController.pessoasComPendencias
+          .map((p) => p.id)
+          .toSet();
+          
+      return _controller.usuario
+          .where((u) => idsPendentes.contains(u.id))
+          .toList();
+    }
+    return _controller.usuario;
   }
 
   Future<void> _irParaCadastro({UsuarioModel? membroEmEdicao}) async {
@@ -107,6 +127,8 @@ class _EquipeScreenState extends State<EquipeScreen>
         ),
       ),
     );
+    widget.onAtualizarNotificacoes?.call();
+    _recarregar();
   }
 
 
@@ -161,41 +183,66 @@ class _EquipeScreenState extends State<EquipeScreen>
             color: theme.scaffoldBackgroundColor,
             child: TabBar(
               controller: _tabController,
-              tabs: const [
-                Tab(icon: Icon(Icons.person_add_alt_1), text: 'Cadastrar'),
-                Tab(icon: Icon(Icons.receipt_long), text: 'Extrato Mensal'),
-                Tab(icon: Icon(Icons.report_problem_outlined), text: 'Ocorrências'),
+              tabs: [
+                const Tab(icon: Icon(Icons.person_add_alt_1), text: 'Cadastrar'),
+                const Tab(icon: Icon(Icons.receipt_long), text: 'Extrato Mensal'),
+                Tab(
+                  icon: Badge(
+                    isLabelVisible: widget.temPendencias,
+                    backgroundColor: AppThemes.errorColor,
+                    label: const Text('!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
+                    child: const Icon(Icons.report_problem_outlined),
+                  ),
+                  text: 'Ocorrências',
+                ),
               ],
             ),
           ),
           Expanded(
             child: ListenableBuilder(
-              listenable: _controller,
+              listenable: Listenable.merge([_controller, _ocorrenciaController]),
               builder: (context, _) {
-                if (_controller.isLoading && _controller.usuario.isEmpty) {
+                final isAbaOcorrencias = _modo == ModoEquipe.ocorrencias;
+                
+                final carregando = isAbaOcorrencias 
+                    ? _ocorrenciaController.carregando 
+                    : (_controller.isLoading && _controller.usuario.isEmpty);
+                    
+                final erro = isAbaOcorrencias 
+                    ? _ocorrenciaController.erroMensagem 
+                    : _controller.erroMensagem;
+                    
+                // Chamada limpa para o método que criamos
+                final listaExibicao = _obterListaExibicao(isAbaOcorrencias);
+
+                if (carregando) {
                   return Center(
                     child: CircularProgressIndicator(color: theme.primaryColor),
                   );
                 }
 
-                if (_controller.erroMensagem != null) {
+                if (erro != null) {
                   return Center(
                     child: Text(
-                      _controller.erroMensagem!,
+                      erro,
                       style: const TextStyle(color: AppThemes.errorColor),
                       textAlign: TextAlign.center,
                     ),
                   );
                 }
 
-                if (_controller.usuario.isEmpty) {
-                  return const Center(child: Text('Ninguém na equipe ainda.'));
+                if (listaExibicao.isEmpty) {
+                  return Center(
+                    child: Text(isAbaOcorrencias 
+                        ? 'Nenhuma ocorrência pendente na equipe.' 
+                        : 'Ninguém na equipe ainda.'),
+                  );
                 }
 
                 return ListView.builder(
-                  itemCount: _controller.usuario.length,
+                  itemCount: listaExibicao.length,
                   itemBuilder: (context, index) {
-                    final membro = _controller.usuario[index];
+                    final membro = listaExibicao[index];
 
                     return UsuarioList(
                       membro: membro,

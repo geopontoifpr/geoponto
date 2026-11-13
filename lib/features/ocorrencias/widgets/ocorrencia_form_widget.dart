@@ -78,9 +78,7 @@ class _OcorrenciaFormWidgetState extends State<OcorrenciaFormWidget> {
         ),
       );
       widget.onConcluido();
-    } else {
-      SnackbarUtil.showError(context, _controller.erroMensagem ?? 'Erro ao salvar.');
-    }
+    }  
   }
 
   Future<void> _excluir() async {
@@ -186,6 +184,29 @@ class _OcorrenciaFormWidgetState extends State<OcorrenciaFormWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_controller.erroMensagem != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.error.withOpacity(0.5)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: AppColors.error),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _controller.erroMensagem!,
+                              style: const TextStyle(color: AppColors.error),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   PrimaryButton(
                     onPressed: _controller.salvando ? null : _salvar,
                     isLoading: _controller.salvando,

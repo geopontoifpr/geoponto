@@ -119,43 +119,58 @@ class OcorrenciaCard extends StatelessWidget {
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
             ),
           ],
+          
+          // BOTÃO DE EDITAR (Aparece apenas para quem passou o onEditar)
           if (onEditar != null && ocorrencia.isPendente)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onEditar,
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Editar Ocorrência'),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onEditar,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Editar Ocorrência'),
+                ),
               ),
             ),
-          ),
-          if (oc.isPendente) ...[
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 10,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  onPressed: () => onAvaliar!(oc, true),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Aprovar'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => onAvaliar!(oc, false),
-                  icon: const Icon(Icons.close),
-                  label: const Text('Recusar'),
-                ),
-              ],
-            ),
-          ],
+            
+          // BOTÃO DE TORNAR PENDENTE (Aparece apenas para o Gestor, se passou onReabrir)
           if (oc.foiAvaliada && onReabrir != null) ...[
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: () => onReabrir!(oc),
               icon: const Icon(Icons.undo),
               label: const Text('Tornar pendente novamente'),
+            ),
+          ],
+          
+          // BOTÕES DE APROVAR/RECUSAR (Aparece apenas para o Gestor, se passou onAvaliar)
+          if (onAvaliar != null && ocorrencia.isPendente) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => onAvaliar!(ocorrencia, false),
+                    icon: const Icon(Icons.cancel_outlined, color: AppColors.error),
+                    label: const Text('Recusar', style: TextStyle(color: AppColors.error)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.error),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => onAvaliar!(ocorrencia, true),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Aprovar'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],

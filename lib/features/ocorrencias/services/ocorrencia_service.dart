@@ -268,7 +268,9 @@ class OcorrenciaService {
       );
     }
 
-    _validarPrazo72Horas(dataReferencia);
+    if (idEdicao == null || idEdicao.isEmpty) {
+      _validarPrazo72Horas(dataReferencia);
+    }
     final horarioTime = OcorrenciaModel.formatarMinutosParaTime(minutosSolicitados);
 
     if (idEdicao != null && idEdicao.isNotEmpty) {

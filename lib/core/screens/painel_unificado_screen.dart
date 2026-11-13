@@ -60,6 +60,12 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
         ..addListener(_aoAtualizarNotificacoes)
         ..carregarOcorrenciasGestor(widget.usuario.id);
     }
+    
+    else if (widget.usuario.tipoUsuario == TipoUsuario.administrador) {
+      _ocorrenciaGestorController = OcorrenciaController()
+        ..addListener(_aoAtualizarNotificacoes)
+        ..carregarPessoasComPendencias(widget.usuario);
+    }
 
     // Se for Administrador, descobre o ID da empresa para alimentar as abas de Setores e Equipe
     if (widget.usuario.tipoUsuario == TipoUsuario.administrador) {
@@ -161,13 +167,17 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
             ),
           ),
           _AbaItem(
-            label: 'EQUIPE', // Encurtado
+            label: 'GERENCIAR EQUIPE', // Encurtado
             icon: Icons.people_outline,
             mostrarAlerta: temPendentes, // <-- Devolve o balãozinho de notificação (!)
             page: EquipeScreen(
               empresaId: widget.usuario.empresaId ?? '',
               usuarioLogado: widget.usuario,
+              temPendencias: temPendentes,
               mostrarAppBar: false,
+              onAtualizarNotificacoes: () {
+                _ocorrenciaGestorController?.carregarOcorrenciasGestor(widget.usuario.id);
+              },
             ),
           ),        
         ];
@@ -175,6 +185,8 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
       // 3. ADMINISTRADOR (DONO): Painel (5ª imagem) + Setores + Equipe
       case TipoUsuario.administrador:
         final empId = _empresaIdAdmin ?? widget.usuario.empresaId ?? '';
+        final temPendentes = 
+            (_ocorrenciaGestorController?.pessoasComPendencias.isNotEmpty ?? false);
         return [
           _AbaItem(
             label: 'PAINEL',
@@ -201,6 +213,7 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
           _AbaItem(
             label: 'GERENCIAR FUNCIONÁRIOS',
             icon: Icons.people_outline,
+            mostrarAlerta: temPendentes,
             page: empId.isEmpty
                 ? const Center(
                     child: Text('Cadastre a empresa na aba Painel primeiro.'),
@@ -209,6 +222,10 @@ class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
                     empresaId: empId,
                     usuarioLogado: widget.usuario,
                     mostrarAppBar: false,
+                    temPendencias: temPendentes,                                       
+                    onAtualizarNotificacoes: () {
+                      _ocorrenciaGestorController?.carregarOcorrenciasGestor(widget.usuario.id);
+                    },
                   ),
           ),
         ];
