@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../features/admin/screens/cadastro_setor_screen.dart';
-import '../../features/admin/screens/painel_empresa_screen.dart';
-import '../../features/colaborador/screens/bater_ponto_screen.dart';
-import '../../features/colaborador/screens/historico_mensal_screen.dart';
-import '../../features/ocorrencias/screens/minhas_ocorrencias_screen.dart';
-import '../../features/usuarios/models/usuario_model.dart';
-import '../widgets/custom_app_bar.dart';
-import '../widgets/fundo_futurista.dart';
-import '../widgets/barra_navegacao.dart';
-import 'equipe_screen.dart';
-import '../controllers/painel_unificado_controller.dart';
+import '../../admin/screens/cadastro_setor_screen.dart';
+import '../../admin/screens/painel_empresa_screen.dart';
+import '../../colaborador/screens/bater_ponto_screen.dart';
+import '../../colaborador/screens/historico_mensal_screen.dart';
+import '../../ocorrencias/screens/minhas_ocorrencias_screen.dart';
+import '../../usuarios/models/usuario_model.dart';
+import '../../../core/widgets/custom_app_bar.dart';
+import '../../../core/widgets/fundo_futurista.dart';
+import '../../../core/widgets/barra_navegacao.dart';
+import '../../../core/screens/equipe_screen.dart';
+import '../controllers/home_controller.dart';
 
 class _Aba {
   final String label;
@@ -19,24 +19,24 @@ class _Aba {
   const _Aba(this.label, this.icon, this.page, {this.alerta = false});
 }
 
-class PainelUnificadoScreen extends StatefulWidget {
+class HomeScreen extends StatefulWidget {
   final UsuarioModel usuario;
-  const PainelUnificadoScreen({super.key, required this.usuario});
+  const HomeScreen({super.key, required this.usuario});
 
   @override
-  State<PainelUnificadoScreen> createState() => _PainelUnificadoScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   final _page = PageController();
-  late final PainelUnificadoController _ctrl;
+  late final HomeController _ctrl;
   int _aba = 0;
   UsuarioModel get _u => widget.usuario;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = PainelUnificadoController(usuario: _u)..inicializar();
+    _ctrl = HomeController(usuario: _u)..inicializar();
   }
 
   @override

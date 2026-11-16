@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/screens/painel_unificado_screen.dart';
+import '../../home/screens/home_screen.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
@@ -47,7 +47,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => PainelUnificadoScreen(usuario: usuarioAtualizado),
+          builder: (_) => HomeScreen(usuario: usuarioAtualizado),
         ),
       );
     } else {

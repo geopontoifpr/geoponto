@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../features/admin/services/empresa_service.dart';
-import '../../features/ocorrencias/controllers/ocorrencia_controller.dart';
-import '../../features/usuarios/models/usuario_model.dart';
+import '../../admin/services/empresa_service.dart';
+import '../../ocorrencias/controllers/ocorrencia_controller.dart';
+import '../../usuarios/models/usuario_model.dart';
 
-class PainelUnificadoController extends ChangeNotifier {
+class HomeController extends ChangeNotifier {
   final UsuarioModel usuario;
   final OcorrenciaController _oc;
   final EmpresaService _empresaService;
   String? empresaId;
 
-  PainelUnificadoController({
+  HomeController({
     required this.usuario,
     OcorrenciaController? oc,
     EmpresaService? empresaService,

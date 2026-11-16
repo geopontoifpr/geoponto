@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/screens/painel_unificado_screen.dart';
+import '../../home/screens/home_screen.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/widgets/custom_text_field.dart';
@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final Widget destino = usuario.primeiroAcesso
           ? PrimeiroAcessoScreen(usuario: usuario)
-          : PainelUnificadoScreen(usuario: usuario);
+          : HomeScreen(usuario: usuario);
 
       Navigator.pushReplacement(
         context,
