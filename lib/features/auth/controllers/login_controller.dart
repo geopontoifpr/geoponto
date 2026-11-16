@@ -1,92 +1,38 @@
 import 'package:flutter/foundation.dart';
-import '../../../core/errors/app_exception.dart';
+import '../../../core/utils/executor_async.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../services/auth_service.dart';
 
-class LoginController extends ChangeNotifier {
+class LoginController extends ChangeNotifier with ExecutorAsync {
   final AuthService _authService;
 
   LoginController({AuthService? authService})
       : _authService = authService ?? AuthService();
 
-  bool _carregando = false;
-  String? _erro;
   UsuarioModel? _usuarioLogado;
-
-  bool get carregando => _carregando;
-  String? get erro => _erro;
   UsuarioModel? get usuarioLogado => _usuarioLogado;
 
-  Future<bool> entrar({
-    required String email,
-    required String senha,
-  }) async {
-    _carregando = true;
-    _erro = null;
-    notifyListeners();
+  /// Mantém o nome usado pelas telas (`_controller.erro`).
+  String? get erro => erroMensagem;
 
-    try {
-      _usuarioLogado = await _authService.autenticar(
-        email: email,
-        senha: senha,
-      );
-      _carregando = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _erro = e.toString().replaceAll('Exception: ', '');
-      _carregando = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  Future<bool> entrar({required String email, required String senha}) =>
+      executar(() async {
+        _usuarioLogado = await _authService.autenticar(email: email, senha: senha);
+      });
 
   Future<bool> configurarPrimeiroAcesso(
     String novaSenha,
     String confirmarSenha,
     String usuarioId,
-  ) async {
-    _carregando = true;
-    _erro = null;
-    notifyListeners();
+  ) =>
+      executar(() => _authService.salvarPrimeiroAcesso(
+            novaSenha,
+            confirmarSenha,
+            usuarioId,
+          ));
 
-    try {
-      await _authService.salvarPrimeiroAcesso(novaSenha, confirmarSenha, usuarioId);
-      _carregando = false;
-      notifyListeners();
-      return true;
-    } on AppException catch (e) {
-      _erro = e.mensagem;
-      _carregando = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _erro = e.toString().replaceAll('Exception: ', '');
-      _carregando = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  Future<bool> recuperarSenha(String email) =>
+      executar(() => _authService.recuperarSenha(email));
 
-  Future<void> sair() async {
-    await _authService.logout();
-  }
-
-  Future<bool> recuperarSenha(String email) async {
-    _carregando = true;
-    _erro = null;
-    notifyListeners();
-
-    try {
-      await _authService.recuperarSenha(email);
-      _carregando = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _erro = e.toString().replaceAll('Exception: ', '');
-      _carregando = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  Future<void> sair() => _authService.logout();
 }

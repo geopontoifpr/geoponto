@@ -68,12 +68,13 @@ class OcorrenciaService {
 
     if (pessoasElegiveis.isEmpty) return [];
 
-    final ocorrencias = await _repository.listarPorUsuariosNoMes(
+   final ocorrencias = await _repository.listarPorUsuariosNoMes(
       usuariosIds: pessoasElegiveis.map((pessoa) => pessoa.id).toList(),
       ano: agora.year,
       mes: agora.month,
-    );
+    );    
     final idsComOcorrencias = ocorrencias
+        .where((ocorrencia) => ocorrencia.isPendente) // <-- O FILTRO SALVADOR AQUI
         .map((ocorrencia) => ocorrencia.usuarioId)
         .toSet();
     final idsComFechamento = await _repository.listarUsuariosComFechamentoFechado(

@@ -37,6 +37,7 @@ class OcorrenciaModel {
   final bool aprovada;
   final String? observacaoGestor;
   final DateTime? criadoEm;
+  final DateTime? atualizadoEm;
 
   OcorrenciaModel({
     this.id,
@@ -52,6 +53,7 @@ class OcorrenciaModel {
     this.aprovada = false,
     this.observacaoGestor,
     this.criadoEm,
+    this.atualizadoEm,
   });
 
   /// Pendentes possuem minutosAbonados nulo. Aprovações e recusas persistidas possuem valor não nulo.
@@ -104,6 +106,9 @@ class OcorrenciaModel {
       observacaoGestor: map['observacao_gestor']?.toString(),
       criadoEm: map['criado_em'] != null
           ? DateTime.parse(map['criado_em'].toString()).toLocal()
+          : null,
+      atualizadoEm: map['atualizado_em'] != null
+          ? DateTime.parse(map['atualizado_em'].toString()).toLocal()
           : null,
     );
   }
