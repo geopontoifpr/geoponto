@@ -6,6 +6,7 @@ import '../utils/feriados_util.dart';
 import '../utils/snackbar_util.dart';
 import '../widgets/botao_imprimirpdf.dart';
 import '../widgets/lista_extrato_diario.dart';
+import '../utils/formatadores.dart';
 import '../../features/colaborador/controllers/frequencia_controller.dart';
 import '../../features/colaborador/services/frequencia_service.dart';
 import '../../features/usuarios/models/usuario_model.dart';
@@ -15,6 +16,7 @@ import '../../features/colaborador/services/extrato_pdf_service.dart';
 class ExtratoMensalScreen extends StatefulWidget {
   final UsuarioModel colaborador;
   final UsuarioModel gestorLogado;
+
 
   const ExtratoMensalScreen({
     super.key,
@@ -40,15 +42,6 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  String _formatarMinutos(int totalMinutos, {bool mostrarSinal = false}) {
-    final negativo = totalMinutos < 0;
-    final absMin = totalMinutos.abs();
-    final h = (absMin ~/ 60).toString().padLeft(2, '0');
-    final m = (absMin % 60).toString().padLeft(2, '0');
-    final sinal = mostrarSinal ? (negativo ? '-' : '+') : '';
-    return '$sinal${h}h$m';
   }
 
   Future<void> _confirmarFechamentoFolha() async {
@@ -186,7 +179,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.progressGreen.withOpacity(0.15),
+                                color: AppColors.progressGreen.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Text(
@@ -236,7 +229,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
                             child: _buildMiniResumo(
                               context,
                               titulo: 'Previsto',
-                              valor: _formatarMinutos(extrato.minutosPrevistos),
+                              valor: Formatadores.minutos(extrato.minutosPrevistos),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -244,7 +237,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
                             child: _buildMiniResumo(
                               context,
                               titulo: 'Trabalhado',
-                              valor: _formatarMinutos(extrato.minutosTrabalhados),
+                              valor: Formatadores.minutos(extrato.minutosTrabalhados),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -252,7 +245,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
                             child: _buildMiniResumo(
                               context,
                               titulo: 'Abonado',
-                              valor: _formatarMinutos(extrato.minutosAbonados),
+                              valor: Formatadores.minutos(extrato.minutosAbonados),
                             ),
                           ),
                         ],
@@ -274,7 +267,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
                             child: _buildMiniResumo(
                               context,
                               titulo: 'Créditos',
-                              valor: _formatarMinutos(
+                              valor: Formatadores.minutos(
                                 extrato.minutosCredito,
                                 mostrarSinal: true,
                               ),
@@ -286,7 +279,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
                             child: _buildMiniResumo(
                               context,
                               titulo: 'Débitos',
-                              valor: _formatarMinutos(
+                              valor: Formatadores.minutos(
                                 -extrato.minutosDebito,
                                 mostrarSinal: true,
                               ),
@@ -322,7 +315,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _formatarMinutos(
+                              Formatadores.minutos(
                                 extrato.saldoMinutos,
                                 mostrarSinal: true,
                               ),
@@ -402,7 +395,7 @@ class _ExtratoMensalScreenState extends State<ExtratoMensalScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(

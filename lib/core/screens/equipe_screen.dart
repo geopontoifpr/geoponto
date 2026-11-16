@@ -36,7 +36,7 @@ class _EquipeScreenState extends State<EquipeScreen>
   final _controller = UsuarioController();
   final _ocorrenciaController = OcorrenciaController();
   late final TabController _tabController;
-
+  bool _apenasPendentes = true;
   ModoEquipe get _modo => ModoEquipe.values[_tabController.index];
 
 
@@ -78,7 +78,8 @@ class _EquipeScreenState extends State<EquipeScreen>
   }
 
   List<UsuarioModel> _obterListaExibicao(bool isAbaOcorrencias) {
-    if (isAbaOcorrencias) {
+   // Agora o filtro só atua se a aba for Ocorrências E o interruptor estiver ligado
+    if (isAbaOcorrencias && _apenasPendentes) {
       final idsPendentes = _ocorrenciaController.pessoasComPendencias
           .map((p) => p.id)
           .toSet();
@@ -87,6 +88,7 @@ class _EquipeScreenState extends State<EquipeScreen>
           .where((u) => idsPendentes.contains(u.id))
           .toList();
     }
+    // Se for outra aba OU o interruptor estiver desligado, mostra todo mundo
     return _controller.usuario;
   }
 
@@ -211,49 +213,54 @@ class _EquipeScreenState extends State<EquipeScreen>
                     ? _ocorrenciaController.erroMensagem 
                     : _controller.erroMensagem;
                     
-                // Chamada limpa para o método que criamos
                 final listaExibicao = _obterListaExibicao(isAbaOcorrencias);
 
+                // Preparamos o que vai aparecer no centro da tela
+                Widget conteudoCentral;
+                
                 if (carregando) {
-                  return Center(
-                    child: CircularProgressIndicator(color: theme.primaryColor),
+                  conteudoCentral = Center(child: CircularProgressIndicator(color: theme.primaryColor));
+                } else if (erro != null) {
+                  conteudoCentral = Center(
+                    child: Text(erro, style: const TextStyle(color: AppThemes.errorColor), textAlign: TextAlign.center),
                   );
-                }
-
-                if (erro != null) {
-                  return Center(
-                    child: Text(
-                      erro,
-                      style: const TextStyle(color: AppThemes.errorColor),
-                      textAlign: TextAlign.center,
-                    ),
-                  );
-                }
-
-                if (listaExibicao.isEmpty) {
-                  return Center(
+                } else if (listaExibicao.isEmpty) {
+                  conteudoCentral = Center(
                     child: Text(isAbaOcorrencias 
-                        ? 'Nenhuma ocorrência pendente na equipe.' 
+                        ? (_apenasPendentes ? 'Nenhuma ocorrência pendente na equipe.' : 'Nenhum colaborador encontrado.')
                         : 'Ninguém na equipe ainda.'),
                   );
+                } else {
+                  conteudoCentral = ListView.builder(
+                    itemCount: listaExibicao.length,
+                    itemBuilder: (context, index) {
+                      final membro = listaExibicao[index];
+                      return UsuarioList(
+                        membro: membro,
+                        onTap: modoCadastro ? null : () => _aoTocarNoMembro(membro),
+                        onEdit: modoCadastro ? () => _irParaCadastro(membroEmEdicao: membro) : null,
+                        onToggleStatus: modoCadastro ? () => _alternarStatus(membro) : null,
+                      );
+                    },
+                  );
                 }
 
-                return ListView.builder(
-                  itemCount: listaExibicao.length,
-                  itemBuilder: (context, index) {
-                    final membro = listaExibicao[index];
-
-                    return UsuarioList(
-                      membro: membro,
-                      onTap: modoCadastro ? null : () => _aoTocarNoMembro(membro),
-                      // editar/inativar só aparecem na aba Cadastrar
-                      onEdit: modoCadastro
-                          ? () => _irParaCadastro(membroEmEdicao: membro)
-                          : null,
-                      onToggleStatus:
-                          modoCadastro ? () => _alternarStatus(membro) : null,
-                    );
-                  },
+                // Desenhamos a coluna final com o Interruptor e a Lista
+                return Column(
+                  children: [
+                    if (isAbaOcorrencias)
+                      SwitchListTile(
+                        title: const Text(
+                          'Mostrar apenas pessoas com pendências',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                        value: _apenasPendentes,
+                        activeThumbColor: theme.primaryColor,
+                        onChanged: (valor) => setState(() => _apenasPendentes = valor),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                    Expanded(child: conteudoCentral),
+                  ],
                 );
               },
             ),

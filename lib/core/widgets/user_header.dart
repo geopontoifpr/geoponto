@@ -49,7 +49,7 @@ class UserHeader extends StatelessWidget {
             corLuz: cs.primary, // Altere para _ciano ou outra cor da sua paleta se preferir
             avatar: CircleAvatar(
               radius: 20,
-              backgroundColor: cs.primary.withOpacity(0.12),
+              backgroundColor: cs.primary.withValues(alpha: 0.12),
               child: Text(
                 _inicial,
                 style: TextStyle(

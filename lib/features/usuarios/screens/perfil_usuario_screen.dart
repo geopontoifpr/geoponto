@@ -49,8 +49,8 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
         
         // Define uma cor ABSOLUTAMENTE sólida ignorando qualquer transparência do sistema
         final corFundo = isDark 
-            ? AppColors.cardDark.withOpacity(1.0) // Força 100% de opacidade
-            : AppColors.cardLight.withOpacity(1.0); // (Ou Colors.white)
+            ? AppColors.cardDark.withValues(alpha: 1.0) // Força 100% de opacidade
+            : AppColors.cardLight.withValues(alpha: 1.0); // (Ou Colors.white)
 
         return AlertDialog(
           title: const Text('Desvincular Aparelho?'),
@@ -188,7 +188,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
               final sucesso = await _loginController.configurarPrimeiroAcesso(
                 nova, 
                 confirma, 
-                widget.usuario.id!,
+                widget.usuario.id,
               );
 
               if (!ctx.mounted) return;
@@ -218,10 +218,10 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
         ? (ehAdmin ? Colors.red[700] : Colors.green[600]) 
         : theme.disabledColor;
     final corFundoBanner = temDispositivo 
-        ? (ehAdmin ? Colors.red.withOpacity(0.08) : Colors.green.withOpacity(0.08)) 
-        : theme.disabledColor.withOpacity(0.08);
+        ? (ehAdmin ? Colors.red.withValues(alpha: 0.08) : Colors.green.withValues(alpha: 0.08)) 
+        : theme.disabledColor.withValues(alpha: 0.08);
     final corBordaBanner = temDispositivo 
-        ? (ehAdmin ? Colors.red.withOpacity(0.3) : Colors.green.withOpacity(0.3)) 
+        ? (ehAdmin ? Colors.red.withValues(alpha: 0.3) : Colors.green.withValues(alpha: 0.3)) 
         : theme.dividerColor;
 
     return Scaffold(
@@ -390,7 +390,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           
           if (_usuarioController.isLoading || _loginController.carregando)
             Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               child: const Center(child: CircularProgressIndicator()),
             ),
         ],

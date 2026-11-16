@@ -6,6 +6,7 @@ import '../controllers/ocorrencia_controller.dart';
 import '../models/ocorrencia_model.dart';
 import '../widgets/ocorrencia_card.dart';
 import '../widgets/ocorrencia_form_widget.dart';
+import '../../../core/utils/formatadores.dart';
 
 class MinhasOcorrenciasScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -25,11 +26,6 @@ class _MinhasOcorrenciasScreenState extends State<MinhasOcorrenciasScreen> {
   final _controller = OcorrenciaController();
   DateTime _mesAtual = DateTime(DateTime.now().year, DateTime.now().month, 1);
   bool _mostrarPendentes = true;
-
-  static const _nomesMeses = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
 
   @override
   void initState() {
@@ -114,7 +110,7 @@ class _MinhasOcorrenciasScreenState extends State<MinhasOcorrenciasScreen> {
             children: [
               IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _mudarMes(-1)),
               Text(
-                '${_nomesMeses[_mesAtual.month - 1]} ${_mesAtual.year}',
+                '${Formatadores.meses[_mesAtual.month - 1]} ${_mesAtual.year}',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface),
               ),
               IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _mudarMes(1)),

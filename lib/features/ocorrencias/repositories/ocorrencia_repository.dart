@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/utils/formatadores.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../models/ocorrencia_model.dart';
 
@@ -9,9 +10,6 @@ class OcorrenciaRepository {
 
   OcorrenciaRepository({SupabaseClient? client})
       : _client = client ?? SupabaseService.instance.client;
-
-  String _fmtData(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   DateTime _inicioMes(int ano, int mes) => DateTime(ano, mes, 1);
 
@@ -54,7 +52,7 @@ class OcorrenciaRepository {
           .from('usuarios')
           .select('id, empresa_id, setor_id, nome, email, tipo_usuario, ativo, primeiro_acesso')
           .eq('setor_id', setorId)
-          .eq('tipo_usuario', 'FUNCIONARIO')
+          .eq('tipo_usuario', TipoUsuario.funcionario.toDbValue())
           .order('nome');
       return (response as List)
           .map((item) => UsuarioModel.fromMap(item as Map<String, dynamic>))
@@ -123,8 +121,8 @@ class OcorrenciaRepository {
           .from('ocorrencias')
           .select()
           .eq('usuario_id', usuarioId)
-          .gte('data_inicio', _fmtData(_inicioMes(ano, mes)))
-          .lt('data_inicio', _fmtData(_inicioProximoMes(ano, mes)))
+          .gte('data_inicio', Formatadores.dataIso(_inicioMes(ano, mes)))
+          .lt('data_inicio', Formatadores.dataIso(_inicioProximoMes(ano, mes)))
           .order('data_inicio', ascending: true);
 
       return (response as List)
@@ -146,8 +144,8 @@ class OcorrenciaRepository {
           .from('ocorrencias')
           .select()
           .inFilter('usuario_id', usuariosIds)
-          .gte('data_inicio', _fmtData(_inicioMes(ano, mes)))
-          .lt('data_inicio', _fmtData(_inicioProximoMes(ano, mes)))
+          .gte('data_inicio', Formatadores.dataIso(_inicioMes(ano, mes)))
+          .lt('data_inicio', Formatadores.dataIso(_inicioProximoMes(ano, mes)))
           .order('data_inicio', ascending: false);
 
       return (response as List)
@@ -181,7 +179,7 @@ class OcorrenciaRepository {
           .from('ocorrencias')
           .select()
           .eq('usuario_id', usuarioId)
-          .eq('data_inicio', _fmtData(data))
+          .eq('data_inicio', Formatadores.dataIso(data))
           .limit(1)
           .maybeSingle();
 
@@ -199,8 +197,8 @@ class OcorrenciaRepository {
           .from('ocorrencias')
           .select()
           .eq('gestor_id', gestorId)
-          .gte('data_inicio', _fmtData(_inicioMes(agora.year, agora.month)))
-          .lt('data_inicio', _fmtData(_inicioProximoMes(agora.year, agora.month)))
+          .gte('data_inicio', Formatadores.dataIso(_inicioMes(agora.year, agora.month)))
+          .lt('data_inicio', Formatadores.dataIso(_inicioProximoMes(agora.year, agora.month)))
           .order('data_inicio', ascending: false);
 
       return (response as List)
@@ -223,11 +221,11 @@ class OcorrenciaRepository {
         throw const ValidacaoException('Não foi possível identificar o usuário da ocorrência.');
       }
 
-      if (userResp['tipo_usuario'] == 'GESTOR') {
+      if (userResp['tipo_usuario'] == TipoUsuario.gestor.toDbValue()) {
         final administrador = await _client
             .from('usuarios')
             .select('id')
-            .eq('tipo_usuario', 'ADMINISTRADOR')
+            .eq('tipo_usuario', TipoUsuario.administrador.toDbValue())
             .limit(1)
             .maybeSingle();
         final administradorId = administrador?['id']?.toString();
@@ -239,7 +237,7 @@ class OcorrenciaRepository {
         );
       }
 
-      if (userResp['tipo_usuario'] == 'ADMINISTRADOR') {
+      if (userResp['tipo_usuario'] == TipoUsuario.administrador.toDbValue()) {
         throw const ValidacaoException(
           'O administrador não possui um responsável definido para suas próprias ocorrências.',
         );
@@ -336,8 +334,8 @@ class OcorrenciaRepository {
       final response = await _client
           .from('ocorrencias')
           .update({
-            'data_inicio': _fmtData(dataReferencia),
-            'data_fim': _fmtData(dataReferencia),
+            'data_inicio': Formatadores.dataIso(dataReferencia),
+            'data_fim': Formatadores.dataIso(dataReferencia),
             'tipo_ocorrencia': tipoOcorrencia.valorBanco,
             'justificativa': justificativa,
             'horario_proposto': horarioProposto,

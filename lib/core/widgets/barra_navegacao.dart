@@ -57,7 +57,7 @@ class BarraNavegacao extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.cardColor,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, -2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, -2))],
       ),
       child: SafeArea(
         child: Padding(
@@ -97,7 +97,7 @@ class _ItemNavegacaoUnico extends StatelessWidget {
     return EfeitoAgua(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      cor: corAtiva.withOpacity(0.2),
+      cor: corAtiva.withValues(alpha: 0.2),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(

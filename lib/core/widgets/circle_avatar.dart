@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class AvatarComLuzCirculante extends StatefulWidget {
   final Widget avatar;
@@ -74,8 +75,8 @@ class _LuzCirculantePainter extends CustomPainter {
     final shaderLuz = SweepGradient(
       colors: [
         Colors.transparent,
-        corLuz.withOpacity(0.1),
-        corLuz.withOpacity(0.6),
+        corLuz.withValues(alpha: 0.1),
+        corLuz.withValues(alpha: 0.6),
         corLuz,
         Colors.transparent,
       ],

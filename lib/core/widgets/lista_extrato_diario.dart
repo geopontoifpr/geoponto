@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/utils/feriados_util.dart';
+import '../../../core/utils/formatadores.dart';
 import '../../features/colaborador/controllers/frequencia_controller.dart';
 
 class ListaExtratoDiarioWidget extends StatelessWidget {
@@ -9,14 +10,6 @@ class ListaExtratoDiarioWidget extends StatelessWidget {
 
   const ListaExtratoDiarioWidget({super.key, required this.controller});
 
-  String _formatarMinutos(int totalMinutos, {bool mostrarSinal = false}) {
-    if (totalMinutos == 0) return '00h00';
-    final absMin = totalMinutos.abs();
-    final h = (absMin ~/ 60).toString().padLeft(2, '0');
-    final m = (absMin % 60).toString().padLeft(2, '0');
-    final sinal = mostrarSinal ? (totalMinutos < 0 ? '-' : '+') : '';
-    return '$sinal${h}h$m';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +66,8 @@ class ListaExtratoDiarioWidget extends StatelessWidget {
                     height: 36,
                     decoration: BoxDecoration(
                       color: isFolga
-                          ? AppColors.error.withOpacity(0.1)
-                          : colorScheme.primary.withOpacity(0.1),
+                          ? AppColors.error.withValues(alpha: 0.1)
+                          : colorScheme.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -104,9 +97,9 @@ class ListaExtratoDiarioWidget extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Trab: ${_formatarMinutos(info.minutosTrabalhados)}  •  '
-                          'Abono: ${_formatarMinutos(info.minutosAbonados)}  •  '
-                          'Prev: ${_formatarMinutos(info.minutosPrevistos)}',
+                          'Trab: ${Formatadores.minutos(info.minutosTrabalhados)}  •  '
+                          'Abono: ${Formatadores.minutos(info.minutosAbonados)}  •  '
+                          'Prev: ${Formatadores.minutos(info.minutosPrevistos)}',
                           style: TextStyle(
                             fontSize: 11,
                             color: colorScheme.onSurfaceVariant,
@@ -124,7 +117,7 @@ class ListaExtratoDiarioWidget extends StatelessWidget {
                         style: TextStyle(fontSize: 10, color: Colors.grey),
                       ),
                       Text(
-                        _formatarMinutos(
+                        Formatadores.minutos(
                           info.saldoMinutos,
                           mostrarSinal: true,
                         ),

@@ -102,7 +102,7 @@ class _PainelEmpresaScreenState extends State<PainelEmpresaScreen> {
                             height: 150,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.progressGreen.withOpacity(0.12),
+                              color: AppColors.progressGreen.withValues(alpha: 0.12),
                             ),
                           ),
                         ),

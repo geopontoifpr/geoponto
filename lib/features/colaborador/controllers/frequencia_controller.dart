@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/utils/executor_async.dart';
+import '../../../core/utils/feriados_util.dart';
+import '../../../core/utils/formatadores.dart';
+import '../../colaborador/models/fechamento_mensal_model.dart';
 import '../../ocorrencias/models/ocorrencia_model.dart';
 import '../models/registro_ponto_model.dart';
 import '../services/frequencia_service.dart';
-import '../models/fechamento_mensal_model.dart';
-import '../../../core/utils/feriados_util.dart';
 
-
-class FrequenciaController extends ChangeNotifier {
+class FrequenciaController extends ChangeNotifier with ExecutorAsync {
   final String usuarioId;
   final FrequenciaService _service;
 
@@ -17,86 +19,60 @@ class FrequenciaController extends ChangeNotifier {
   }) : _service = service ?? FrequenciaService() {
     final agora = DateTime.now();
     mesAtual = DateTime(agora.year, agora.month, 1);
+    carregando = true; // a tela começa em "carregando"
   }
-
-  static const List<String> nomesMeses = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
 
   late DateTime mesAtual;
   DateTime? dataCadastroUsuario;
   int cargaHorariaSemanalPadrao = 40;
-  bool carregando = true;
   bool folhaFechada = false;
   FechamentoMensalModel? fechamentoSalvo;
-  String? erroMensagem;
-  bool _isDisposed = false;
 
   List<Map<String, dynamic>> jornadasDoMes = [];
   Map<int, List<RegistroPontoModel>> pontosPorDia = {};
   Map<int, List<OcorrenciaModel>> ocorrenciasPorDia = {};
 
-  String get nomeMesAtual => nomesMeses[mesAtual.month - 1];
+  String get nomeMesAtual => Formatadores.meses[mesAtual.month - 1];
   int get totalDiasMes => DateTime(mesAtual.year, mesAtual.month + 1, 0).day;
   int get offsetSemana => DateTime(mesAtual.year, mesAtual.month, 1).weekday % 7;
 
-  /// Requisito 11: Somente meses anteriores ao atual e ainda não fechados
+  /// Somente meses anteriores ao atual podem ser fechados.
   bool get isMesAnteriorAoAtual {
     final agora = DateTime.now();
-    final inicioMesAtual = DateTime(agora.year, agora.month, 1);
-    return mesAtual.isBefore(inicioMesAtual);
+    return mesAtual.isBefore(DateTime(agora.year, agora.month, 1));
   }
 
   bool get podeFecharFolha => isMesAnteriorAoAtual && !folhaFechada;
 
-  @override
-  void dispose() {
-    _isDisposed = true;
-    super.dispose();
-  }
+  // ───────────── Carregamento ─────────────
 
-  Future<void> carregarDadosMes() async {
-    carregando = true;
-    erroMensagem = null;
-    notifyListeners();
+  Future<void> carregarDadosMes() => executar(() async {
+        dataCadastroUsuario ??= await _service.obterDataCadastroUsuario(usuarioId);
+        cargaHorariaSemanalPadrao =
+            await _service.obterCargaHorariaSemanal(usuarioId);
 
-    try {
-      dataCadastroUsuario ??= await _service.obterDataCadastroUsuario(usuarioId);
-      cargaHorariaSemanalPadrao = await _service.obterCargaHorariaSemanal(usuarioId);
-
-      jornadasDoMes = await _service.obterJornadasPorMes(
-        usuarioId: usuarioId,
-        ano: mesAtual.year,
-        mes: mesAtual.month,
-      );
-
-      pontosPorDia = await _service.obterPontosAgrupadosPorDia(
-        usuarioId: usuarioId,
-        ano: mesAtual.year,
-        mes: mesAtual.month,
-      );
-
-      ocorrenciasPorDia = await _service.obterOcorrenciasAgrupadasPorDia(
-        usuarioId: usuarioId,
-        ano: mesAtual.year,
-        mes: mesAtual.month,
-      );
-
-      fechamentoSalvo = await _service.buscarFechamentoMensal(
-        usuarioId: usuarioId,
-        ano: mesAtual.year,
-        mes: mesAtual.month,
-      );
-      folhaFechada = fechamentoSalvo?.fechada ?? false;
-    } catch (e) {
-      erroMensagem = 'Não foi possível carregar os dados do mês: $e';
-    } finally {
-      carregando = false;
-      if (_isDisposed) return;
-      notifyListeners();
-    }
-  }
+        jornadasDoMes = await _service.obterJornadasPorMes(
+          usuarioId: usuarioId,
+          ano: mesAtual.year,
+          mes: mesAtual.month,
+        );
+        pontosPorDia = await _service.obterPontosAgrupadosPorDia(
+          usuarioId: usuarioId,
+          ano: mesAtual.year,
+          mes: mesAtual.month,
+        );
+        ocorrenciasPorDia = await _service.obterOcorrenciasAgrupadasPorDia(
+          usuarioId: usuarioId,
+          ano: mesAtual.year,
+          mes: mesAtual.month,
+        );
+        fechamentoSalvo = await _service.buscarFechamentoMensal(
+          usuarioId: usuarioId,
+          ano: mesAtual.year,
+          mes: mesAtual.month,
+        );
+        folhaFechada = fechamentoSalvo?.fechada ?? false;
+      }, erroPadrao: 'Não foi possível carregar os dados do mês.');
 
   void mudarMes(int delta) {
     mesAtual = DateTime(mesAtual.year, mesAtual.month + delta, 1);
@@ -105,7 +81,9 @@ class FrequenciaController extends ChangeNotifier {
     carregarDadosMes();
   }
 
-  /// Requisito 10: Busca a carga horária vigente na data específica do dia
+  // ───────────── Cálculos ─────────────
+
+  /// Carga horária semanal vigente na data específica do dia.
   int obterCargaHorariaDoDia(int dia) {
     final dataTexto =
         '${mesAtual.year}-${mesAtual.month.toString().padLeft(2, '0')}-${dia.toString().padLeft(2, '0')}';
@@ -125,55 +103,46 @@ class FrequenciaController extends ChangeNotifier {
     return cargaHorariaSemanalPadrao;
   }
 
-
   int obterMinutosPrevistosDoDia(int dia) {
     final data = DateTime(mesAtual.year, mesAtual.month, dia);
-    // Zera os minutos previstos se for sábado, domingo ou feriado
-    if (FeriadosUtil.isFimDeSemanaOuFeriado(data)) {
-      return 0;
-    }
+    if (FeriadosUtil.isFimDeSemanaOuFeriado(data)) return 0;
     return ((obterCargaHorariaDoDia(dia) * 60) / 5).round();
   }
 
-  /// Mantido com retorno Duration para compatibilidade com HistoricoMensalScreen
-  Duration calcularHorasDoDia(int dia) {
-    final min = _service.calcularMinutosTrabalhadosDoDia(pontosPorDia[dia] ?? []);
-    return Duration(minutes: min);
-  }
+  Duration calcularHorasDoDia(int dia) => Duration(
+        minutes: _service.calcularMinutosTrabalhadosDoDia(pontosPorDia[dia] ?? []),
+      );
 
-  /// Requisito 3 e 9: Dados consolidados de um único dia
+  /// Dados consolidados de um único dia.
   ({
     int minutosTrabalhados,
     int minutosAbonados,
     int minutosPrevistos,
     int saldoMinutos,
     bool isFimDeSemana,
-    String? nomeFeriado, // <--- ADICIONADO AQUI NO TIPO DE RETORNO
+    String? nomeFeriado,
     List<RegistroPontoModel> batidas,
   }) obterDadosDia(int dia) {
     final dt = DateTime(mesAtual.year, mesAtual.month, dia);
-    final isFimDeSemana = FeriadosUtil.isFimDeSemanaOuFeriado(dt);
-    final nomeFeriado = FeriadosUtil.obterFeriado(dt);   
     final batidas = pontosPorDia[dia] ?? [];
     final ocorrencias = ocorrenciasPorDia[dia] ?? [];
 
     final trabalhados = _service.calcularMinutosTrabalhadosDoDia(batidas);
     final abonados = _service.calcularMinutosAbonadosDoDia(ocorrencias);
     final previstos = obterMinutosPrevistosDoDia(dia);
-    final saldo = trabalhados + abonados - previstos;
 
     return (
       minutosTrabalhados: trabalhados,
       minutosAbonados: abonados,
       minutosPrevistos: previstos,
-      saldoMinutos: saldo,
-      isFimDeSemana: isFimDeSemana,
-      nomeFeriado: nomeFeriado, // <--- ADICIONADO AQUI NO RETURN
+      saldoMinutos: trabalhados + abonados - previstos,
+      isFimDeSemana: FeriadosUtil.isFimDeSemanaOuFeriado(dt),
+      nomeFeriado: FeriadosUtil.obterFeriado(dt),
       batidas: batidas,
     );
   }
 
-  /// Requisitos 4, 7, 8, 9 e 14: Cálculo mensal unificado em minutos
+  /// Cálculo mensal unificado em minutos.
   ({
     int minutosPrevistos,
     int minutosTrabalhados,
@@ -183,96 +152,40 @@ class FrequenciaController extends ChangeNotifier {
     int minutosCredito,
     int minutosDebito,
   }) calcularExtratoDetalhado() {
-    int minutosPrevistos = 0;
-    int minutosTrabalhados = 0;
-    int minutosAbonados = 0;
-    int diasTrabalhados = 0;
-    int minutosCredito = 0;
-    int minutosDebito = 0;
+    int previstos = 0, trabalhados = 0, abonados = 0;
+    int dias = 0, credito = 0, debito = 0;
 
     for (int d = 1; d <= totalDiasMes; d++) {
-      final infoDia = obterDadosDia(d);
+      final info = obterDadosDia(d);
 
-      minutosPrevistos += infoDia.minutosPrevistos;
-      minutosTrabalhados += infoDia.minutosTrabalhados;
-      minutosAbonados += infoDia.minutosAbonados;
+      previstos += info.minutosPrevistos;
+      trabalhados += info.minutosTrabalhados;
+      abonados += info.minutosAbonados;
 
-      if (infoDia.minutosTrabalhados > 0 || infoDia.batidas.isNotEmpty) {
-        diasTrabalhados++;
-      }
+      if (info.minutosTrabalhados > 0 || info.batidas.isNotEmpty) dias++;
 
-      if (infoDia.saldoMinutos > 0) {
-        minutosCredito += infoDia.saldoMinutos;
-      } else if (infoDia.saldoMinutos < 0) {
-        minutosDebito += infoDia.saldoMinutos.abs();
+      if (info.saldoMinutos > 0) {
+        credito += info.saldoMinutos;
+      } else if (info.saldoMinutos < 0) {
+        debito += info.saldoMinutos.abs();
       }
     }
 
-    // Se a folha já estiver fechada no banco, preserva os totais oficiais gravados
-    if (folhaFechada && fechamentoSalvo != null) {
-      return (
-        minutosPrevistos: fechamentoSalvo!.minutosPrevistos,
-        minutosTrabalhados: fechamentoSalvo!.minutosTrabalhados,
-        minutosAbonados: fechamentoSalvo!.minutosAbonados,
-        saldoMinutos: fechamentoSalvo!.saldoMinutos,
-        diasTrabalhados: diasTrabalhados,
-        minutosCredito: minutosCredito,
-        minutosDebito: minutosDebito,
-      );
-    }
-
-    final saldoMinutos =
-        minutosTrabalhados + minutosAbonados - minutosPrevistos;
+    // Folha fechada: preserva os totais oficiais gravados no banco.
+    final f = (folhaFechada && fechamentoSalvo != null) ? fechamentoSalvo! : null;
 
     return (
-      minutosPrevistos: minutosPrevistos,
-      minutosTrabalhados: minutosTrabalhados,
-      minutosAbonados: minutosAbonados,
-      saldoMinutos: saldoMinutos,
-      diasTrabalhados: diasTrabalhados,
-      minutosCredito: minutosCredito,
-      minutosDebito: minutosDebito,
+      minutosPrevistos: f?.minutosPrevistos ?? previstos,
+      minutosTrabalhados: f?.minutosTrabalhados ?? trabalhados,
+      minutosAbonados: f?.minutosAbonados ?? abonados,
+      saldoMinutos: f?.saldoMinutos ?? (trabalhados + abonados - previstos),
+      diasTrabalhados: dias,
+      minutosCredito: credito,
+      minutosDebito: debito,
     );
   }
 
-  /// Requisitos 11, 12, 13 e 16: Fechamento de folha com validação e bloqueio de duplicidade
-  Future<bool> fecharFolhaMes() async {
-    try {
-      final extrato = calcularExtratoDetalhado();
-      final novoFechamento = FechamentoMensalModel(
-        usuarioId: usuarioId,
-        mesReferencia: DateTime(mesAtual.year, mesAtual.month, 1),
-        minutosPrevistos: extrato.minutosPrevistos,
-        minutosTrabalhados: extrato.minutosTrabalhados,
-        minutosAbonados: extrato.minutosAbonados,
-        saldoMinutos: extrato.saldoMinutos,
-        fechada: true,
-      );
-
-      await _service.validarEInserirFechamento(novoFechamento, folhaFechada);
-      fechamentoSalvo = novoFechamento;
-      folhaFechada = true;
-      erroMensagem = null;
-      notifyListeners();
-      return true;
-    } on PostgrestException catch (e) {
-      if (e.code == '23505') {
-        erroMensagem = 'Esta folha já foi fechada anteriormente.';
-        folhaFechada = true;
-      } else {
-        erroMensagem = 'Erro no banco ao fechar folha: ${e.message}';
-      }
-      notifyListeners();
-      return false;
-    } catch (e) {
-      // Exceptions de regra de negócio lançadas pelo Service
-      erroMensagem = e.toString().replaceFirst('Exception: ', '');
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Mantido para compatibilidade com HistoricoMensalScreen (visão do colaborador)
+  /// Compatível com a HistoricoMensalScreen.
   ({
     int trabHoras,
     int trabMin,
@@ -281,38 +194,63 @@ class FrequenciaController extends ChangeNotifier {
     double progresso,
   }) calcularResumoMensal() {
     final extrato = calcularExtratoDetalhado();
-    final totalConcluido = extrato.minutosTrabalhados + extrato.minutosAbonados;
-    final faltamMinutos = (extrato.minutosPrevistos - totalConcluido)
-        .clamp(0, extrato.minutosPrevistos);
-
+    final concluido = extrato.minutosTrabalhados + extrato.minutosAbonados;
+    final faltam =
+        (extrato.minutosPrevistos - concluido).clamp(0, extrato.minutosPrevistos);
     final progresso = extrato.minutosPrevistos > 0
-        ? (totalConcluido / extrato.minutosPrevistos).clamp(0.0, 1.0)
+        ? (concluido / extrato.minutosPrevistos).clamp(0.0, 1.0)
         : 0.0;
 
     return (
       trabHoras: extrato.minutosTrabalhados ~/ 60,
       trabMin: extrato.minutosTrabalhados % 60,
-      faltamHoras: faltamMinutos ~/ 60,
-      faltamMinRest: faltamMinutos % 60,
+      faltamHoras: faltam ~/ 60,
+      faltamMinRest: faltam % 60,
       progresso: progresso,
     );
   }
 
-  StatusDiaCalendario avaliarStatusDia(int dia) {
-    final hoje = DateTime.now();
-    return _service.avaliarStatusDia(
-      dataDia: DateTime(mesAtual.year, mesAtual.month, dia),
-      dataCadastroUsuario: dataCadastroUsuario ?? hoje,
-      minutosPrevistosDia: obterMinutosPrevistosDoDia(dia),
-      batidas: pontosPorDia[dia] ?? [],
-      ocorrencias: ocorrenciasPorDia[dia] ?? [],
-    );
-  }
+  // ───────────── Fechamento ─────────────
+
+  /// Não liga `carregando` (para a tela não virar spinner); só preenche o erro.
+  Future<bool> fecharFolhaMes() => executar(() async {
+        final extrato = calcularExtratoDetalhado();
+        final novo = FechamentoMensalModel(
+          usuarioId: usuarioId,
+          mesReferencia: DateTime(mesAtual.year, mesAtual.month, 1),
+          minutosPrevistos: extrato.minutosPrevistos,
+          minutosTrabalhados: extrato.minutosTrabalhados,
+          minutosAbonados: extrato.minutosAbonados,
+          saldoMinutos: extrato.saldoMinutos,
+          fechada: true,
+        );
+
+        try {
+          await _service.validarEInserirFechamento(novo, folhaFechada);
+        } on PostgrestException catch (e) {
+          if (e.code == '23505') {
+            folhaFechada = true;
+            throw const ValidacaoException('Esta folha já foi fechada anteriormente.');
+          }
+          throw ServidorException('Erro no banco ao fechar folha: ${e.message}');
+        }
+
+        fechamentoSalvo = novo;
+        folhaFechada = true;
+      }, mostrarCarregando: false, erroPadrao: 'Erro ao salvar fechamento.');
+
+  // ───────────── Calendário ─────────────
+
+  StatusDiaCalendario avaliarStatusDia(int dia) => _service.avaliarStatusDia(
+        dataDia: DateTime(mesAtual.year, mesAtual.month, dia),
+        dataCadastroUsuario: dataCadastroUsuario ?? DateTime.now(),
+        minutosPrevistosDia: obterMinutosPrevistosDoDia(dia),
+        batidas: pontosPorDia[dia] ?? [],
+        ocorrencias: ocorrenciasPorDia[dia] ?? [],
+      );
 
   bool exibirAlertaExclamacao(int dia) {
-    final status = avaliarStatusDia(dia);
-    final ocorrencias = ocorrenciasPorDia[dia] ?? [];
-    final temOcorrenciaPendente = ocorrencias.any((o) => o.isPendente);
-    return status == StatusDiaCalendario.vermelho || temOcorrenciaPendente;
+    final temPendente = (ocorrenciasPorDia[dia] ?? []).any((o) => o.isPendente);
+    return avaliarStatusDia(dia) == StatusDiaCalendario.vermelho || temPendente;
   }
 }

@@ -223,7 +223,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
                       boxShadow: [
                         if (habilitado)
                           BoxShadow(
-                            color: const Color(0xFF74B49B).withOpacity(0.35),
+                            color: const Color(0xFF74B49B).withValues(alpha: 0.35),
                             blurRadius: 24,
                             offset: const Offset(0, 10),
                           ),

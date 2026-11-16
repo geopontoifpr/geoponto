@@ -340,8 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: CustomPaint(
-          // foregroundPainter: const _CantosPainter(),
+        child: CustomPaint(          
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(

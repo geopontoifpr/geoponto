@@ -2,13 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../core/errors/app_exception.dart';
+import '../../../core/utils/executor_async.dart';
 import '../../../core/services/biometria_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/utils/calculadora_distancia_util.dart';
 import '../models/registro_ponto_model.dart';
 import '../services/ponto_service.dart';
 
-class PontoController extends ChangeNotifier {
+class PontoController extends ChangeNotifier with ExecutorAsync {
+  static const double _precisaoMaximaMetros = 50;
+
   final String usuarioId;
   final PontoService _pontoService;
   final LocationService _locationService;
@@ -21,7 +24,9 @@ class PontoController extends ChangeNotifier {
     BiometriaService? biometriaService,
   })  : _pontoService = pontoService ?? PontoService(),
         _locationService = locationService ?? LocationService(),
-        _biometriaService = biometriaService ?? BiometriaService();
+        _biometriaService = biometriaService ?? BiometriaService() {
+    carregando = true; // a tela começa em "carregando"
+  }
 
   String nomeUsuario = 'Colaborador';
   String nomeEmpresa = 'Empresa';
@@ -31,46 +36,67 @@ class PontoController extends ChangeNotifier {
   Position? posicaoAtual;
   double? distanciaEmpresa;
   List<RegistroPontoModel> registros = [];
-  bool carregando = true;
   bool atualizandoLocalizacao = false;
   bool registrando = false;
   bool dentroDoRaio = false;
-  String? erro;
   String? avisoLocalizacao;
 
-  bool get precisaoValida =>
-      posicaoAtual != null && posicaoAtual!.accuracy <= 50;
+  /// Mantém o nome usado pelas telas (`_controller.erro`).
+  String? get erro => erroMensagem;
+  set erro(String? valor) => erroMensagem = valor;
 
-  // Agora o botão fica liberado para clique; a validação de GPS e raio roda AO CLICAR!
+  bool get precisaoValida =>
+      posicaoAtual != null && posicaoAtual!.accuracy <= _precisaoMaximaMetros;
+
+  // O botão fica liberado; a validação de GPS/raio roda AO CLICAR.
   bool get podeBaterPonto =>
       !carregando &&
       !atualizandoLocalizacao &&
       !registrando &&
       registros.length < 4;
 
-  String get textoBotao => _pontoService.obterTextoBotao(registros);
-
-  Future<void> inicializar(String nomeDoUsuarioLogado) async {
-    try {
-      carregando = true;
-      erro = null;
-      notifyListeners();
-
-      final dados = await _pontoService.obterDadosEmpresaValidados();
-
-      nomeUsuario = nomeDoUsuarioLogado;
-      nomeEmpresa = dados['nome_empresa'] as String;
-      latitudeEmpresa = dados['latitude_empresa'] as double;
-      longitudeEmpresa = dados['longitude_empresa'] as double;
-      raioPermitido = dados['raio_permitido_m'] as double;
-
-      await carregarRegistros();
-    } catch (e) {
-      erro = _mensagemErro(e);
-    } finally {
-      carregando = false;
-      notifyListeners();
+  /// Mensagens amigáveis para os erros de localização.
+  @override
+  String mensagemDeErro(Object erro, String? padrao) {
+    if (erro is LocalizacaoDesativadaException) {
+      return 'A localização do aparelho está desativada. Ative o GPS e tente novamente.';
     }
+    if (erro is PermissaoLocalizacaoNegadaException) {
+      return 'A permissão de localização foi negada. Ela é necessária para bater ponto.';
+    }
+    if (erro is PermissaoLocalizacaoNegadaPermanentementeException) {
+      return 'A permissão de localização está bloqueada nas configurações do aparelho.';
+    }
+    return super.mensagemDeErro(erro, padrao);
+  }
+
+  Future<void> _carregarDadosEmpresa() async {
+    final dados = await _pontoService.obterDadosEmpresaValidados();
+    nomeEmpresa = dados['nome_empresa'] as String;
+    latitudeEmpresa = dados['latitude_empresa'] as double;
+    longitudeEmpresa = dados['longitude_empresa'] as double;
+    raioPermitido = dados['raio_permitido_m'] as double;
+  }
+
+  Future<void> inicializar(String nomeDoUsuarioLogado) => executar(() async {
+        await _carregarDadosEmpresa();
+        nomeUsuario = nomeDoUsuarioLogado;
+        await carregarRegistros();
+      });
+
+  Future<void> carregarRegistros() async {
+    registros = await _pontoService.buscarRegistrosDoDia(usuarioId);
+    notifyListeners();
+  }
+
+  /// Marca a localização como inválida e guarda o aviso. Sempre retorna false.
+  bool _rejeitarLocalizacao(String aviso, {Position? posicao}) {
+    posicaoAtual = posicao;
+    distanciaEmpresa = null;
+    dentroDoRaio = false;
+    avisoLocalizacao = aviso;
+    erro = aviso;
+    return false;
   }
 
   Future<bool> atualizarLocalizacao() async {
@@ -78,35 +104,29 @@ class PontoController extends ChangeNotifier {
     avisoLocalizacao = null;
     erro = null;
     notifyListeners();
+
     try {
-      if (latitudeEmpresa == null || longitudeEmpresa == null || raioPermitido == null) {
-        final dados = await _pontoService.obterDadosEmpresaValidados();
-        nomeEmpresa = dados['nome_empresa'] as String;
-        latitudeEmpresa = dados['latitude_empresa'] as double;
-        longitudeEmpresa = dados['longitude_empresa'] as double;
-        raioPermitido = dados['raio_permitido_m'] as double;
+      if (latitudeEmpresa == null ||
+          longitudeEmpresa == null ||
+          raioPermitido == null) {
+        await _carregarDadosEmpresa();
       }
 
       final posicao = await _locationService.obterLocalizacaoAtual();
 
       if (posicao.isMocked) {
-        posicaoAtual = posicao;
-        distanciaEmpresa = null;
-        dentroDoRaio = false;
-        avisoLocalizacao =
-            'Localização simulada (Fake GPS) detectada. Não é permitido bater ponto.';
-        erro = avisoLocalizacao;
-        return false;
+        return _rejeitarLocalizacao(
+          'Localização simulada (Fake GPS) detectada. Não é permitido bater ponto.',
+          posicao: posicao,
+        );
       }
 
-      if (posicao.accuracy > 50) {
-        posicaoAtual = posicao;
-        distanciaEmpresa = null;
-        dentroDoRaio = false;
-        avisoLocalizacao =
-            'Sinal de GPS impreciso (±${posicao.accuracy.toStringAsFixed(0)}m). Vá para um local aberto e tente novamente.';
-        erro = avisoLocalizacao;
-        return false;
+      if (posicao.accuracy > _precisaoMaximaMetros) {
+        return _rejeitarLocalizacao(
+          'Sinal de GPS impreciso (±${posicao.accuracy.toStringAsFixed(0)}m). '
+          'Vá para um local aberto e tente novamente.',
+          posicao: posicao,
+        );
       }
 
       posicaoAtual = posicao;
@@ -121,28 +141,19 @@ class PontoController extends ChangeNotifier {
 
       if (!dentroDoRaio) {
         avisoLocalizacao =
-            'Você está fora do raio permitido da empresa (${distancia.toStringAsFixed(0)}m de distância; máximo permitido: ${raioPermitido!.toStringAsFixed(0)}m).';
+            'Você está fora do raio permitido da empresa (${distancia.toStringAsFixed(0)}m '
+            'de distância; máximo permitido: ${raioPermitido!.toStringAsFixed(0)}m).';
         erro = avisoLocalizacao;
         return false;
       }
 
       return true;
     } catch (e) {
-      posicaoAtual = null;
-      distanciaEmpresa = null;
-      dentroDoRaio = false;
-      avisoLocalizacao = _mensagemErro(e);
-      erro = avisoLocalizacao;
-      return false;
+      return _rejeitarLocalizacao(mensagemDeErro(e, null));
     } finally {
       atualizandoLocalizacao = false;
       notifyListeners();
     }
-  }
-
-  Future<void> carregarRegistros() async {
-    registros = await _pontoService.buscarRegistrosDoDia(usuarioId);
-    notifyListeners();
   }
 
   Future<bool> baterPonto() async {
@@ -153,14 +164,14 @@ class PontoController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Executa a verificação de GPS e Raio ao clicar no botão
+      // 1. GPS e raio
       final gpsValido = await atualizarLocalizacao();
       if (!gpsValido || !dentroDoRaio || !precisaoValida || posicaoAtual == null) {
         erro ??= 'Não foi possível validar sua localização dentro do raio da empresa.';
         return false;
       }
 
-      // 2. Solicita a Biometria (apenas em dispositivos móveis; na Web pula biometria)
+      // 2. Biometria (apenas em dispositivos móveis)
       if (!kIsWeb) {
         final autenticado = await _biometriaService.autenticar();
         if (!autenticado) {
@@ -169,7 +180,7 @@ class PontoController extends ChangeNotifier {
         }
       }
 
-      // 3. Registra o ponto no Supabase
+      // 3. Registro no Supabase
       await _pontoService.registrarPonto(
         usuarioId: usuarioId,
         latitude: posicaoAtual!.latitude,
@@ -178,24 +189,11 @@ class PontoController extends ChangeNotifier {
       await carregarRegistros();
       return true;
     } catch (e) {
-      erro = _mensagemErro(e);
+      erro = mensagemDeErro(e, null);
       return false;
     } finally {
       registrando = false;
       notifyListeners();
     }
-  }
-
-  String _mensagemErro(Object erro) {
-    if (erro is LocalizacaoDesativadaException) {
-      return 'A localização do aparelho está desativada. Ative o GPS e tente novamente.';
-    }
-    if (erro is PermissaoLocalizacaoNegadaException) {
-      return 'A permissão de localização foi negada. Ela é necessária para bater ponto.';
-    }
-    if (erro is PermissaoLocalizacaoNegadaPermanentementeException) {
-      return 'A permissão de localização está bloqueada nas configurações do aparelho.';
-    }
-    return erro.toString().replaceFirst('Exception: ', '');
   }
 }

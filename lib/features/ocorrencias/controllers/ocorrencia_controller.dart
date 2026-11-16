@@ -11,17 +11,11 @@ class OcorrenciaController extends ChangeNotifier with ExecutorAsync {
       : _service = service ?? OcorrenciaService();
 
   List<OcorrenciaModel> ocorrenciasDoMes = [];
-  List<OcorrenciaModel> ocorrenciasGestor = [];
   List<UsuarioModel> pessoasComPendencias = [];
   List<OcorrenciaModel> ocorrenciasDaPessoa = [];
   UsuarioModel? pessoaSelecionada;
 
-  List<TipoOcorrenciaEnum> get tiposOcorrencia => TipoOcorrenciaEnum.values;
-
-  int get quantidadePendentes =>
-      ocorrenciasGestor.where((oc) => oc.isPendente).length;
-
-  // ───────────── Leitura ─────────────
+  List<TipoOcorrenciaEnum> get tiposOcorrencia => TipoOcorrenciaEnum.values; 
 
   Future<void> carregarPessoasComPendencias(UsuarioModel usuarioLogado) {
     pessoaSelecionada = null;
@@ -55,11 +49,7 @@ class OcorrenciaController extends ChangeNotifier with ExecutorAsync {
     notifyListeners();
   }
 
-  Future<void> carregarOcorrenciasGestor(String gestorId) => executar(
-        () async => ocorrenciasGestor = await _service.listarPorGestor(gestorId),
-        erroPadrao: 'Erro ao carregar ocorrências da equipe.',
-      );
-
+ 
   Future<void> carregarDoMes(
     String usuarioId,
     DateTime mes, {

@@ -18,27 +18,22 @@ class PainelUnificadoController extends ChangeNotifier {
         empresaId = usuario.empresaId {
     _oc.addListener(notifyListeners);
   }
-
   bool get temPendencias {
-    switch (usuario.tipoUsuario) {
-      case TipoUsuario.gestor:
-        return _oc.quantidadePendentes > 0;
-      case TipoUsuario.administrador:
-        return _oc.pessoasComPendencias.isNotEmpty;
-      case TipoUsuario.funcionario:
-        return false;
+    // Gestor e Administrador agora usam a exata mesma lógica
+    if (usuario.tipoUsuario == TipoUsuario.gestor || 
+        usuario.tipoUsuario == TipoUsuario.administrador) {
+      return _oc.pessoasComPendencias.isNotEmpty;
     }
+    return false;
   }
 
   Future<void> atualizarPendencias() {
-    switch (usuario.tipoUsuario) {
-      case TipoUsuario.gestor:
-        return _oc.carregarOcorrenciasGestor(usuario.id);
-      case TipoUsuario.administrador:
-        return _oc.carregarPessoasComPendencias(usuario);
-      case TipoUsuario.funcionario:
-        return Future.value();
+    if (usuario.tipoUsuario == TipoUsuario.gestor || 
+        usuario.tipoUsuario == TipoUsuario.administrador) {
+      // Ambos carregam a lista unificada passando o próprio usuário
+      return _oc.carregarPessoasComPendencias(usuario);
     }
+    return Future.value();
   }
 
   Future<void> inicializar() async {

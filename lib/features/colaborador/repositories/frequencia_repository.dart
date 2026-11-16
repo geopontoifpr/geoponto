@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/utils/formatadores.dart';
 import '../../../core/services/supabase_service.dart';
 import '../models/registro_ponto_model.dart';
 import '../models/fechamento_mensal_model.dart';
@@ -18,8 +19,8 @@ class FrequenciaRepository {
     required int ano,
     required int mes,
   }) async {
-    final inicioUtc = DateTime(ano, mes, 1).toUtc().toIso8601String();
-    final proximoMesUtc = DateTime(ano, mes + 1, 1).toUtc().toIso8601String();
+    final inicioUtc = Formatadores.dataIso(DateTime(ano, mes, 1));
+    final proximoMesUtc = Formatadores.dataIso(DateTime(ano, mes + 1, 1));
 
     final response = await _client
         .from('registros_ponto')

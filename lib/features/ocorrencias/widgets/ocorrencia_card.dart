@@ -86,7 +86,7 @@ class OcorrenciaCard extends StatelessWidget {
                     avatar: Icon(iconeStatus, size: 16, color: corStatus),
                     label: Text(status),
                     side: BorderSide.none,
-                    backgroundColor: corStatus.withOpacity(0.12),
+                    backgroundColor: corStatus.withValues(alpha: 0.12),
                     labelStyle: TextStyle(
                       color: corStatus,
                       fontWeight: FontWeight.w600,
@@ -126,7 +126,7 @@ class OcorrenciaCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withOpacity(0.55),
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

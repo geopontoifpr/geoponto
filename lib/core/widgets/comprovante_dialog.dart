@@ -38,7 +38,7 @@ class ComprovanteDialog extends StatelessWidget {
         ],
       ),
       // 1. FORÇA A COR DE FUNDO SÓLIDA AQUI
-      backgroundColor: Theme.of(context).cardColor.withOpacity(1.0), 
+      backgroundColor: Theme.of(context).cardColor.withValues(alpha: 1.0), 
       // 2. REMOVE A PELÍCULA DE COR DO MATERIAL 3
       surfaceTintColor: Colors.transparent,
       content: SingleChildScrollView(

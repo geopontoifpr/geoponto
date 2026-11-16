@@ -1,7 +1,6 @@
 import '../repositories/jornada_repository.dart';
 import '../models/jornada_trabalho_model.dart';
 import '../models/jornada_usuario_model.dart';
-import '../../../core/errors/app_exception.dart';
 
 class JornadaService {
   final _repository = JornadaRepository();

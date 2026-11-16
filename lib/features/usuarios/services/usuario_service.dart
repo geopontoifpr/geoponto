@@ -37,7 +37,7 @@ class UsuarioService {
     if (!email.contains('@')) throw ValidacaoException('E-mail inválido.');
     if (setorId == null || setorId.isEmpty) throw ValidacaoException('Selecione um setor.');
 
-    if (tipoUsuario == 'GESTOR' && setorId != null) {
+    if (tipoUsuario == 'GESTOR') {
       final setorOcupado = await _repository.verificarSeSetorTemGestor(setorId, ignorarId: idEdicao);
       if (setorOcupado) {
         throw ValidacaoException('Este setor já possui um Gestor responsável vinculado a ele.');

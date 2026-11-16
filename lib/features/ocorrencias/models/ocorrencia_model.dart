@@ -1,3 +1,5 @@
+import '../../../core/utils/formatadores.dart';
+
 enum TipoOcorrenciaEnum {
   esquecimento('esquecimento', 'Esquecimento de registro'),
   atraso('atraso', 'Atraso'),
@@ -114,20 +116,17 @@ class OcorrenciaModel {
   }
 
   Map<String, dynamic> toInsertMap() {
-    String formatDate(DateTime d) =>
-        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
     return {
       'usuario_id': usuarioId,
       'gestor_id': gestorId,
-      'data_inicio': formatDate(dataInicio),
-      if (dataFim != null) 'data_fim': formatDate(dataFim!),
+      'data_inicio': Formatadores.dataIso(dataInicio),
+      if (dataFim != null) 'data_fim': Formatadores.dataIso(dataFim!),
       if (minutosAbonados != null) 'minutos_abonados': minutosAbonados,
       'tipo_ocorrencia': tipoOcorrencia.valorBanco,
       'justificativa': justificativa,
       if (horarioProposto != null) 'horario_proposto': horarioProposto,
       'aprovada': aprovada,
       if (observacaoGestor != null) 'observacao_gestor': observacaoGestor,
-    };
+    };   
   }
 }

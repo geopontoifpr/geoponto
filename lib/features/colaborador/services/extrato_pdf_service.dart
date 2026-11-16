@@ -2,7 +2,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/registro_ponto_model.dart';
-import '../../ocorrencias/models/ocorrencia_model.dart';
+import '../../../core/utils/formatadores.dart';
 
 
 class ExtratoPdfService {
@@ -141,8 +141,8 @@ class ExtratoPdfService {
 
   static pw.Widget _buildTabela(List<Map<String, dynamic>> dias, int ano, String mesNome) {
     // Definimos os cabeçalhos
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    final int mesReferencia = meses.indexOf(mesNome) + 1;
+
+    final int mesReferencia = Formatadores.meses.indexOf(mesNome) + 1;
     
     
     final headers = [

@@ -41,18 +41,7 @@ class PontoService {
     }
     const tiposDoBanco = ['entrada_1', 'saida_1', 'entrada_2', 'saida_2'];
     return tiposDoBanco[registros.length];
-  }
-
-  String obterTextoBotao(List<RegistroPontoModel> registros) {
-    if (registros.length >= 4) return 'Limite diário atingido';
-    const textosDosBotoes = [
-      'Registrar Entrada 1',
-      'Registrar Saída para Almoço',
-      'Registrar Retorno do Almoço',
-      'Registrar Fim do Expediente',
-    ];
-    return textosDosBotoes[registros.length];
-  }
+  }  
 
   Future<RegistroPontoModel> registrarPonto({
     required String usuarioId,

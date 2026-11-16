@@ -4,7 +4,6 @@ import '../../../core/services/supabase_service.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../models/ocorrencia_model.dart';
 import '../repositories/ocorrencia_repository.dart';
-import 'package:flutter/foundation.dart';
 
 class OcorrenciaService {
   final OcorrenciaRepository _repository;
@@ -57,9 +56,12 @@ class OcorrenciaService {
         }
         pessoasElegiveis = await _repository.listarFuncionariosPorSetor(setorId);
       case TipoUsuario.administrador:
-        pessoasElegiveis = (await _repository.listarUsuariosPorTipo(
-          tipoUsuario: 'GESTOR',
-        )).where((pessoa) => pessoa.ativo).toList();
+        // Admin vê pendências de Gestores e Funcionários
+        final gestores = await _repository.listarUsuariosPorTipo(tipoUsuario: 'GESTOR');
+        final funcionarios = await _repository.listarUsuariosPorTipo(tipoUsuario: 'FUNCIONARIO');
+        pessoasElegiveis = [...gestores, ...funcionarios]
+            .where((pessoa) => pessoa.ativo)
+            .toList();
       case TipoUsuario.funcionario:
         throw const ValidacaoException(
           'Colaboradores não possuem permissão para consultar ocorrências para avaliação.',
@@ -68,15 +70,17 @@ class OcorrenciaService {
 
     if (pessoasElegiveis.isEmpty) return [];
 
-   final ocorrencias = await _repository.listarPorUsuariosNoMes(
+    final ocorrencias = await _repository.listarPorUsuariosNoMes(
       usuariosIds: pessoasElegiveis.map((pessoa) => pessoa.id).toList(),
       ano: agora.year,
       mes: agora.month,
-    );    
+    );
+    
     final idsComOcorrencias = ocorrencias
-        .where((ocorrencia) => ocorrencia.isPendente) // <-- O FILTRO SALVADOR AQUI
+        .where((ocorrencia) => ocorrencia.isPendente)
         .map((ocorrencia) => ocorrencia.usuarioId)
         .toSet();
+        
     final idsComFechamento = await _repository.listarUsuariosComFechamentoFechado(
       usuariosIds: idsComOcorrencias.toList(),
       ano: agora.year,
@@ -102,24 +106,6 @@ class OcorrenciaService {
       pessoa: pessoa,
       ano: agora.year,
       mes: agora.month,
-    );
-  }
-
-  Future<List<OcorrenciaModel>> listarPorMes({
-    required String usuarioId,
-    required int ano,
-    required int mes,
-  }) async {
-    final usuarioAutenticado = await _obterUsuarioAutenticado();
-    if (usuarioAutenticado.id != usuarioId) {
-      throw const ValidacaoException(
-        'Você só pode consultar as próprias ocorrências nesta funcionalidade.',
-      );
-    }
-    return _repository.listarPorMes(
-      usuarioId: usuarioId,
-      ano: ano,
-      mes: mes,
     );
   }
 
@@ -178,9 +164,9 @@ class OcorrenciaService {
         );
       }
     } else if (usuario.tipoUsuario == TipoUsuario.administrador) {
-      if (pessoa.tipoUsuario != TipoUsuario.gestor) {
+      if (pessoa.tipoUsuario == TipoUsuario.administrador) {
         throw const ValidacaoException(
-          'O administrador só pode consultar ocorrências de gestores nesta funcionalidade.',
+          'O administrador não pode consultar ocorrências de outros administradores.',
         );
       }
     } else {
@@ -205,14 +191,6 @@ class OcorrenciaService {
       ano: ano,
       mes: mes,
     );
-  }
-
-  Future<List<OcorrenciaModel>> listarPorGestor(String gestorId) async {
-    final usuario = await _obterUsuarioAutenticado();
-    if (usuario.id != gestorId || usuario.tipoUsuario != TipoUsuario.gestor) {
-      throw const ValidacaoException('A consulta de pendências não está autorizada.');
-    }
-    return _repository.listarPorGestor(gestorId);
   }
 
   void _validarPrazo72Horas(DateTime dataReferencia) {
@@ -340,6 +318,49 @@ class OcorrenciaService {
     await _repository.deletarOcorrencia(ocorrencia.id!);
   }
 
+  Future<void> _validarPermissaoSobre({
+    required UsuarioModel usuario,
+    required OcorrenciaModel ocorrencia,
+    required UsuarioModel pessoa,
+    required String acao,
+  }) async {
+    if (ocorrencia.usuarioId != pessoa.id ||
+        usuario.id == ocorrencia.usuarioId ||
+        usuario.empresaId == null ||
+        pessoa.empresaId != usuario.empresaId) {
+      throw ValidacaoException('Você não possui permissão para $acao esta ocorrência.');
+    }
+
+    switch (usuario.tipoUsuario) {
+      case TipoUsuario.gestor:
+        final setor = await _repository.obterSetorResponsavelDoGestor(usuario.id);
+        if (pessoa.tipoUsuario != TipoUsuario.funcionario ||
+            setor == null ||
+            pessoa.setorId != setor ||
+            ocorrencia.gestorId != usuario.id) {
+          throw ValidacaoException('Você só pode $acao ocorrências de colaboradores do seu setor.');
+        }
+      case TipoUsuario.administrador:
+        if (pessoa.tipoUsuario == TipoUsuario.administrador) {
+          throw ValidacaoException('O administrador não pode $acao ocorrências de outros administradores.');
+        }
+      case TipoUsuario.funcionario:
+        throw ValidacaoException('Colaboradores não podem $acao ocorrências.');
+    }
+  }
+
+  Future<void> _validarMesAberto(OcorrenciaModel oc) async {
+    final agora = DateTime.now();
+    final fechado = await _repository.mesEstaFechado(
+      usuarioId: oc.usuarioId,
+      ano: agora.year,
+      mes: agora.month,
+    );
+    if (fechado || oc.dataInicio.year != agora.year || oc.dataInicio.month != agora.month) {
+      throw const ValidacaoException('Não é possível alterar ocorrências de um mês encerrado ou diferente do atual.');
+    }
+  }
+
   Future<void> avaliarOcorrencia({
     required OcorrenciaModel ocorrencia,
     required bool aprovar,
@@ -347,70 +368,30 @@ class OcorrenciaService {
     String? observacaoGestor,
   }) async {
     final usuario = await _obterUsuarioAutenticado();
+    
     if (ocorrencia.id == null || ocorrencia.foiAvaliada) {
       throw const ValidacaoException('A ocorrência não está pendente de avaliação.');
     }
-    if (usuario.id == ocorrencia.usuarioId) {
-      throw const ValidacaoException('Você não pode aprovar ou recusar sua própria ocorrência.');
-    }
 
-    if (ocorrencia.usuarioId != pessoaSelecionada.id ||
-        usuario.empresaId == null ||
-        pessoaSelecionada.empresaId != usuario.empresaId) {
-      throw const ValidacaoException(
-        'A ocorrência não pertence à pessoa ou à empresa selecionada.',
-      );
-    }
-
-    if (usuario.tipoUsuario == TipoUsuario.gestor) {
-      final setorResponsavel =
-          await _repository.obterSetorResponsavelDoGestor(usuario.id);
-      if (pessoaSelecionada.tipoUsuario != TipoUsuario.funcionario ||
-          setorResponsavel == null ||
-          pessoaSelecionada.setorId != setorResponsavel ||
-          ocorrencia.gestorId != usuario.id) {
-        throw const ValidacaoException(
-          'Você só pode avaliar ocorrências de colaboradores do seu setor.',
-        );
-      }
-    } else if (usuario.tipoUsuario == TipoUsuario.administrador) {
-      if (pessoaSelecionada.tipoUsuario != TipoUsuario.gestor ||
-          ocorrencia.gestorId != usuario.id) {
-        throw const ValidacaoException(
-          'O administrador só pode avaliar ocorrências de gestores da própria empresa.',
-        );
-      }
-    } else {
-      throw const ValidacaoException('Colaboradores não podem avaliar ocorrências.');
-    }
-
-    final agora = DateTime.now();
-    final fechado = await _repository.mesEstaFechado(
-      usuarioId: ocorrencia.usuarioId,
-      ano: agora.year,
-      mes: agora.month,
+    await _validarPermissaoSobre(
+      usuario: usuario, 
+      ocorrencia: ocorrencia, 
+      pessoa: pessoaSelecionada, 
+      acao: 'avaliar'
     );
-    if (fechado || ocorrencia.dataInicio.year != agora.year ||
-        ocorrencia.dataInicio.month != agora.month) {
-      throw const ValidacaoException(
-        'Não é possível avaliar ocorrências de um mês encerrado ou diferente do mês atual.',
-      );
-    }
+    
+    await _validarMesAberto(ocorrencia);
 
     final minutosAbonados = aprovar ? ocorrencia.minutosPropostos : 0;
     if (aprovar && (minutosAbonados <= 0 || minutosAbonados > 720)) {
-      throw const ValidacaoException(
-        'A quantidade de minutos solicitados nesta ocorrência é inválida.',
-      );
+      throw const ValidacaoException('A quantidade de minutos solicitados nesta ocorrência é inválida.');
     }
 
     await _repository.avaliarOcorrencia(
       ocorrenciaId: ocorrencia.id!,
       aprovar: aprovar,
       minutosAbonados: minutosAbonados,
-      observacao: observacaoGestor?.trim().isEmpty == true
-          ? null
-          : observacaoGestor?.trim(),
+      observacao: observacaoGestor?.trim().isEmpty == true ? null : observacaoGestor?.trim(),
     );
   }
 
@@ -419,53 +400,20 @@ class OcorrenciaService {
     required UsuarioModel pessoaSelecionada,
   }) async {
     final usuario = await _obterUsuarioAutenticado();
+    
     if (ocorrencia.id == null || !ocorrencia.foiAvaliada) {
       throw const ValidacaoException('A ocorrência não está concluída.');
     }
-    if (ocorrencia.usuarioId != pessoaSelecionada.id ||
-        usuario.id == ocorrencia.usuarioId ||
-        usuario.empresaId == null ||
-        pessoaSelecionada.empresaId != usuario.empresaId) {
-      throw const ValidacaoException('Você não possui permissão para reabrir esta ocorrência.');
-    }
 
-    if (usuario.tipoUsuario == TipoUsuario.gestor) {
-      final setorResponsavel =
-          await _repository.obterSetorResponsavelDoGestor(usuario.id);
-      if (pessoaSelecionada.tipoUsuario != TipoUsuario.funcionario ||
-          setorResponsavel == null ||
-          pessoaSelecionada.setorId != setorResponsavel ||
-          ocorrencia.gestorId != usuario.id) {
-        throw const ValidacaoException(
-          'Você só pode reabrir ocorrências de colaboradores do seu setor.',
-        );
-      }
-    } else if (usuario.tipoUsuario == TipoUsuario.administrador) {
-      if (pessoaSelecionada.tipoUsuario != TipoUsuario.gestor ||
-          ocorrencia.gestorId != usuario.id) {
-        throw const ValidacaoException(
-          'O administrador só pode reabrir ocorrências de gestores da própria empresa.',
-        );
-      }
-    } else {
-      throw const ValidacaoException('Colaboradores não podem reabrir ocorrências.');
-    }
-
-    final agora = DateTime.now();
-    final fechado = await _repository.mesEstaFechado(
-      usuarioId: ocorrencia.usuarioId,
-      ano: agora.year,
-      mes: agora.month,
+    await _validarPermissaoSobre(
+      usuario: usuario, 
+      ocorrencia: ocorrencia, 
+      pessoa: pessoaSelecionada, 
+      acao: 'reabrir'
     );
-    if (fechado ||
-        ocorrencia.dataInicio.year != agora.year ||
-        ocorrencia.dataInicio.month != agora.month) {
-      throw const ValidacaoException(
-        'Não é possível reabrir ocorrências de um mês encerrado ou diferente do mês atual.',
-      );
-    }
+    
+    await _validarMesAberto(ocorrencia);
 
     await _repository.reabrirOcorrencia(ocorrencia.id!);
   }
-
 }

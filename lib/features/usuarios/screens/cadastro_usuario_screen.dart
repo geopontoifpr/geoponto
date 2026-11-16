@@ -9,6 +9,7 @@ import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../jornadas/controllers/jornada_controller.dart';
 
+
 class CadastroUsuarioScreen extends StatefulWidget {
   final String empresaId;
   final UsuarioModel? membroEmEdicao;
@@ -171,8 +172,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
         
         // Define uma cor ABSOLUTAMENTE sólida ignorando qualquer transparência do sistema
         final corFundo = isDark 
-            ? AppColors.cardDark.withOpacity(1.0) // Força 100% de opacidade
-            : AppColors.cardLight.withOpacity(1.0); // (Ou Colors.white)
+            ? AppColors.cardDark.withValues(alpha: 1.0) // Força 100% de opacidade
+            : AppColors.cardLight.withValues(alpha: 1.0); // (Ou Colors.white)
 
         return AlertDialog(
           title: const Text('Desvincular Aparelho?'),
@@ -272,8 +273,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
 
               if (ehAdmin) ...[
                 DropdownButtonFormField<String>(
-                  value: _tipoSelecionado,
-                  dropdownColor: theme.cardColor.withOpacity(1.0),
+                  initialValue: _tipoSelecionado,
+                  dropdownColor: theme.cardColor.withValues(alpha: 1.0),
                   decoration: InputDecoration(
                     labelText: 'Tipo de Acesso',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -305,8 +306,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                     }
 
                     return DropdownButtonFormField<String>(
-                      value: _setorSelecionado,
-                      dropdownColor: theme.cardColor.withOpacity(1.0),
+                      initialValue: _setorSelecionado,
+                      dropdownColor: theme.cardColor.withValues(alpha: 1.0),
                       decoration: InputDecoration(
                         labelText: 'Setor',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -348,8 +349,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                   }
 
                   return DropdownButtonFormField<String>(
-                    value: _jornadaSelecionada,
-                    dropdownColor: theme.cardColor.withOpacity(1.0),
+                    initialValue: _jornadaSelecionada,
+                    dropdownColor: theme.cardColor.withValues(alpha: 1.0),
                     decoration: InputDecoration(
                       labelText: 'Jornada de Trabalho',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -422,8 +423,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: temDispositivo 
-                                            ? Colors.red.withOpacity(0.08)
-                                            : theme.disabledColor.withOpacity(0.08),
+                                            ? Colors.red.withValues(alpha: 0.08)
+                                            : theme.disabledColor.withValues(alpha: 0.08),
                                       ),
                                     ),
                                   ),
@@ -436,7 +437,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: temDispositivo 
-                                            ? Colors.red.withOpacity(0.3) 
+                                            ? Colors.red.withValues(alpha: 0.3) 
                                             : theme.dividerColor,
                                         width: 1.5,
                                       ),

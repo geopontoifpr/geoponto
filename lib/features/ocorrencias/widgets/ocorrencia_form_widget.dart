@@ -136,7 +136,7 @@ class _OcorrenciaFormWidgetState extends State<OcorrenciaFormWidget> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<TipoOcorrenciaEnum>(
-          value: _tipoSelecionado,
+          initialValue: _tipoSelecionado,
           dropdownColor: theme.cardColor,
           decoration: InputDecoration(
             filled: true, fillColor: theme.scaffoldBackgroundColor,
@@ -189,9 +189,9 @@ class _OcorrenciaFormWidgetState extends State<OcorrenciaFormWidget> {
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
+                        color: AppColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.error.withOpacity(0.5)),
+                        border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
                       ),
                       child: Row(
                         children: [

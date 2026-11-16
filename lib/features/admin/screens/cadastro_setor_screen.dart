@@ -196,7 +196,7 @@ class _CadastroSetorScreenState extends State<CadastroSetorScreen> {
 
                         return ListTile(
                           tileColor:
-                              editandoEsse ? Colors.blue.withOpacity(0.1) : null,
+                              editandoEsse ? Colors.blue.withValues(alpha: 0.1) : null,
                           leading: const CircleAvatar(
                             child: Icon(Icons.account_tree_outlined),
                           ),

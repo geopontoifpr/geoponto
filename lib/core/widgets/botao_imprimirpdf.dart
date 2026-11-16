@@ -3,6 +3,7 @@ import '../../../core/utils/feriados_util.dart';
 import '../../features/usuarios/models/usuario_model.dart';
 import '../../features/colaborador/controllers/frequencia_controller.dart';
 import '../../features/colaborador/services/extrato_pdf_service.dart';
+import '../utils/formatadores.dart';
 
 class BotaoImprimirPdfWidget extends StatelessWidget {
   final FrequenciaController controller;
@@ -15,15 +16,6 @@ class BotaoImprimirPdfWidget extends StatelessWidget {
     required this.colaborador,
     required this.nomeGestor,
   });
-
-  String _formatarMinutos(int totalMinutos, {bool mostrarSinal = false, bool ocultarZero = false}) {
-    if (totalMinutos == 0) return ocultarZero ? '---' : '00:00';
-    final absMin = totalMinutos.abs();
-    final h = (absMin ~/ 60).toString().padLeft(2, '0');
-    final m = (absMin % 60).toString().padLeft(2, '0');
-    final sinal = mostrarSinal ? (totalMinutos < 0 ? '-' : '+') : '';
-    return '$sinal$h:$m'; // Mudado de 'h' para ':' para igualar ao espelho contábil
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,13 +57,15 @@ class BotaoImprimirPdfWidget extends StatelessWidget {
                 'nomeFeriado': FeriadosUtil.obterFeriado(DateTime(controller.mesAtual.year, controller.mesAtual.month, dia)),
                 'batidas': info.batidas,
                 'ocorrencias': controller.ocorrenciasPorDia[dia] ?? [], // Pega direto do mapa do controller
-                'hrPrevistas': _formatarMinutos(minutosPrevistos, ocultarZero: true),
-                'hrTrabalhadas': _formatarMinutos(minutosTrabalhados, ocultarZero: true),
-                'hrExtras': _formatarMinutos(horasExtras, ocultarZero: true),
-                'hrAbonadas': _formatarMinutos(minutosAbonados, ocultarZero: true), // Abono/HA
-                'atrasosFaltas': _formatarMinutos(atrasosFaltas, mostrarSinal: true, ocultarZero: true), // Débito
-                'saldoDia': _formatarMinutos(saldoDoDia, mostrarSinal: true),
-                'saldoAcumulado': _formatarMinutos(saldoAcumulado, mostrarSinal: true),
+                'hrPrevistas': Formatadores.minutos(minutosPrevistos, zero: '---'),
+                'hrTrabalhadas': Formatadores.minutos(minutosTrabalhados, zero: '---'),
+                'hrExtras': Formatadores.minutos(horasExtras, zero: '---'),
+                'hrAbonadas': Formatadores.minutos(minutosAbonados, zero: '---'), // Abono/HA
+                'atrasosFaltas': Formatadores.minutos(atrasosFaltas, mostrarSinal: true, zero: '---'), // Débito
+                'saldoDia': Formatadores.minutos(saldoDoDia, mostrarSinal: true),
+                'saldoAcumulado': Formatadores.minutos(saldoAcumulado, mostrarSinal: true),
+                'saldoDia': Formatadores.minutos(saldoDoDia, mostrarSinal: true),
+                'saldoAcumulado': Formatadores.minutos(saldoAcumulado, mostrarSinal: true),
               };
             });
 
@@ -138,10 +132,10 @@ class BotaoImprimirPdfWidget extends StatelessWidget {
               jornadasText: jornadasFmt,
               nomeMes: controller.nomeMesAtual,
               ano: controller.mesAtual.year,
-              horasPrevistas: _formatarMinutos(extrato.minutosPrevistos),
-              horasTrabalhadas: _formatarMinutos(extrato.minutosTrabalhados),
-              horasAbonadas: _formatarMinutos(extrato.minutosAbonados),
-              saldoFinal: _formatarMinutos(extrato.saldoMinutos, mostrarSinal: true),
+              horasPrevistas: Formatadores.minutos(extrato.minutosPrevistos),
+              horasTrabalhadas: Formatadores.minutos(extrato.minutosTrabalhados),
+              horasAbonadas: Formatadores.minutos(extrato.minutosAbonados),
+              saldoFinal: Formatadores.minutos(extrato.saldoMinutos, mostrarSinal: true),
               dias: diasInfo,
             );
           } catch (e) {

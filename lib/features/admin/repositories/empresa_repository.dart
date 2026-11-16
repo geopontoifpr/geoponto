@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/services/supabase_service.dart';
 import '../models/empresa_model.dart';
-import '../models/setor_model.dart';
 import '../../usuarios/models/usuario_model.dart';
 
 class EmpresaRepository {

@@ -14,7 +14,7 @@ class AppThemes {
     scaffoldBackgroundColor: AppColors.backgroundLight,
     cardColor: AppColors.cardLight,
     dividerColor: AppColors.borderLight,
-    shadowColor: Colors.black.withOpacity(0.05),
+    shadowColor: Colors.black.withValues(alpha: 0.05),
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.cardLight,
       foregroundColor: AppColors.textPrimaryLight,
@@ -42,7 +42,7 @@ class AppThemes {
     
     cardColor: AppColors.cardDark,
     dividerColor: AppColors.borderDark,
-    shadowColor: Colors.black.withOpacity(0.3),
+    shadowColor: Colors.black.withValues(alpha: 0.3),
     
     // 2. A APP BAR TAMBÉM DEVE SER TRANSPARENTE
     appBarTheme: const AppBarTheme(
@@ -84,19 +84,19 @@ class AppThemes {
     switch (status) {
       case 'verde':
         return (
-          bg: isDark ? const Color(0xFF14532D).withOpacity(0.7) : const Color(0xFFE8F5E9),
+          bg: isDark ? const Color(0xFF14532D).withValues(alpha: 0.7) : const Color(0xFFE8F5E9),
           border: isDark ? const Color(0xFF22C55E) : const Color(0xFF81C784),
           text: isDark ? const Color(0xFF86EFAC) : const Color(0xFF2E7D32),
         );
       case 'laranja':
         return (
-          bg: isDark ? const Color(0xFF7C2D12).withOpacity(0.7) : const Color(0xFFFFF3E0),
+          bg: isDark ? const Color(0xFF7C2D12).withValues(alpha: 0.7) : const Color(0xFFFFF3E0),
           border: isDark ? const Color(0xFFF97316) : const Color(0xFFFFB74D),
           text: isDark ? const Color(0xFFFDBA74) : const Color(0xFFE65100),
         );
       case 'vermelho':
         return (
-          bg: isDark ? const Color(0xFF7F1D1D).withOpacity(0.7) : const Color(0xFFFFEBEE),
+          bg: isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.7) : const Color(0xFFFFEBEE),
           border: isDark ? const Color(0xFFEF4444) : const Color(0xFFE57373),
           text: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFC62828),
         );
