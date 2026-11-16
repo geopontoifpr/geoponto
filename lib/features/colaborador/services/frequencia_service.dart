@@ -3,7 +3,7 @@ import '../../ocorrencias/models/ocorrencia_model.dart';
 import '../../ocorrencias/repositories/ocorrencia_repository.dart';
 import '../models/registro_ponto_model.dart';
 import '../repositories/frequencia_repository.dart';
-import '../../gestor/models/fechamento_mensal_model.dart';
+import '../models/fechamento_mensal_model.dart';
 
 enum StatusDiaCalendario { neutro, verde, laranja, vermelho }
 

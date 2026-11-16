@@ -4,6 +4,32 @@ import '../../usuarios/models/usuario_model.dart';
 import '../models/ocorrencia_model.dart';
 import '../services/ocorrencia_service.dart';
 
+
+mixin ExecutorAsync on ChangeNotifier {
+  bool carregando = false;
+  String? erroMensagem;
+
+  Future<bool> executar(Future<void> Function() acao, {required String erroPadrao}) async {
+    carregando = true; 
+    erroMensagem = null; 
+    notifyListeners();
+    try { 
+      await acao(); 
+      return true; 
+    } on AppException catch (e) { 
+      erroMensagem = e.mensagem; 
+      return false; 
+    } catch (_) { 
+      erroMensagem = erroPadrao; 
+      return false; 
+    } finally { 
+      carregando = false; 
+      notifyListeners(); 
+    }
+  }
+}    
+
+
 class OcorrenciaController extends ChangeNotifier {
   final OcorrenciaService _service;
 
@@ -23,6 +49,8 @@ class OcorrenciaController extends ChangeNotifier {
 
   int get quantidadePendentes =>
       ocorrenciasGestor.where((oc) => oc.isPendente).length;
+
+
 
   Future<void> carregarPessoasComPendencias(UsuarioModel usuarioLogado) async {
     carregando = true;

@@ -1,389 +1,128 @@
 import 'package:flutter/material.dart';
-import '../../features/admin/models/empresa_model.dart';
-import '../../features/admin/services/empresa_service.dart';
 import '../../features/admin/screens/cadastro_setor_screen.dart';
 import '../../features/admin/screens/painel_empresa_screen.dart';
 import '../../features/colaborador/screens/bater_ponto_screen.dart';
 import '../../features/colaborador/screens/historico_mensal_screen.dart';
-import '../../features/ocorrencias/controllers/ocorrencia_controller.dart';
-import '../../features/ocorrencias/screens/ocorrencias_gestor_screen.dart';
 import '../../features/ocorrencias/screens/minhas_ocorrencias_screen.dart';
 import '../../features/usuarios/models/usuario_model.dart';
-import '../constants/app_colors.dart';
 import '../widgets/custom_app_bar.dart';
-import '../widgets/efeito_agua.dart';
 import '../widgets/fundo_futurista.dart';
-import '../screens/equipe_screen.dart';
+import '../widgets/barra_navegacao.dart';
+import 'equipe_screen.dart';
+import '../controllers/painel_unificado_controller.dart';
 
-
-
-class _AbaItem {
+class _Aba {
   final String label;
   final IconData icon;
   final Widget page;
-  final bool mostrarAlerta;
-
-  const _AbaItem({
-    required this.label,
-    required this.icon,
-    required this.page,
-    this.mostrarAlerta = false,
-  });
+  final bool alerta;
+  const _Aba(this.label, this.icon, this.page, {this.alerta = false});
 }
 
 class PainelUnificadoScreen extends StatefulWidget {
   final UsuarioModel usuario;
-
-  const PainelUnificadoScreen({
-    super.key,
-    required this.usuario,
-  });
+  const PainelUnificadoScreen({super.key, required this.usuario});
 
   @override
   State<PainelUnificadoScreen> createState() => _PainelUnificadoScreenState();
 }
 
 class _PainelUnificadoScreenState extends State<PainelUnificadoScreen> {
-  final PageController _pageController = PageController();
-  int _abaAtual = 0;
-
-  OcorrenciaController? _ocorrenciaGestorController;
-  String? _empresaIdAdmin;
+  final _page = PageController();
+  late final PainelUnificadoController _ctrl;
+  int _aba = 0;
+  UsuarioModel get _u => widget.usuario;
 
   @override
   void initState() {
     super.initState();
-
-    // Se for Gestor, carrega as ocorrências para acender o alerta (!) na navbar
-    if (widget.usuario.tipoUsuario == TipoUsuario.gestor) {
-      _ocorrenciaGestorController = OcorrenciaController()
-        ..addListener(_aoAtualizarNotificacoes)
-        ..carregarOcorrenciasGestor(widget.usuario.id);
-    }
-    
-    else if (widget.usuario.tipoUsuario == TipoUsuario.administrador) {
-      _ocorrenciaGestorController = OcorrenciaController()
-        ..addListener(_aoAtualizarNotificacoes)
-        ..carregarPessoasComPendencias(widget.usuario);
-    }
-
-    // Se for Administrador, descobre o ID da empresa para alimentar as abas de Setores e Equipe
-    if (widget.usuario.tipoUsuario == TipoUsuario.administrador) {
-      _carregarEmpresaAdmin();
-    }
-  }
-
-  Future<void> _carregarEmpresaAdmin() async {
-    try {
-      final List<EmpresaModel> empresas =
-          await EmpresaService(usuario: widget.usuario).buscarMinhasEmpresas();
-      if (empresas.isNotEmpty && mounted) {
-        setState(() {
-          _empresaIdAdmin = empresas.first.id;
-        });
-      }
-    } catch (_) {}
-  }
-
-  void _aoAtualizarNotificacoes() {
-    if (mounted) setState(() {});
+    _ctrl = PainelUnificadoController(usuario: _u)..inicializar();
   }
 
   @override
   void dispose() {
-    _ocorrenciaGestorController?.removeListener(_aoAtualizarNotificacoes);
-    _ocorrenciaGestorController?.dispose();
-    _pageController.dispose();
+    _ctrl.dispose();
+    _page.dispose();
     super.dispose();
   }
 
-  void _irParaAba(int index) {
-    setState(() => _abaAtual = index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
+  void _irParaAba(int i) {
+    setState(() => _aba = i);
+    _page.animateToPage(i, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
+  }
+
+  List<_Aba> get _abasPessoais => [
+    _Aba('PONTO', Icons.access_time, BaterPontoScreen(usuario: _u, mostrarAppBar: false)),
+    _Aba('MEU HISTÓRICO', Icons.history, HistoricoMensalScreen(usuario: _u, mostrarAppBar: false)),
+    _Aba('MINHAS OCORRÊNCIAS', Icons.report_problem_outlined, MinhasOcorrenciasScreen(usuario: _u, mostrarAppBar: false)),
+  ];
+
+  _Aba _abaEquipe(String label) {
+    final empId = _ctrl.empresaId ?? '';
+    return _Aba(
+      label,
+      Icons.people_outline,
+      empId.isEmpty
+          ? const Center(child: Text('Cadastre a empresa na aba Painel primeiro.'))
+          : EquipeScreen(
+              empresaId: empId,
+              usuarioLogado: _u,
+              mostrarAppBar: false,
+              temPendencias: _ctrl.temPendencias,
+              onAtualizarNotificacoes: _ctrl.atualizarPendencias,
+            ),
+      alerta: _ctrl.temPendencias,
     );
   }
 
-  List<_AbaItem> _construirAbasPorCargo() {
-    switch (widget.usuario.tipoUsuario) {
-      // 1. COLABORADOR: Abre direto em Bater Ponto + Histórico (sem aba redundante de ocorrências)
+  List<_Aba> _construirAbas() {
+    switch (_u.tipoUsuario) {
       case TipoUsuario.funcionario:
-        return [
-          _AbaItem(
-            label: 'PONTO',
-            icon: Icons.access_time,
-            page: BaterPontoScreen(
-              usuario: widget.usuario,
-              mostrarAppBar: false,
-            ),
-          ),
-          _AbaItem(
-            label: 'MEU HISTÓRICO',
-            icon: Icons.history,
-            page: HistoricoMensalScreen(
-              usuario: widget.usuario,
-              mostrarAppBar: false,
-            ),
-          ),
-           _AbaItem(
-            label: 'MINHAS OCORRÊNCIAS',
-            icon: Icons.history,
-            page: MinhasOcorrenciasScreen(
-              usuario: widget.usuario,
-              mostrarAppBar: false,
-            ),
-          ),
-        ];
-
-      // 2. GESTOR: Ponto + Histórico + Minhas Ocorrências + Equipe
+        return _abasPessoais;
       case TipoUsuario.gestor:
-        final temPendentes =
-            (_ocorrenciaGestorController?.quantidadePendentes ?? 0) > 0;
-        return [
-          _AbaItem(
-            label: 'PONTO',
-            icon: Icons.access_time,
-            page: BaterPontoScreen(
-              usuario: widget.usuario,
-              mostrarAppBar: false,
-            ),
-          ),
-          _AbaItem(
-            label: 'MEU HISTÓRICO', // Encurtado
-            icon: Icons.history,
-            page: HistoricoMensalScreen(
-              usuario: widget.usuario,
-              mostrarAppBar: false,
-            ),
-          ),
-          _AbaItem(
-            label: 'MINHAS OCORRÊNCIAS', // Encurtado
-            icon: Icons.report_problem_outlined, // Ícone correto
-            page: MinhasOcorrenciasScreen(
-              usuario: widget.usuario,
-              mostrarAppBar: false,
-            ),
-          ),
-          _AbaItem(
-            label: 'GERENCIAR EQUIPE', // Encurtado
-            icon: Icons.people_outline,
-            mostrarAlerta: temPendentes, // <-- Devolve o balãozinho de notificação (!)
-            page: EquipeScreen(
-              empresaId: widget.usuario.empresaId ?? '',
-              usuarioLogado: widget.usuario,
-              temPendencias: temPendentes,
-              mostrarAppBar: false,
-              onAtualizarNotificacoes: () {
-                _ocorrenciaGestorController?.carregarOcorrenciasGestor(widget.usuario.id);
-              },
-            ),
-          ),        
-        ];
-
-      // 3. ADMINISTRADOR (DONO): Painel (5ª imagem) + Setores + Equipe
+        return [..._abasPessoais, _abaEquipe('EQUIPE')];
       case TipoUsuario.administrador:
-        final empId = _empresaIdAdmin ?? widget.usuario.empresaId ?? '';
-        final temPendentes = 
-            (_ocorrenciaGestorController?.pessoasComPendencias.isNotEmpty ?? false);
         return [
-          _AbaItem(
-            label: 'PAINEL',
-            icon: Icons.dashboard_outlined,
-            page: PainelEmpresaScreen(
-              usuario: widget.usuario,
-              mostrarAppBar: false,
-              onIrParaSetores: () => _irParaAba(1),
-              onIrParaEquipe: () => _irParaAba(2),
-            ),
-          ),
-          _AbaItem(
-            label: 'CADASTRO DE SETORES',
-            icon: Icons.account_tree_outlined,
-            page: empId.isEmpty
-                ? const Center(
-                    child: Text('Cadastre a empresa na aba Painel primeiro.'),
-                  )
-                : CadastroSetorScreen(
-                    empresaId: empId,
-                    mostrarAppBar: false,
-                  ),
-          ),
-          _AbaItem(
-            label: 'GERENCIAR FUNCIONÁRIOS',
-            icon: Icons.people_outline,
-            mostrarAlerta: temPendentes,
-            page: empId.isEmpty
-                ? const Center(
-                    child: Text('Cadastre a empresa na aba Painel primeiro.'),
-                  )
-                : EquipeScreen(
-                    empresaId: empId,
-                    usuarioLogado: widget.usuario,
-                    mostrarAppBar: false,
-                    temPendencias: temPendentes,                                       
-                    onAtualizarNotificacoes: () {
-                      _ocorrenciaGestorController?.carregarOcorrenciasGestor(widget.usuario.id);
-                    },
-                  ),
-          ),
+          _Aba('PAINEL', Icons.dashboard_outlined, PainelEmpresaScreen(usuario: _u, mostrarAppBar: false, onIrParaSetores: () => _irParaAba(1), onIrParaEquipe: () => _irParaAba(2))),
+          _Aba('SETORES', Icons.account_tree_outlined, _ctrl.empresaId?.isEmpty ?? true ? const Center(child: Text('Cadastre a empresa primeiro.')) : CadastroSetorScreen(empresaId: _ctrl.empresaId!, mostrarAppBar: false)),
+          _abaEquipe('FUNCIONÁRIOS'),
         ];
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final escuro = theme.brightness == Brightness.dark;
-    final abas = _construirAbasPorCargo();
+    final escuro = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        key: ValueKey(widget.usuario.nome),
-        usuario: widget.usuario,
-        onPerfilPressed: () {
-          setState(() {});
-        },
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Fundo: só no tema escuro. Fica sempre na posição 0 do Stack.
-          if (escuro)
-            const FundoFuturista(child: SizedBox.shrink())
-          else
-            const SizedBox.shrink(),
-
-          // O PageView fica sempre na posição 1, então não é recriado
-          // quando o usuário alterna o tema.
-          PageView(
-            controller: _pageController,
-            physics: const BouncingScrollPhysics(),
-            onPageChanged: (index) {
-              setState(() => _abaAtual = index);
-              if (widget.usuario.tipoUsuario == TipoUsuario.administrador &&
-                  _empresaIdAdmin == null) {
-                _carregarEmpresaAdmin();
-              }
-            },
-            children: abas.map((a) => a.page).toList(),
+    return ListenableBuilder(
+      listenable: _ctrl,
+      builder: (context, _) {
+        final abas = _construirAbas();
+        return Scaffold(
+          appBar: CustomAppBar(
+            key: ValueKey(_u.nome),
+            usuario: _u,
+            onPerfilPressed: () => setState(() {}),
           ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(abas.length, (index) {
-                final aba = abas[index];
-                final ativo = _abaAtual == index;
-                final corAtiva = AppColors.progressGreen;
-                final corInativa = theme.colorScheme.onSurfaceVariant;
-
-                return Expanded(
-                  child: EfeitoAgua(
-                    onTap: () => _irParaAba(index),
-                    borderRadius: BorderRadius.circular(12),
-                    cor: corAtiva.withOpacity(0.2),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Stack(
-                          clipBehavior: Clip.none,
-                          alignment: Alignment.center,
-                          children: [
-                            Icon(
-                              aba.icon,
-                              size: 24,
-                              color: ativo ? corAtiva : corInativa,
-                            ),
-
-                            // Símbolo de alerta
-                            if (aba.mostrarAlerta)
-                              Positioned(
-                                top: -5,
-                                right: -8,
-                                child: Container(
-                                  width: 16,
-                                  height: 16,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: theme.cardColor,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: const Center(
-                                    child: Text(
-                                      '!',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        height: 1.0,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        Text(
-                          aba.label,
-                          textAlign: TextAlign.center,
-                          softWrap: true,
-                          maxLines: 2,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight:
-                                ativo ? FontWeight.w800 : FontWeight.w600,
-                            letterSpacing: 0.4,
-                            color: ativo ? corAtiva : corInativa,
-                          ),
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: ativo ? corAtiva : Colors.transparent,
-                          ),
-                        ),
-                      ],
-                    ),
-                    ),
-                  ),
-                );
-              }),
-            ),
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (escuro) const FundoFuturista(child: SizedBox.shrink()),
+              PageView(
+                controller: _page,
+                physics: const BouncingScrollPhysics(),
+                onPageChanged: (i) => setState(() => _aba = i),
+                children: abas.map((a) => a.page).toList(),
+              ),
+            ],
           ),
-        ),
-      ),
+          bottomNavigationBar: BarraNavegacao(
+            itens: [for (final a in abas) ItemNavegacao(a.label, a.icon, alerta: a.alerta)],
+            atual: _aba,
+            onTap: _irParaAba,
+          ),
+        );
+      },
     );
   }
 }

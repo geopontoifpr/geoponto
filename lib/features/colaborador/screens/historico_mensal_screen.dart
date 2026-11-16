@@ -11,6 +11,7 @@ import '../controllers/frequencia_controller.dart';
 import '../services/frequencia_service.dart';
 
 
+
 class HistoricoMensalScreen extends StatefulWidget {
   final UsuarioModel usuario;
   final bool mostrarAppBar;
@@ -275,7 +276,7 @@ class _HistoricoMensalScreenState extends State<HistoricoMensalScreen> {
                   controller: _controller,
                   colaborador: widget.usuario,
                   // A lógica vai direto aqui dentro da chamada do botão:
-                  nomeGestor: (widget.usuario.tipoUsuario == 'GESTOR') 
+                  nomeGestor: (widget.usuario.tipoUsuario == TipoUsuario.gestor) 
                       ? 'Administrador' 
                       : 'Gestor(a) ${widget.usuario.setorNome ?? 'Não informado'}',
               ),

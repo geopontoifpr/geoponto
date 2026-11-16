@@ -1,68 +1,67 @@
-import 'package:flutter/foundation.dart';
-
+import 'package:flutter/material.dart';
 import '../../features/admin/services/empresa_service.dart';
 import '../../features/ocorrencias/controllers/ocorrencia_controller.dart';
 import '../../features/usuarios/models/usuario_model.dart';
 
 class PainelUnificadoController extends ChangeNotifier {
   final UsuarioModel usuario;
-  late final EmpresaService _empresaService;
-  final OcorrenciaController ocorrenciaController;
-
-  String? empresaIdAdmin;
-  bool carregandoEmpresa = false;
-  String? erroEmpresa;
+  final OcorrenciaController _oc;
+  final EmpresaService _empresaService;
+  String? empresaId;
 
   PainelUnificadoController({
     required this.usuario,
-    OcorrenciaController? ocorrenciaController,
+    OcorrenciaController? oc,
     EmpresaService? empresaService,
-  })  : ocorrenciaController = ocorrenciaController ?? OcorrenciaController() {
-    _empresaService = empresaService ?? EmpresaService(usuario: usuario);
-    this.ocorrenciaController.addListener(_notificarAlteracao);
+  })  : _oc = oc ?? OcorrenciaController(),
+        _empresaService = empresaService ?? EmpresaService(usuario: usuario),
+        empresaId = usuario.empresaId {
+    _oc.addListener(notifyListeners);
   }
 
-  bool get temOcorrenciasPendentes =>
-      ocorrenciaController.quantidadePendentes > 0;
+  bool get temPendencias {
+    switch (usuario.tipoUsuario) {
+      case TipoUsuario.gestor:
+        return _oc.quantidadePendentes > 0;
+      case TipoUsuario.administrador:
+        return _oc.pessoasComPendencias.isNotEmpty;
+      case TipoUsuario.funcionario:
+        return false;
+    }
+  }
+
+  Future<void> atualizarPendencias() {
+    switch (usuario.tipoUsuario) {
+      case TipoUsuario.gestor:
+        return _oc.carregarOcorrenciasGestor(usuario.id);
+      case TipoUsuario.administrador:
+        return _oc.carregarPessoasComPendencias(usuario);
+      case TipoUsuario.funcionario:
+        return Future.value();
+    }
+  }
 
   Future<void> inicializar() async {
-    final tarefas = <Future<void>>[];
-
-    if (usuario.tipoUsuario == TipoUsuario.gestor) {
-      tarefas.add(ocorrenciaController.carregarOcorrenciasGestor(usuario.id));
-    }
-
-    if (usuario.tipoUsuario == TipoUsuario.administrador) {
-      tarefas.add(carregarEmpresaAdmin());
-    }
-
-    await Future.wait(tarefas);
+    await Future.wait([
+      atualizarPendencias(),
+      if (usuario.tipoUsuario == TipoUsuario.administrador) carregarEmpresa(),
+    ]);
   }
 
-  Future<void> carregarEmpresaAdmin() async {
-    carregandoEmpresa = true;
-    erroEmpresa = null;
-    notifyListeners();
-
+  Future<void> carregarEmpresa() async {
     try {
-      final empresas = await _empresaService.buscarMinhasEmpresas();
-      empresaIdAdmin = empresas.isEmpty ? null : empresas.first.id;
-    } catch (_) {
-      erroEmpresa = 'Não foi possível carregar a empresa.';
-    } finally {
-      carregandoEmpresa = false;
-      notifyListeners();
-    }
-  }
-
-  void _notificarAlteracao() {
-    notifyListeners();
+      final lista = await _empresaService.buscarMinhasEmpresas();
+      if (lista.isNotEmpty) {
+        empresaId = lista.first.id;
+        notifyListeners();
+      }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
-    ocorrenciaController.removeListener(_notificarAlteracao);
-    ocorrenciaController.dispose();
+    _oc.removeListener(notifyListeners);
+    _oc.dispose();
     super.dispose();
   }
 }

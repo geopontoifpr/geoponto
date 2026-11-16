@@ -51,6 +51,7 @@ class _BaterPontoScreenState extends State<BaterPontoScreen> {
   void dispose() {
     _relogioTimer?.cancel();
     _controller.dispose();
+    _empresaController.dispose();
     super.dispose();
   }
 

@@ -4,6 +4,7 @@ import 'package:printing/printing.dart';
 import '../models/registro_ponto_model.dart';
 import '../../ocorrencias/models/ocorrencia_model.dart';
 
+
 class ExtratoPdfService {
   static Future<void> gerarEImprimirPdf({
     required String nomeColaborador,
@@ -140,6 +141,10 @@ class ExtratoPdfService {
 
   static pw.Widget _buildTabela(List<Map<String, dynamic>> dias, int ano, String mesNome) {
     // Definimos os cabeçalhos
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    final int mesReferencia = meses.indexOf(mesNome) + 1;
+    
+    
     final headers = [
       'Data', 
       'Horários Registrados\n(Batidas / Ocorrências)', 
@@ -186,7 +191,8 @@ class ExtratoPdfService {
         
         // 2. LINHAS DOS DIAS
         ...dias.map((info) {
-          final diaStr = '${info['dia'].toString().padLeft(2, '0')}/${mesNome == "Setembro" ? "09" : "10"}/$ano';
+          final diaStr = '${info['dia'].toString().padLeft(2, '0')}/${mesReferencia.toString().padLeft(2, '0')}/$ano';
+          
           
           final batidas = info['batidas'] as List<RegistroPontoModel>;
           final ocorrencias = info['ocorrencias'] as List<dynamic>;

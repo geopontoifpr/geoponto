@@ -116,14 +116,13 @@ class _EquipeScreenState extends State<EquipeScreen>
     );
   }
 
-
-  void _abrirOcorrencias(UsuarioModel membro) {
-    Navigator.push(
+  Future<void> _abrirOcorrencias(UsuarioModel membro) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => OcorrenciasGestorScreen(
           usuarioLogado: widget.usuarioLogado,
-          pessoaInicial: membro,
+          pessoa: membro,
         ),
       ),
     );
