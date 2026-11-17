@@ -166,7 +166,7 @@ class _MinhasOcorrenciasScreenState extends State<MinhasOcorrenciasScreen> {
                 child: ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: lista.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final oc = lista[index];
                     return OcorrenciaCard(

@@ -35,7 +35,7 @@ class ComprovantePdfService {
                 child: pw.Text(
                   'Comprovante de Registro de Ponto do Trabalhador\n(CRPT)',
                   // 2. Agora você pode usar FontWeight normal, o pacote puxa o fontBold do tema
-                  style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+                  style: const pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
                   textAlign: pw.TextAlign.center,
                 ),
               ),
@@ -43,19 +43,19 @@ class ComprovantePdfService {
               pw.Divider(),
               pw.SizedBox(height: 10),
               
-              pw.Text('EMPREGADOR', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+              pw.Text('EMPREGADOR', style: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
               // O restante do seu código permanece igual, 
               // mas agora todos suportam acentos automaticamente!
               pw.Text('Razão Social: ${empresa.nome ?? "Não informado"}', style: const pw.TextStyle(fontSize: 12)),
               pw.Text('CNPJ: ${empresa.cnpj ?? "Não informado"}', style: const pw.TextStyle(fontSize: 12)),
               pw.SizedBox(height: 16),
               
-              pw.Text('TRABALHADOR', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+              pw.Text('TRABALHADOR', style: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
               pw.Text('Nome: ${usuario.nome}', style: const pw.TextStyle(fontSize: 12)),
               pw.Text('CPF: ${usuario.cpf}', style: const pw.TextStyle(fontSize: 12)),
               pw.SizedBox(height: 16),
               
-              pw.Text('DADOS DO REGISTRO', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+              pw.Text('DADOS DO REGISTRO', style: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
               pw.Text('Data: $dataFormatada', style: const pw.TextStyle(fontSize: 12)),
               pw.Text('Hora: $horaFormatada', style: const pw.TextStyle(fontSize: 12)),
               pw.Text('Fuso Horário: UTC-3 (Horário de Brasília)', style: const pw.TextStyle(fontSize: 12)),

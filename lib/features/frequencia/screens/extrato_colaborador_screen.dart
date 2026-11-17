@@ -82,7 +82,7 @@ class _ExtratoColaboradorScreenState extends State<ExtratoColaboradorScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: UsuarioAppBar(usuario: widget.colaborador),
+      appBar: UsuarioAppBar(usuario: widget.gestorLogado),
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {

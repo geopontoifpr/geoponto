@@ -41,6 +41,7 @@ class OcorrenciaService {
 
   Future<List<UsuarioModel>> listarPessoasComPendencias({
     required UsuarioModel usuarioLogado,
+   
   }) async {
     final usuario = await _validarUsuarioLogado(usuarioLogado);
     final agora = DateTime.now();
@@ -72,8 +73,8 @@ class OcorrenciaService {
 
     final ocorrencias = await _repository.listarPorUsuariosNoMes(
       usuariosIds: pessoasElegiveis.map((pessoa) => pessoa.id).toList(),
-      ano: agora.year,
-      mes: agora.month,
+      ano: DateTime.now().year,
+      mes: DateTime.now().month,
     );
     
     final idsComOcorrencias = ocorrencias
@@ -97,15 +98,16 @@ class OcorrenciaService {
   Future<List<OcorrenciaModel>> listarOcorrenciasDaPessoa({
     required UsuarioModel usuarioLogado,
     required UsuarioModel pessoa,
+    required int ano,
+    required int mes,
   }) async {
     final usuario = await _validarUsuarioLogado(usuarioLogado);
-    final agora = DateTime.now();
 
     return _listarOcorrenciasDeOutraPessoa(
       usuario: usuario,
       pessoa: pessoa,
-      ano: agora.year,
-      mes: agora.month,
+      ano: ano,
+      mes: mes,
     );
   }
 

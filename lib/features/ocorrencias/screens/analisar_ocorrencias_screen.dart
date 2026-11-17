@@ -125,7 +125,7 @@ class _AnalisarOcorrenciasScreenState extends State<AnalisarOcorrenciasScreen> {
       appBar: UsuarioAppBar(usuario: widget.usuarioLogado),
       body: ListenableBuilder(
         listenable: _c,
-        builder: (_, __) {
+        builder: (_, _) {
           final lista = _c.ocorrenciasDaPessoa.filtrar(pendentes: _pendentes);
           return Column(
             children: [
@@ -147,7 +147,7 @@ class _AnalisarOcorrenciasScreenState extends State<AnalisarOcorrenciasScreen> {
                     child: ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: lista.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) => OcorrenciaCard(
                         ocorrencia: lista[i],
                         dataFormatada: '${lista[i].dataInicio.day.toString().padLeft(2, '0')}/${lista[i].dataInicio.month.toString().padLeft(2, '0')}/${lista[i].dataInicio.year}',

@@ -5,7 +5,7 @@ import '../../../core/errors/app_exception.dart';
 
 class LocationService {
   Future<Position> obterLocalizacaoAtual() async {
-    bool servicoAtivo = await Geolocator.isLocationServiceEnabled();
+    final bool servicoAtivo = await Geolocator.isLocationServiceEnabled();
 
     if (!servicoAtivo) {
       throw const LocalizacaoDesativadaException();

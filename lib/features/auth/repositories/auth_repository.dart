@@ -1,9 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../../../core/errors/app_exception.dart';
 
 class AuthRepository {
-  final _client = Supabase.instance.client;
+  final SupabaseClient _client;
+
+  AuthRepository({SupabaseClient? client})
+      : _client = client ?? SupabaseService.instance.client;
 
   // Parâmetros posicionais (String email, String senha)
   Future<UsuarioModel?> buscarPorCredenciais(String email, String senha) async {
@@ -16,7 +20,7 @@ class AuthRepository {
 
       final user = res.user;
       if (user == null) {
-        throw AuthExceptionApp('Erro ao autenticar usuário.'); // Sem 'const'
+        throw const AuthExceptionApp('Erro ao autenticar usuário.'); // Sem 'const'
       }
 
       // 2. Busca o perfil na tabela pública (O RLS agora permite pois temos o Token!)
@@ -34,7 +38,7 @@ class AuthRepository {
     } on PostgrestException catch (e) {
       throw ServidorException('Erro no banco de dados: ${e.message}');
     } catch (e) {
-      throw ServidorException('Falha inesperada no login.');
+      throw const ServidorException('Falha inesperada no login.');
     }
   }
 
@@ -46,7 +50,7 @@ class AuthRepository {
     try {
       await _client.auth.updateUser(UserAttributes(password: novaSenha));
     } catch (e) {
-      throw ServidorException('Erro ao atualizar a senha no provedor de autenticação.');
+      throw const ServidorException('Erro ao atualizar a senha no provedor de autenticação.');
     }
   }
 
@@ -55,7 +59,7 @@ class AuthRepository {
     try {
       await _client.from('usuarios').update({'primeiro_acesso': false}).eq('id', usuarioId);
     } catch (e) {
-      throw ServidorException('Erro ao atualizar o status de primeiro acesso.');
+      throw const ServidorException('Erro ao atualizar o status de primeiro acesso.');
     }
   }
   // Vincula o dispositivo ao usuário na tabela pública
@@ -66,14 +70,14 @@ class AuthRepository {
           .update({'dispositivo_usuario': dispositivoId})
           .eq('id', usuarioId);
     } catch (e) {
-      throw ServidorException('Erro ao vincular o dispositivo ao usuário.');
+      throw const ServidorException('Erro ao vincular o dispositivo ao usuário.');
     }
   }
   Future<void> enviarEmailRecuperacao(String email) async {
     try {
       await _client.auth.resetPasswordForEmail(email,redirectTo: 'io.supabase.geoponto://login-callback/',);
     } catch (e) {
-      throw ServidorException('Erro ao processar a solicitação de recuperação.');
+      throw const ServidorException('Erro ao processar a solicitação de recuperação.');
     }
   }
 }

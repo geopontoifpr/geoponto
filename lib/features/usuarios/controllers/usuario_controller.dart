@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/utils/executor_async.dart';
 import '../models/usuario_model.dart';
 import '../services/usuario_service.dart';
@@ -61,16 +60,15 @@ class UsuarioController extends ChangeNotifier with ExecutorAsync {
       executar(() => _service.desvincularDispositivo(usuarioId));
 
   Future<bool> atualizarNome(UsuarioModel usuarioAtual, String novoNome) {
-    final nome = novoNome.trim();
-    if (nome == usuarioAtual.nome) return Future.value(true);
+    final nomeLimpo = novoNome.trim();
+    if (nomeLimpo == usuarioAtual.nome) return Future.value(true);
 
     return executar(() async {
-      // Idealmente isto iria para UsuarioService/UsuarioRepository.
-      await Supabase.instance.client
-          .from('usuarios')
-          .update({'nome': nome})
-          .eq('id', usuarioAtual.id);
-      usuarioAtual.nome = nome; // atualiza o objeto em memória
+      await _service.atualizarNome(usuarioAtual, nomeLimpo);
+      
+      usuarioAtual.nome = nomeLimpo;
+      
+      
     }, erroPadrao: 'Erro ao atualizar o nome.');
   }
 

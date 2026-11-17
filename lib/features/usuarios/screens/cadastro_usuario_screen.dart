@@ -16,11 +16,11 @@ class CadastroUsuarioScreen extends StatefulWidget {
   final UsuarioModel usuarioLogado;
   
   const CadastroUsuarioScreen({
-    Key? key,
+    super.key,
     required this.empresaId,
     this.membroEmEdicao,
     required this.usuarioLogado,
-  }) : super(key: key);
+  });
 
   @override
   State<CadastroUsuarioScreen> createState() => _CadastroUsuarioScreenState();
@@ -144,6 +144,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
           await _jornadaController.salvarJornadaUsuario(usuarioAlvoId, _jornadaSelecionada!);
         }
       }
+
+      if (!mounted) return;
 
           // 1. Define a mensagem
       final mensagemSucesso = ehEdicao 

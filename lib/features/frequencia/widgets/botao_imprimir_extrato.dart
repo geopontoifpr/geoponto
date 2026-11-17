@@ -35,13 +35,13 @@ class BotaoImprimirExtrato extends StatelessWidget {
               
               // Lógica contábil do saldo: 
               // Saldo do dia é o que passou (ou faltou) da jornada prevista + abonos
-              int minutosTrabalhados = info.minutosTrabalhados;
-              int minutosPrevistos = info.minutosPrevistos;
-              int minutosAbonados = info.minutosAbonados;
+              final int minutosTrabalhados = info.minutosTrabalhados;
+              final int minutosPrevistos = info.minutosPrevistos;
+              final int minutosAbonados = info.minutosAbonados;
               
               int horasExtras = 0;
               int atrasosFaltas = 0;
-              int saldoDoDia = info.saldoMinutos; 
+              final int saldoDoDia = info.saldoMinutos; 
               
               if (saldoDoDia > 0) {
                 horasExtras = saldoDoDia;
@@ -67,7 +67,7 @@ class BotaoImprimirExtrato extends StatelessWidget {
               };
             });
 
-            List<String> jornadasFmt = [];
+            final List<String> jornadasFmt = [];
               // Função auxiliar para formatar a data. Retorna null se não houver data válida (Atual)
               String? formatarDataIso(String? dataIso) {
                 if (dataIso == null) return null;

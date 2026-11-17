@@ -6,9 +6,7 @@ import '../models/fechamento_mensal_model.dart';
 
 class FrequenciaRepository {
   final SupabaseClient _client;
-
-  /// Caso a tabela registros_ponto use outro nome para a data efetiva da batida
-  /// (ex: 'data_hora_ponto' ou 'data_hora'), altere apenas esta constante:
+  
   static const String colunaDataPonto = 'criado_em';
 
   FrequenciaRepository({SupabaseClient? client})
@@ -34,8 +32,12 @@ class FrequenciaRepository {
         .map((item) => RegistroPontoModel.fromMap(Map<String, dynamic>.from(item)))
         .toList();
   }
+  
+  String? obterIdUsuarioLogado() {
+    return _client.auth.currentUser?.id;
+  }
 
-  Future<DateTime> obterDataCadastroUsuario(String usuarioId) async {
+  Future<DateTime?> obterDataCadastroUsuario(String usuarioId) async {
     try {
       final response = await _client
           .from('usuarios')
@@ -47,11 +49,10 @@ class FrequenciaRepository {
         return DateTime.parse(response['criado_em'].toString()).toLocal();
       }
     } catch (_) {}
-    final agora = DateTime.now();
-    return DateTime(agora.year, agora.month, 1);
+    return null; // O repositório não toma decisão, apenas relata que não achou.
   }
 
-  Future<int> obterCargaHorariaSemanal(String usuarioId) async {
+  Future<int?> obterCargaHorariaSemanal(String usuarioId) async {
     try {
       final vinculo = await _client
           .from('jornadas_usuarios')
@@ -73,7 +74,7 @@ class FrequenciaRepository {
         }
       }
     } catch (_) {}
-    return 40;
+    return null; // O repositório não assume o padrão 40, deixa isso pro Service.
   }
 
   Future<List<Map<String, dynamic>>> listarJornadasPorMes({
@@ -128,7 +129,6 @@ class FrequenciaRepository {
     return null;
   }
 
-  /// Usa INSERT simples para respeitar a constraint UNIQUE (usuario_id, mes_referencia)
   Future<void> inserirFechamentoMensal(FechamentoMensalModel fechamento) async {
     await _client.from('fechamentos_mensais').insert(fechamento.toMap());
   }

@@ -49,6 +49,13 @@ app.*.map.json
 .env
 .env.*
 dotenv.env
-!.env.exampleandroid/build/
-build/
+!.env.example
+android/build/
 **/android/build/
+
+# Gerados pelo Flutter
+**/ephemeral/
+**/Flutter/Generated.xcconfig
+**/Flutter/flutter_export_environment.sh
+**/generated_plugin_registrant.*
+**/GeneratedPluginRegistrant.*

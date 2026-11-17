@@ -72,7 +72,7 @@ class ExtratoPdfService {
         children: [
           pw.Text(
             'EXTRATO MENSAL DE FREQUÊNCIA', 
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            style: const pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 4),
           pw.Text('Período: $mes / $ano', style: const pw.TextStyle(fontSize: 11)),
@@ -100,15 +100,15 @@ class ExtratoPdfService {
         children: [
           pw.Text(
                 'CPF: $cpf', 
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
               pw.Text(
                 'Funcionário(a): $nome', 
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
               pw.Text(
                 'Setor: $nomeSetor', 
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
           pw.Divider(thickness: 0.5),
           
@@ -130,8 +130,8 @@ class ExtratoPdfService {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('Saldo Final do Mês:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-              pw.Text(saldo, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Saldo Final do Mês:', style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              pw.Text(saldo, style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
             ],
           ),
         ],
@@ -180,7 +180,7 @@ class ExtratoPdfService {
             child: pw.Text(
               h,
               textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(
+              style: const pw.TextStyle(
                 fontSize: 9,
                 fontWeight: pw.FontWeight.bold,
                 color: PdfColors.white, // Fonte branca no fundo azul

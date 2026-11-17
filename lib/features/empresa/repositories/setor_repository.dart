@@ -1,9 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../core/errors/app_exception.dart';
 import '../models/setor_model.dart';
 
 class SetorRepository {
-  final _client = Supabase.instance.client;
+  final SupabaseClient _client;
+
+  SetorRepository({SupabaseClient? client})
+      : _client = client ?? SupabaseService.instance.client;
 
   Future<SetorModel> salvarSetor(SetorModel setor, {bool ehEdicao = false}) async {
     try {
@@ -35,7 +39,7 @@ class SetorRepository {
     } on PostgrestException catch (e) {
       throw ServidorException('Erro no banco de dados: ${e.message}');
     } catch (e) {
-      throw ServidorException('Falha inesperada ao salvar setor.');
+      throw const ServidorException('Falha inesperada ao salvar setor.');
     }
   }
 
@@ -59,11 +63,11 @@ class SetorRepository {
       } on PostgrestException catch (e) {
         // 23503 é o código do PostgreSQL para violação de Chave Estrangeira
         if (e.code == '23503') {
-          throw ServidorException('Não é possível excluir este setor pois há funcionários vinculados a ele.');
+          throw const ServidorException('Não é possível excluir este setor pois há funcionários vinculados a ele.');
         }
         throw ServidorException('Erro ao excluir setor: ${e.message}');
       } catch (e) {
-        throw ServidorException('Falha inesperada ao excluir setor.');
+        throw const ServidorException('Falha inesperada ao excluir setor.');
       }
   }
 

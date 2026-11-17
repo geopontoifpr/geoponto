@@ -82,7 +82,7 @@ class OcorrenciaRepository {
   }) async {
     if (usuariosIds.isEmpty) return <String>{};
     final mesReferencia =
-        '${ano}-${mes.toString().padLeft(2, '0')}-01';
+        '$ano-${mes.toString().padLeft(2, '0')}-01';
     try {
       final response = await _client
           .from('fechamentos_mensais')

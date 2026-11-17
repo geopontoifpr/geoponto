@@ -23,7 +23,7 @@ class OcorrenciaController extends ChangeNotifier with ExecutorAsync {
     pessoasComPendencias = [];
     return executar(() async {
       pessoasComPendencias = await _service.listarPessoasComPendencias(
-        usuarioLogado: usuarioLogado,
+        usuarioLogado: usuarioLogado,       
       );
     }, erroPadrao: 'Erro ao carregar pessoas com ocorrências pendentes.');
   }
@@ -38,6 +38,8 @@ class OcorrenciaController extends ChangeNotifier with ExecutorAsync {
       ocorrenciasDaPessoa = await _service.listarOcorrenciasDaPessoa(
         usuarioLogado: usuarioLogado,
         pessoa: pessoa,
+        ano: DateTime.now().year,
+        mes: DateTime.now().month,
       );
     }, erroPadrao: 'Erro ao carregar ocorrências da pessoa selecionada.');
   }

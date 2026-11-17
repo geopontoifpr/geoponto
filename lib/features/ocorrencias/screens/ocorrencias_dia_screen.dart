@@ -185,8 +185,6 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // TODO: Caso você tenha passado o "StatusOcorrencia get status" para o Model 
-    // conforme sugerido na Seção 7 da sua análise, você pode simplificar esses ifs futuramente.
     final Color corStatus;
     final String textoStatus;
     final IconData iconeStatus;

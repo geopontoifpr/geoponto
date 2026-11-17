@@ -32,15 +32,15 @@ class UsuarioService {
     required String tipoUsuario,
     required String? setorId,
   }) async {
-    if (nome.trim().length < 3) throw ValidacaoException('Nome muito curto.');
-    if (cpf.trim().length != 11) throw ValidacaoException('CPF inválido. Deve conter 11 dígitos.');
-    if (!email.contains('@')) throw ValidacaoException('E-mail inválido.');
-    if (setorId == null || setorId.isEmpty) throw ValidacaoException('Selecione um setor.');
+    if (nome.trim().length < 3) throw const ValidacaoException('Nome muito curto.');
+    if (cpf.trim().length != 11) throw const ValidacaoException('CPF inválido. Deve conter 11 dígitos.');
+    if (!email.contains('@')) throw const ValidacaoException('E-mail inválido.');
+    if (setorId == null || setorId.isEmpty) throw const ValidacaoException('Selecione um setor.');
 
     if (tipoUsuario == 'GESTOR') {
       final setorOcupado = await _repository.verificarSeSetorTemGestor(setorId, ignorarId: idEdicao);
       if (setorOcupado) {
-        throw ValidacaoException('Este setor já possui um Gestor responsável vinculado a ele.');
+        throw const ValidacaoException('Este setor já possui um Gestor responsável vinculado a ele.');
       }
     }
 
@@ -81,7 +81,7 @@ class UsuarioService {
     if (novoStatus == true && usuario.tipoUsuario.name.toUpperCase() == 'GESTOR' && usuario.setorId != null) {
       final setorOcupado = await _repository.verificarSeSetorTemGestor(usuario.setorId!, ignorarId: usuario.id);
       if (setorOcupado) {
-        throw ValidacaoException('O setor selecionado já possui um Gestor vinculado. Altere o gestor atual primeiro.');
+        throw const ValidacaoException('O setor selecionado já possui um Gestor vinculado. Altere o gestor atual primeiro.');
       }
     }
 
@@ -103,7 +103,7 @@ class UsuarioService {
   Future<String?> obterIdPorEmail(String email) async {
     try {
       if (email.trim().isEmpty || !email.contains('@')) {
-        throw ValidacaoException('E-mail inválido para busca.');
+        throw const ValidacaoException('E-mail inválido para busca.');
       }
       
       return await _repository.buscarIdPorEmail(email.trim());
@@ -115,5 +115,18 @@ class UsuarioService {
   Future<void> desvincularDispositivo(String usuarioId) async {
     // repository é a sua instância de UsuarioRepository
     await _repository.limparDispositivo(usuarioId);
+  }
+  Future<void> atualizarNome(UsuarioModel usuarioAtual, String novoNome) async {
+    final nomeLimpo = novoNome.trim();
+    
+    // Regra de negócio: se o nome for idêntico ou vazio, aborta sem chamar o banco
+    if (nomeLimpo.isEmpty) {
+      throw Exception('O nome não pode ser vazio.');
+    }
+    if (nomeLimpo == usuarioAtual.nome) {
+      return; // Sucesso silencioso, nada a atualizar
+    }
+
+    await _repository.atualizarNome(usuarioAtual.id, nomeLimpo);
   }
 }

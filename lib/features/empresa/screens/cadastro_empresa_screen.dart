@@ -75,13 +75,17 @@ class _CadastroEmpresaScreenState extends State<CadastroEmpresaScreen> {
         Navigator.pop(context);
       }
     } on AppException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.mensagem), backgroundColor: e.cor, behavior: SnackBarBehavior.floating),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.mensagem), backgroundColor: e.cor, behavior: SnackBarBehavior.floating),
+        );
+      }
     } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro inesperado.'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erro inesperado.'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+        );
+      }
     }
   }
 

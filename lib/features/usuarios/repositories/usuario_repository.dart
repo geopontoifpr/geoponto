@@ -1,10 +1,15 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
+import '../../../core/services/supabase_service.dart';
 import '../../../core/errors/app_exception.dart';
 import '../models/usuario_model.dart';
 
 
 class UsuarioRepository {
-  final _client = Supabase.instance.client;
+  final SupabaseClient _client;
+  
+  UsuarioRepository({SupabaseClient? client})
+      : _client = client ?? SupabaseService.instance.client;
+
 
   Future<List<UsuarioModel>> listarUsuarios({
     required String empresaId,
@@ -45,22 +50,22 @@ class UsuarioRepository {
     } on PostgrestException catch (e) {
       // Se o Gatilho bloquear a edição/reativação:
       if (e.message.contains('GESTOR_DUPLICADO')) {
-        throw ValidacaoException('O setor selecionado já possui um Gestor vinculado. Altere o gestor atual primeiro.');
+        throw const ValidacaoException('O setor selecionado já possui um Gestor vinculado. Altere o gestor atual primeiro.');
       }
       
       // Tratamento de e-mail duplicado
       if (e.code == '23505') {
         final msgBanco = e.message.toLowerCase();
         if (msgBanco.contains('email')) {
-          throw ValidacaoException('Este e-mail já está cadastrado no sistema.');
+          throw const ValidacaoException('Este e-mail já está cadastrado no sistema.');
         } else {
-          throw ValidacaoException('Este dado já existe no sistema.');
+          throw const ValidacaoException('Este dado já existe no sistema.');
         }
       }
       
       throw ServidorException('Erro ao atualizar dados: ${e.message}');
     } catch (e) {
-      throw ServidorException('Falha inesperada ao atualizar usuário.');
+      throw const ServidorException('Falha inesperada ao atualizar usuário.');
     }
   }
     
@@ -91,7 +96,6 @@ class UsuarioRepository {
 
   Future<bool> verificarSeSetorTemGestor(String setorId, {String? ignorarId}) async {
     try {
-      // SUA LÓGICA: Olha diretamente pra quem é o dono na tabela de setores
       final response = await _client
           .from('setores')
           .select('gestor_id')
@@ -118,7 +122,7 @@ class UsuarioRepository {
     try {
       await _client.from('setores').update({'gestor_id': null}).eq('gestor_id', usuarioId);
     } catch (e) {
-      throw ServidorException('Erro ao remover vínculo antigo do gestor.');
+      throw const ServidorException('Erro ao remover vínculo antigo do gestor.');
     }
   }
 
@@ -127,7 +131,7 @@ class UsuarioRepository {
     try {
       await _client.from('setores').update({'gestor_id': usuarioId}).eq('id', setorId);
     } catch (e) {
-      throw ServidorException('Erro ao vincular gestor ao setor.');
+      throw const ServidorException('Erro ao vincular gestor ao setor.');
     }
   }
 
@@ -151,7 +155,13 @@ class UsuarioRepository {
           .update({'dispositivo_usuario': null})
           .eq('id', usuarioId);
     } catch (e) {
-      throw ServidorException('Erro ao remover o vínculo do dispositivo no banco.');
+      throw const ServidorException('Erro ao remover o vínculo do dispositivo no banco.');
     }
+  }
+  Future<void> atualizarNome(String usuarioId, String novoNome) async {
+    await _client
+        .from('usuarios')
+        .update({'nome': novoNome})
+        .eq('id', usuarioId);
   }
 }

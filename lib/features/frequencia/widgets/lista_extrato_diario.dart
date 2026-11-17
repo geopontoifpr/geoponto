@@ -39,7 +39,7 @@ class ListaExtratoDiario extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: controller.totalDiasMes,
-            separatorBuilder: (_, __) => const Divider(height: 20),
+            separatorBuilder: (_, _) => const Divider(height: 20),
             itemBuilder: (context, index) {
               final dia = index + 1;
               final info = controller.obterDadosDia(dia);

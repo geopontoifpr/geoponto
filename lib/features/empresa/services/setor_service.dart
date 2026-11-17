@@ -13,13 +13,13 @@ class SetorService {
     final nomeTratado = setor.nome.trim();
 
     if (nomeTratado.isEmpty) {
-      throw ValidacaoException('O nome do setor é obrigatório.');
+      throw const ValidacaoException('O nome do setor é obrigatório.');
     }
     if (nomeTratado.length < 3) {
-      throw ValidacaoException('O nome do setor deve ter pelo menos 3 caracteres.');
+      throw const ValidacaoException('O nome do setor deve ter pelo menos 3 caracteres.');
     }
     if (setor.empresaId.isEmpty) {
-      throw ValidacaoException('O setor precisa estar vinculado a uma empresa.');
+      throw const ValidacaoException('O setor precisa estar vinculado a uma empresa.');
     }
 
     // NOVA VALIDAÇÃO: Bloquear nomes duplicados
@@ -29,7 +29,7 @@ class SetorService {
     );
 
     if (nomeDuplicado) {
-      throw ValidacaoException('Já existe um setor com este nome nesta empresa.');
+      throw const ValidacaoException('Já existe um setor com este nome nesta empresa.');
     }
 
     final setorValidado = SetorModel(
@@ -48,7 +48,7 @@ class SetorService {
   }
   
   Future<List<SetorModel>> listarSetores(String empresaId) async {
-    if (empresaId.isEmpty) throw ValidacaoException('Empresa não identificada.');
+    if (empresaId.isEmpty) throw const ValidacaoException('Empresa não identificada.');
     return await _repository.listarSetoresPorEmpresa(empresaId);
   }
 }

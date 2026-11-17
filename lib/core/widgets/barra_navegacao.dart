@@ -110,15 +110,15 @@ class _ItemNavegacaoUnico extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
                 item.label,
-                maxLines: 2, // <-- Altere de 1 para 2
-                textAlign: TextAlign.center, // <-- Adicione para o texto quebrado ficar alinhado ao centro
+                maxLines: 2, 
+                textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    fontSize: 10, // Se ainda ficar apertado, você pode reduzir para 9 ou 9.5
+                    fontSize: 10, 
                     fontWeight: ativo ? FontWeight.w800 : FontWeight.w600,
                     letterSpacing: 0.4,
                     color: ativo ? corAtiva : corInativa,
-                    height: 1.1, // <-- Adicione para diminuir o espaço entre as duas linhas
+                    height: 1.1, 
                 ),
             ),
             const SizedBox(height: 4),

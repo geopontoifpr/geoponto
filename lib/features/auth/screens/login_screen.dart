@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 final sucesso = await _controller.recuperarSenha(email);
 
-                if (!ctx.mounted) return;
+                if (!mounted || !ctx.mounted) return;
 
                 if (sucesso) {
                   Navigator.pop(ctx);

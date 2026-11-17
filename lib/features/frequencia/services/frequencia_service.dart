@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/utils/feriados_util.dart';
 import '../../ocorrencias/models/ocorrencia_model.dart';
 import '../../ocorrencias/repositories/ocorrencia_repository.dart';
 import '../../ponto/models/registro_ponto_model.dart';
@@ -17,11 +17,19 @@ class FrequenciaService {
   })  : _frequenciaRepo = frequenciaRepo ?? FrequenciaRepository(),
         _ocorrenciaRepo = ocorrenciaRepo ?? OcorrenciaRepository();
 
-  Future<DateTime> obterDataCadastroUsuario(String usuarioId) =>
-      _frequenciaRepo.obterDataCadastroUsuario(usuarioId);
+  Future<DateTime> obterDataCadastroUsuario(String usuarioId) async {
+    final data = await _frequenciaRepo.obterDataCadastroUsuario(usuarioId);
+    if (data != null) return data;
+    
+    // Regra de negócio: se o banco falhar em informar, assumimos o início do mês atual.
+    final agora = DateTime.now();
+    return DateTime(agora.year, agora.month, 1);
+  }
 
-  Future<int> obterCargaHorariaSemanal(String usuarioId) =>
-      _frequenciaRepo.obterCargaHorariaSemanal(usuarioId);
+  Future<int> obterCargaHorariaSemanal(String usuarioId) async {
+    // Regra de negócio: se não houver carga cadastrada, assume 40 horas semanais.
+    return await _frequenciaRepo.obterCargaHorariaSemanal(usuarioId) ?? 40;
+  }
 
   Future<List<Map<String, dynamic>>> obterJornadasPorMes({
     required String usuarioId,
@@ -48,11 +56,10 @@ class FrequenciaService {
   Future<void> inserirFechamentoMensal(FechamentoMensalModel fechamento) =>
       _frequenciaRepo.inserirFechamentoMensal(fechamento);
 
-  /// Valida as regras de negócio do fechamento mensal e, se todas passarem,
-  /// insere o fechamento. Lança [Exception] em caso de violação.
   Future<void> validarEInserirFechamento(
     FechamentoMensalModel fechamento,
     bool folhaJaFechada,
+    Map<int, List<OcorrenciaModel>> ocorrenciasPorDia,
   ) async {
     final agora = DateTime.now();
     final inicioMesAtual = DateTime(agora.year, agora.month, 1);
@@ -72,7 +79,18 @@ class FrequenciaService {
       throw Exception('Esta folha mensal já se encontra fechada.');
     }
 
-    final idUsuarioLogado = Supabase.instance.client.auth.currentUser?.id;
+    // --- NOVA REGRA: Bloqueia se houver ocorrência pendente ---
+    final temOcorrenciaPendente = ocorrenciasPorDia.values
+        .expand((lista) => lista)
+        .any((ocorrencia) => ocorrencia.isPendente);
+
+    if (temOcorrenciaPendente) {
+      throw Exception(
+        'Não é possível fechar a folha: existem ocorrências pendentes de análise para este mês.',
+      );
+    }
+
+    final idUsuarioLogado = _frequenciaRepo.obterIdUsuarioLogado();
     if (idUsuarioLogado == fechamento.usuarioId) {
       throw Exception('O gestor não pode fechar a própria folha.');
     }
@@ -80,7 +98,6 @@ class FrequenciaService {
     await _frequenciaRepo.inserirFechamentoMensal(fechamento);
   }
 
-  /// Agrupa por dia local da batida e garante ordem cronológica (Requisitos 2 e 6)
   Future<Map<int, List<RegistroPontoModel>>> obterPontosAgrupadosPorDia({
     required String usuarioId,
     required int ano,
@@ -125,7 +142,6 @@ class FrequenciaService {
     return mapOcorrencias;
   }
 
-  /// Calcula minutos trabalhados APENAS a partir de pares de batidas (Requisito 7)
   int calcularMinutosTrabalhadosDoDia(List<RegistroPontoModel> batidasDoDia) {
     if (batidasDoDia.length < 2) return 0;
 
@@ -134,8 +150,7 @@ class FrequenciaService {
 
     int totalMinutos = 0;
     for (int i = 0; i + 1 < batidas.length; i += 2) {
-      final diff =
-          batidas[i + 1].dataHoraPonto.difference(batidas[i].dataHoraPonto);
+      final diff = batidas[i + 1].dataHoraPonto.difference(batidas[i].dataHoraPonto);
       if (!diff.isNegative) {
         totalMinutos += diff.inMinutes;
       }
@@ -143,7 +158,6 @@ class FrequenciaService {
     return totalMinutos;
   }
 
-  /// Soma apenas ocorrências aprovadas (Requisito 8)
   int calcularMinutosAbonadosDoDia(List<OcorrenciaModel> ocorrenciasDoDia) {
     int totalAbonado = 0;
     for (final oc in ocorrenciasDoDia) {
@@ -152,6 +166,172 @@ class FrequenciaService {
       }
     }
     return totalAbonado;
+  }
+
+  // ───────────── Lógica de Negócios Transferida do Controller ─────────────
+
+  int obterCargaHorariaDoDia({
+    required int dia,
+    required DateTime mesAtual,
+    required List<Map<String, dynamic>> jornadasDoMes,
+    required int cargaHorariaSemanalPadrao,
+  }) {
+    final dataTexto = '${mesAtual.year}-${mesAtual.month.toString().padLeft(2, '0')}-${dia.toString().padLeft(2, '0')}';
+
+    for (final vinculo in jornadasDoMes.reversed) {
+      final inicio = vinculo['data_inicio_vigencia']?.toString().split('T').first;
+      final fim = vinculo['data_fim_vigencia']?.toString().split('T').first;
+
+      if (inicio == null || inicio.compareTo(dataTexto) > 0) continue;
+      if (fim != null && fim.compareTo(dataTexto) < 0) continue;
+
+      final jornada = vinculo['jornadas_trabalho'];
+      if (jornada is Map && jornada['carga_horaria_sem'] != null) {
+        return (jornada['carga_horaria_sem'] as num).toInt();
+      }
+    }
+    return cargaHorariaSemanalPadrao;
+  }
+
+  int obterMinutosPrevistosDoDia({
+    required int dia,
+    required DateTime mesAtual,
+    required int cargaHorariaDoDia,
+  }) {
+    final data = DateTime(mesAtual.year, mesAtual.month, dia);
+    if (FeriadosUtil.isFimDeSemanaOuFeriado(data)) return 0;
+    return ((cargaHorariaDoDia * 60) / 5).round();
+  }
+
+  ({
+    int minutosTrabalhados,
+    int minutosAbonados,
+    int minutosPrevistos,
+    int saldoMinutos,
+    bool isFimDeSemana,
+    String? nomeFeriado,
+    List<RegistroPontoModel> batidas,
+  }) obterDadosDia({
+    required int dia,
+    required DateTime mesAtual,
+    required List<RegistroPontoModel> batidas,
+    required List<OcorrenciaModel> ocorrencias,
+    required int minutosPrevistos,
+  }) {
+    final dt = DateTime(mesAtual.year, mesAtual.month, dia);
+    final trabalhados = calcularMinutosTrabalhadosDoDia(batidas);
+    final abonados = calcularMinutosAbonadosDoDia(ocorrencias);
+
+    return (
+      minutosTrabalhados: trabalhados,
+      minutosAbonados: abonados,
+      minutosPrevistos: minutosPrevistos,
+      saldoMinutos: trabalhados + abonados - minutosPrevistos,
+      isFimDeSemana: FeriadosUtil.isFimDeSemanaOuFeriado(dt),
+      nomeFeriado: FeriadosUtil.obterFeriado(dt),
+      batidas: batidas,
+    );
+  }
+
+  ({
+    int minutosPrevistos,
+    int minutosTrabalhados,
+    int minutosAbonados,
+    int saldoMinutos,
+    int diasTrabalhados,
+    int minutosCredito,
+    int minutosDebito,
+  }) calcularExtratoDetalhado({
+    required int totalDiasMes,
+    required DateTime mesAtual,
+    required Map<int, List<RegistroPontoModel>> pontosPorDia,
+    required Map<int, List<OcorrenciaModel>> ocorrenciasPorDia,
+    required List<Map<String, dynamic>> jornadasDoMes,
+    required int cargaHorariaSemanalPadrao,
+    required bool folhaFechada,
+    required FechamentoMensalModel? fechamentoSalvo,
+  }) {
+    int previstos = 0, trabalhados = 0, abonados = 0;
+    int dias = 0, credito = 0, debito = 0;
+
+    for (int d = 1; d <= totalDiasMes; d++) {
+      final cargaDia = obterCargaHorariaDoDia(
+        dia: d, 
+        mesAtual: mesAtual, 
+        jornadasDoMes: jornadasDoMes, 
+        cargaHorariaSemanalPadrao: cargaHorariaSemanalPadrao
+      );
+      
+      final minPrevistos = obterMinutosPrevistosDoDia(
+        dia: d, 
+        mesAtual: mesAtual, 
+        cargaHorariaDoDia: cargaDia
+      );
+
+      final info = obterDadosDia(
+        dia: d,
+        mesAtual: mesAtual,
+        batidas: pontosPorDia[d] ?? [],
+        ocorrencias: ocorrenciasPorDia[d] ?? [],
+        minutosPrevistos: minPrevistos,
+      );
+
+      previstos += info.minutosPrevistos;
+      trabalhados += info.minutosTrabalhados;
+      abonados += info.minutosAbonados;
+
+      if (info.minutosTrabalhados > 0 || info.batidas.isNotEmpty) dias++;
+
+      if (info.saldoMinutos > 0) {
+        credito += info.saldoMinutos;
+      } else if (info.saldoMinutos < 0) {
+        debito += info.saldoMinutos.abs();
+      }
+    }
+
+    final f = (folhaFechada && fechamentoSalvo != null) ? fechamentoSalvo : null;
+
+    return (
+      minutosPrevistos: f?.minutosPrevistos ?? previstos,
+      minutosTrabalhados: f?.minutosTrabalhados ?? trabalhados,
+      minutosAbonados: f?.minutosAbonados ?? abonados,
+      saldoMinutos: f?.saldoMinutos ?? (trabalhados + abonados - previstos),
+      diasTrabalhados: dias,
+      minutosCredito: credito,
+      minutosDebito: debito,
+    );
+  }
+
+  ({
+    int trabHoras,
+    int trabMin,
+    int faltamHoras,
+    int faltamMinRest,
+    double progresso,
+  }) calcularResumoMensal(
+    ({
+      int minutosPrevistos,
+      int minutosTrabalhados,
+      int minutosAbonados,
+      int saldoMinutos,
+      int diasTrabalhados,
+      int minutosCredito,
+      int minutosDebito,
+    }) extrato,
+  ) {
+    final concluido = extrato.minutosTrabalhados + extrato.minutosAbonados;
+    final faltam = (extrato.minutosPrevistos - concluido).clamp(0, extrato.minutosPrevistos);
+    final progresso = extrato.minutosPrevistos > 0
+        ? (concluido / extrato.minutosPrevistos).clamp(0.0, 1.0)
+        : 0.0;
+
+    return (
+      trabHoras: extrato.minutosTrabalhados ~/ 60,
+      trabMin: extrato.minutosTrabalhados % 60,
+      faltamHoras: faltam ~/ 60,
+      faltamMinRest: faltam % 60,
+      progresso: progresso,
+    );
   }
 
   StatusDiaCalendario avaliarStatusDia({
