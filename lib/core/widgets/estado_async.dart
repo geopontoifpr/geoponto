@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class EstadoAsync extends StatelessWidget {
   final bool carregando;

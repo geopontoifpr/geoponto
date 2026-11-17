@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Envolve qualquer widget com um efeito de água: ao tocar, nasce uma onda
 /// líquida no ponto exato do toque, com anéis ondulados que se expandem e

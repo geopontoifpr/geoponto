@@ -1,0 +1,269 @@
+import 'package:material_ui/material_ui.dart';
+import '../../../core/themes/app_themes.dart';
+import '../../../core/utils/snackbar_util.dart';
+import '../widgets/usuario_list_tile.dart';
+import '../../frequencia/screens/extrato_colaborador_screen.dart';
+import '../../ocorrencias/screens/analisar_ocorrencias_screen.dart';
+import '../../ocorrencias/controllers/ocorrencia_controller.dart';
+import '../controllers/usuario_controller.dart';
+import '../models/usuario_model.dart';
+import 'cadastro_usuario_screen.dart';
+
+enum ModoEquipe { cadastrar, extrato, ocorrencias }
+
+class EquipeScreen extends StatefulWidget {
+  final String empresaId;
+  final UsuarioModel usuarioLogado;
+  final bool mostrarAppBar;
+  final VoidCallback? onAtualizarNotificacoes;
+  final bool temPendencias; 
+
+  const EquipeScreen({
+    super.key,
+    required this.empresaId,
+    required this.usuarioLogado,
+    this.mostrarAppBar = true,
+    this.onAtualizarNotificacoes,
+    this.temPendencias = false,
+  });
+
+  @override
+  State<EquipeScreen> createState() => _EquipeScreenState();
+}
+
+class _EquipeScreenState extends State<EquipeScreen>
+    with SingleTickerProviderStateMixin {
+  final _controller = UsuarioController();
+  final _ocorrenciaController = OcorrenciaController();
+  late final TabController _tabController;
+  bool _apenasPendentes = true;
+  ModoEquipe get _modo => ModoEquipe.values[_tabController.index];
+
+
+  @override
+  void initState() {
+    super.initState();
+
+    _tabController = TabController(
+      length: ModoEquipe.values.length,
+      vsync: this,
+    )..addListener(() {
+        if (!_tabController.indexIsChanging) {
+          setState(() {});
+        }
+      });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recarregar();
+    });
+  }
+
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _controller.dispose();
+    _ocorrenciaController.dispose();
+    super.dispose();
+  }
+
+  void _recarregar() {
+    if (widget.empresaId.isNotEmpty) {
+      _controller.carregarUsuarios(widget.usuarioLogado, widget.empresaId);
+    }
+    _ocorrenciaController.carregarPessoasComPendencias(widget.usuarioLogado);
+  }  
+
+  List<UsuarioModel> _obterListaExibicao(bool isAbaOcorrencias) {
+   // Agora o filtro só atua se a aba for Ocorrências E o interruptor estiver ligado
+    if (isAbaOcorrencias && _apenasPendentes) {
+      final idsPendentes = _ocorrenciaController.pessoasComPendencias
+          .map((p) => p.id)
+          .toSet();
+          
+      return _controller.usuario
+          .where((u) => idsPendentes.contains(u.id))
+          .toList();
+    }
+    // Se for outra aba OU o interruptor estiver desligado, mostra todo mundo
+    return _controller.usuario;
+  }
+
+  Future<void> _irParaCadastro({UsuarioModel? membroEmEdicao}) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CadastroUsuarioScreen(
+          empresaId: widget.empresaId,
+          usuarioLogado: widget.usuarioLogado,
+          membroEmEdicao: membroEmEdicao,
+        ),
+      ),
+    );
+    _recarregar();
+  }
+
+  void _abrirExtrato(UsuarioModel membro) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExtratoColaboradorScreen(
+          colaborador: membro,
+          gestorLogado: widget.usuarioLogado,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirOcorrencias(UsuarioModel membro) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AnalisarOcorrenciasScreen(
+          usuarioLogado: widget.usuarioLogado,
+          pessoa: membro,
+        ),
+      ),
+    );
+    widget.onAtualizarNotificacoes?.call();
+    _recarregar();
+  }
+
+
+  void _aoTocarNoMembro(UsuarioModel membro) {
+    switch (_modo) {
+      case ModoEquipe.cadastrar:
+        break; // no modo cadastro, as ações ficam nos botões editar/inativar
+      case ModoEquipe.extrato:
+        _abrirExtrato(membro);
+        break;
+      case ModoEquipe.ocorrencias:
+        _abrirOcorrencias(membro);
+        break;
+    }
+  }
+
+  Future<void> _alternarStatus(UsuarioModel membro) async {
+    final sucesso =
+        await _controller.alternarStatus(membro, widget.usuarioLogado);
+    if (!mounted) return;
+
+    if (!sucesso) {
+      SnackbarUtil.showError(
+        context,
+        _controller.erroMensagem ?? 'Erro ao alterar status.',
+      );
+    } else {
+      _recarregar();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final modoCadastro = _modo == ModoEquipe.cadastrar;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,   // <- adicione
+      appBar: widget.mostrarAppBar
+          ? AppBar(title: const Text('Gestão de Equipe'))
+          : null,
+      floatingActionButton: modoCadastro
+          ? FloatingActionButton.extended(
+              onPressed: () => _irParaCadastro(),
+              icon: const Icon(Icons.person_add),
+              label: const Text('Novo Membro'),
+            )
+          : null,
+      body: Column(
+        children: [
+          Material(
+            color: theme.scaffoldBackgroundColor,
+            child: TabBar(
+              controller: _tabController,
+              tabs: [
+                const Tab(icon: Icon(Icons.person_add_alt_1), text: 'Cadastrar'),
+                const Tab(icon: Icon(Icons.receipt_long), text: 'Extrato Mensal'),
+                Tab(
+                  icon: Badge(
+                    isLabelVisible: widget.temPendencias,
+                    backgroundColor: AppThemes.errorColor,
+                    label: const Text('!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
+                    child: const Icon(Icons.report_problem_outlined),
+                  ),
+                  text: 'Ocorrências',
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: Listenable.merge([_controller, _ocorrenciaController]),
+              builder: (context, _) {
+                final isAbaOcorrencias = _modo == ModoEquipe.ocorrencias;
+                
+                final carregando = isAbaOcorrencias 
+                    ? _ocorrenciaController.carregando 
+                    : (_controller.isLoading && _controller.usuario.isEmpty);
+                    
+                final erro = isAbaOcorrencias 
+                    ? _ocorrenciaController.erroMensagem 
+                    : _controller.erroMensagem;
+                    
+                final listaExibicao = _obterListaExibicao(isAbaOcorrencias);
+
+                // Preparamos o que vai aparecer no centro da tela
+                Widget conteudoCentral;
+                
+                if (carregando) {
+                  conteudoCentral = Center(child: CircularProgressIndicator(color: theme.primaryColor));
+                } else if (erro != null) {
+                  conteudoCentral = Center(
+                    child: Text(erro, style: const TextStyle(color: AppThemes.errorColor), textAlign: TextAlign.center),
+                  );
+                } else if (listaExibicao.isEmpty) {
+                  conteudoCentral = Center(
+                    child: Text(isAbaOcorrencias 
+                        ? (_apenasPendentes ? 'Nenhuma ocorrência pendente na equipe.' : 'Nenhum colaborador encontrado.')
+                        : 'Ninguém na equipe ainda.'),
+                  );
+                } else {
+                  conteudoCentral = ListView.builder(
+                    itemCount: listaExibicao.length,
+                    itemBuilder: (context, index) {
+                      final membro = listaExibicao[index];
+                      return UsuarioListTile(
+                        membro: membro,
+                        onTap: modoCadastro ? null : () => _aoTocarNoMembro(membro),
+                        onEdit: modoCadastro ? () => _irParaCadastro(membroEmEdicao: membro) : null,
+                        onToggleStatus: modoCadastro ? () => _alternarStatus(membro) : null,
+                      );
+                    },
+                  );
+                }
+
+                // Desenhamos a coluna final com o Interruptor e a Lista
+                return Column(
+                  children: [
+                    if (isAbaOcorrencias)
+                      SwitchListTile(
+                        title: const Text(
+                          'Mostrar apenas pessoas com pendências',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                        value: _apenasPendentes,
+                        activeThumbColor: theme.primaryColor,
+                        onChanged: (valor) => setState(() => _apenasPendentes = valor),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                    Expanded(child: conteudoCentral),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

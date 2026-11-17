@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
-import '../../admin/screens/cadastro_setor_screen.dart';
-import '../../admin/screens/painel_empresa_screen.dart';
-import '../../colaborador/screens/bater_ponto_screen.dart';
-import '../../colaborador/screens/historico_mensal_screen.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../empresa/screens/cadastro_setor_screen.dart';
+import '../../empresa/screens/painel_empresa_screen.dart';
+import '../../ponto/screens/bater_ponto_screen.dart';
+import '../../frequencia/screens/meu_historico_screen.dart';
 import '../../ocorrencias/screens/minhas_ocorrencias_screen.dart';
 import '../../usuarios/models/usuario_model.dart';
-import '../../../core/widgets/custom_app_bar.dart';
+import '../../usuarios/widgets/usuario_app_bar.dart';
 import '../../../core/widgets/fundo_futurista.dart';
 import '../../../core/widgets/barra_navegacao.dart';
-import '../../../core/screens/equipe_screen.dart';
+import '../../usuarios/screens/equipe_screen.dart';
 import '../controllers/home_controller.dart';
 
 class _Aba {
@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<_Aba> get _abasPessoais => [
     _Aba('PONTO', Icons.access_time, BaterPontoScreen(usuario: _u, mostrarAppBar: false)),
-    _Aba('MEU HISTÓRICO', Icons.history, HistoricoMensalScreen(usuario: _u, mostrarAppBar: false)),
+    _Aba('MEU HISTÓRICO', Icons.history, MeuHistoricoScreen(usuario: _u, mostrarAppBar: false)),
     _Aba('MINHAS OCORRÊNCIAS', Icons.report_problem_outlined, MinhasOcorrenciasScreen(usuario: _u, mostrarAppBar: false)),
   ];
 
@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, _) {
         final abas = _construirAbas();
         return Scaffold(
-          appBar: CustomAppBar(
+          appBar: UsuarioAppBar(
             key: ValueKey(_u.nome),
             usuario: _u,
             onPerfilPressed: () => setState(() {}),

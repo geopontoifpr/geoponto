@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/utils/formatadores.dart';
-import '../../colaborador/models/registro_ponto_model.dart';
+import '../../ponto/models/registro_ponto_model.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../models/ocorrencia_model.dart';
-import '../widgets/ocorrencia_form_widget.dart';
+import '../widgets/ocorrencia_form.dart';
 
 class OcorrenciasDiaScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -167,7 +167,7 @@ class _OcorrenciasDiaScreenState extends State<OcorrenciasDiaScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [AppThemes.cardShadow(context)],
               ),
-              child: OcorrenciaFormWidget(
+              child: OcorrenciaForm(
                 usuario: widget.usuario,
                 dataReferencia: _dataReferencia,
                 ocorrenciaExistente: _ocorrenciaExistente,

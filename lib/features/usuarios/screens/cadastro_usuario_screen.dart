@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import '../models/usuario_model.dart';
 import '../controllers/usuario_controller.dart';
-import '../../admin/controllers/setor_controller.dart';
+import '../../empresa/controllers/setor_controller.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';

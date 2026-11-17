@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/widgets/custom_app_bar.dart';
+import '../../usuarios/widgets/usuario_app_bar.dart';
 import '../../usuarios/models/usuario_model.dart';
 import '../controllers/ocorrencia_controller.dart';
 import '../models/ocorrencia_model.dart';
 import '../widgets/ocorrencia_card.dart';
-import '../widgets/ocorrencia_form_widget.dart';
+import '../widgets/ocorrencia_form.dart';
 import '../../../core/utils/formatadores.dart';
 
 class MinhasOcorrenciasScreen extends StatefulWidget {
@@ -75,7 +75,7 @@ class _MinhasOcorrenciasScreenState extends State<MinhasOcorrenciasScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(ctx).colorScheme.onSurface),
               ),
               const SizedBox(height: 16),
-              OcorrenciaFormWidget(
+              OcorrenciaForm(
                 usuario: widget.usuario,
                 dataReferencia: oc.dataInicio,
                 ocorrenciaExistente: oc,
@@ -184,6 +184,6 @@ class _MinhasOcorrenciasScreenState extends State<MinhasOcorrenciasScreen> {
     );
 
     if (!widget.mostrarAppBar) return conteudo;
-    return Scaffold(appBar: CustomAppBar(usuario: widget.usuario), body: conteudo);
+    return Scaffold(appBar: UsuarioAppBar(usuario: widget.usuario), body: conteudo);
   }
 }

@@ -41,6 +41,7 @@ dependencies:
   pdf: ^3.13.1
   printing: ^5.15.1
   device_info_plus: ^13.3.0
+  material_ui: ^1.11.1
 
 dev_dependencies:
   flutter_test:

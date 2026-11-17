@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/services/supabase_service.dart';
 import 'core/themes/app_themes.dart';
@@ -7,7 +7,7 @@ import 'core/themes/theme_controller.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/usuarios/models/usuario_model.dart'; 
 import 'features/auth/screens/primeiro_acesso_screen.dart';
-import 'core/widgets/animacao_abertura.dart';
+import 'features/auth/widgets/animacao_abertura.dart';
 import 'core/widgets/fundo_futurista.dart';
 
 
