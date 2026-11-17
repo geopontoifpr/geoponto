@@ -48,6 +48,7 @@ app.*.map.json
 .widget_preview/
 .env
 .env.*
+dotenv.env
 !.env.exampleandroid/build/
 build/
 **/android/build/
