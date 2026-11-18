@@ -44,7 +44,6 @@ class OcorrenciaService {
    
   }) async {
     final usuario = await _validarUsuarioLogado(usuarioLogado);
-    final agora = DateTime.now();
     late final List<UsuarioModel> pessoasElegiveis;
 
     switch (usuario.tipoUsuario) {
@@ -71,30 +70,23 @@ class OcorrenciaService {
 
     if (pessoasElegiveis.isEmpty) return [];
 
-    final ocorrencias = await _repository.listarPorUsuariosNoMes(
-      usuariosIds: pessoasElegiveis.map((pessoa) => pessoa.id).toList(),
-      ano: DateTime.now().year,
-      mes: DateTime.now().month,
+    // Busca TODAS as pendências da equipe, sem filtrar por mês
+    final ocorrencias = await _repository.listarTodasPendentesPorUsuarios(
+      pessoasElegiveis.map((pessoa) => pessoa.id).toList(),
     );
     
+    // Extrai apenas os IDs de quem tem ocorrência na lista retornada
     final idsComOcorrencias = ocorrencias
-        .where((ocorrencia) => ocorrencia.isPendente)
         .map((ocorrencia) => ocorrencia.usuarioId)
         .toSet();
-        
-    final idsComFechamento = await _repository.listarUsuariosComFechamentoFechado(
-      usuariosIds: idsComOcorrencias.toList(),
-      ano: agora.year,
-      mes: agora.month,
-    );
 
+    // Retorna as pessoas
     return pessoasElegiveis
-        .where((pessoa) =>
-            idsComOcorrencias.contains(pessoa.id) &&
-            !idsComFechamento.contains(pessoa.id))
+        .where((pessoa) => idsComOcorrencias.contains(pessoa.id))
         .toList();
   }
 
+  
   Future<List<OcorrenciaModel>> listarOcorrenciasDaPessoa({
     required UsuarioModel usuarioLogado,
     required UsuarioModel pessoa,
@@ -351,16 +343,30 @@ class OcorrenciaService {
     }
   }
 
+  // Future<void> _validarMesAberto(OcorrenciaModel oc) async {
+  //   final agora = DateTime.now();
+  //   final fechado = await _repository.mesEstaFechado(
+  //     usuarioId: oc.usuarioId,
+  //     ano: agora.year,
+  //     mes: agora.month,
+  //   );
+  //   if (fechado || oc.dataInicio.year != agora.year || oc.dataInicio.month != agora.month) {
+  //     throw const ValidacaoException('Não é possível alterar ocorrências de um mês encerrado ou diferente do atual.');
+  //   }
+  // }
   Future<void> _validarMesAberto(OcorrenciaModel oc) async {
-    final agora = DateTime.now();
+    // Verifica se o mês da OCORRÊNCIA já foi fechado (e não o mês de "hoje")
     final fechado = await _repository.mesEstaFechado(
       usuarioId: oc.usuarioId,
-      ano: agora.year,
-      mes: agora.month,
+      ano: oc.dataInicio.year,
+      mes: oc.dataInicio.month,
     );
-    if (fechado || oc.dataInicio.year != agora.year || oc.dataInicio.month != agora.month) {
-      throw const ValidacaoException('Não é possível alterar ocorrências de um mês encerrado ou diferente do atual.');
-    }
+    
+    if (fechado) {
+      throw const ValidacaoException(
+        'Não é possível alterar ocorrências de um mês que já teve a folha de ponto fechada.',
+      );
+    }    
   }
 
   Future<void> avaliarOcorrencia({

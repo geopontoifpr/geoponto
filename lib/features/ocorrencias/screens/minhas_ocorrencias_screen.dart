@@ -6,7 +6,7 @@ import '../controllers/ocorrencia_controller.dart';
 import '../models/ocorrencia_model.dart';
 import '../widgets/ocorrencia_card.dart';
 import '../widgets/ocorrencia_form.dart';
-import '../../../core/utils/formatadores.dart';
+import '../../../core/widgets/seletor_mes.dart';
 
 class MinhasOcorrenciasScreen extends StatefulWidget {
   final UsuarioModel usuario;
@@ -102,21 +102,7 @@ class _MinhasOcorrenciasScreenState extends State<MinhasOcorrenciasScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Seletor de Mês
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: theme.cardColor,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _mudarMes(-1)),
-              Text(
-                '${Formatadores.meses[_mesAtual.month - 1]} ${_mesAtual.year}',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface),
-              ),
-              IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _mudarMes(1)),
-            ],
-          ),
-        ),
+        SeletorMes(mes: _mesAtual, onMudar: _mudarMes),
         // Filtros (Chips)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

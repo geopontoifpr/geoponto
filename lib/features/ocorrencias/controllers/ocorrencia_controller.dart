@@ -6,6 +6,9 @@ import '../services/ocorrencia_service.dart';
 
 class OcorrenciaController extends ChangeNotifier with ExecutorAsync {
   final OcorrenciaService _service;
+  // novos campos
+  DateTime mesReferencia = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  int _requisicaoAtual = 0;
 
   OcorrenciaController({OcorrenciaService? service})
       : _service = service ?? OcorrenciaService();
@@ -29,18 +32,24 @@ class OcorrenciaController extends ChangeNotifier with ExecutorAsync {
   }
 
   Future<void> selecionarPessoa({
-    required UsuarioModel usuarioLogado,
-    required UsuarioModel pessoa,
+  required UsuarioModel usuarioLogado,
+  required UsuarioModel pessoa,
+  DateTime? mes, // opcional: se null, mantém o mês atual do controller
   }) {
     pessoaSelecionada = pessoa;
+    if (mes != null) mesReferencia = DateTime(mes.year, mes.month, 1);
     ocorrenciasDaPessoa = [];
+
     return executar(() async {
-      ocorrenciasDaPessoa = await _service.listarOcorrenciasDaPessoa(
+      final id = ++_requisicaoAtual;
+      final lista = await _service.listarOcorrenciasDaPessoa(
         usuarioLogado: usuarioLogado,
         pessoa: pessoa,
-        ano: DateTime.now().year,
-        mes: DateTime.now().month,
+        ano: mesReferencia.year,
+        mes: mesReferencia.month,
       );
+      if (id != _requisicaoAtual) return; // resposta de um mês antigo: descarta
+      ocorrenciasDaPessoa = lista;
     }, erroPadrao: 'Erro ao carregar ocorrências da pessoa selecionada.');
   }
 
@@ -48,6 +57,7 @@ class OcorrenciaController extends ChangeNotifier with ExecutorAsync {
     pessoaSelecionada = null;
     ocorrenciasDaPessoa = [];
     erroMensagem = null;
+    mesReferencia = DateTime(DateTime.now().year, DateTime.now().month, 1);
     notifyListeners();
   }
 

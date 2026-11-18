@@ -5,6 +5,7 @@ import '../models/ocorrencia_model.dart';
 import '../widgets/ocorrencia_card.dart';
 import '../widgets/filtro_ocorrencias_chips.dart';
 import '../../../core/widgets/estado_async.dart';
+import '../../../core/widgets/seletor_mes.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../usuarios/widgets/usuario_app_bar.dart';
 
@@ -31,9 +32,12 @@ class AnalisarOcorrenciasScreen extends StatefulWidget {
 class _AnalisarOcorrenciasScreenState extends State<AnalisarOcorrenciasScreen> {
   final _c = OcorrenciaController();
   bool _pendentes = true;
+  
 
   Future<void> _carregar() =>
       _c.selecionarPessoa(usuarioLogado: widget.usuarioLogado, pessoa: widget.pessoa);
+
+      
 
   @override
   void initState() {
@@ -50,6 +54,15 @@ class _AnalisarOcorrenciasScreenState extends State<AnalisarOcorrenciasScreen> {
   void _aviso(bool ok, String sucesso, String falha) => ok
       ? SnackbarUtil.showSuccess(context, sucesso)
       : SnackbarUtil.showError(context, _c.erroMensagem ?? falha);
+
+  Future<void> _mudarMes(int delta) {
+    final atual = _c.mesReferencia;
+    return _c.selecionarPessoa(
+      usuarioLogado: widget.usuarioLogado,
+      pessoa: widget.pessoa,
+      mes: DateTime(atual.year, atual.month + delta, 1),
+    );
+  }    
 
   Future<void> _avaliar(OcorrenciaModel oc, bool aprovar) async {
     final obs = TextEditingController();
@@ -133,6 +146,11 @@ class _AnalisarOcorrenciasScreenState extends State<AnalisarOcorrenciasScreen> {
                 leading: const BackButton(),
                 title: Text(widget.pessoa.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text(widget.pessoa.tipoUsuario == TipoUsuario.gestor ? 'Ocorrências do gestor' : 'Ocorrências do colaborador'),
+              ),
+              SeletorMes(
+                mes: _c.mesReferencia,
+                onMudar: _mudarMes,
+                bloquearFuturo: true, // não existem ocorrências em meses futuros
               ),
               FiltroOcorrenciasChips(pendentes: _pendentes, onChanged: (v) => setState(() => _pendentes = v)),
               Expanded(

@@ -278,8 +278,7 @@ class OcorrenciaRepository {
             'atualizado_em': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', ocorrenciaId)
-          .isFilter('minutos_abonados', null)
-          .eq('aprovada', false)
+          .isFilter('minutos_abonados', null)          
           .select('id');
 
       if ((response as List).isEmpty) {
@@ -342,8 +341,7 @@ class OcorrenciaRepository {
             'atualizado_em': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', id)
-          .isFilter('minutos_abonados', null)
-          .eq('aprovada', false)
+          .isFilter('minutos_abonados', null)          
           .select('id');
       if ((response as List).isEmpty) {
         throw const ValidacaoException(
@@ -372,5 +370,24 @@ class OcorrenciaRepository {
       throw ServidorException('Erro ao excluir ocorrência: ${e.message}');
     }
   }
+  Future<List<OcorrenciaModel>> listarTodasPendentesPorUsuarios(List<String> usuariosIds) async {
+    if (usuariosIds.isEmpty) return [];
+    try {
+      final response = await _client
+          .from('ocorrencias')
+          .select()
+          .inFilter('usuario_id', usuariosIds)
+          .eq('aprovada', false)                // <-- Seu filtro garantindo que não está aprovada
+          .isFilter('minutos_abonados', null)   // <-- Trava garantindo que ainda não foi nem recusada
+          .order('data_inicio', ascending: true);
+
+      return (response as List)
+          .map((item) => OcorrenciaModel.fromMap(item as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw ServidorException('Erro ao listar ocorrências pendentes: ${e.message}');
+    }
+  }
+  
 
 }
