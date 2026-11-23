@@ -16,7 +16,7 @@ Aplicativo móvel de controle de ponto eletrônico e gestão de jornada de traba
 2. [Objetivos](#-objetivos)
 3. [Download Rápido (APK) e Credenciais para a Banca](#-download-rápido-apk-e-credenciais-para-a-banca)
 4. [Perfis de Usuário](#-perfis-de-usuário)
-5. [Guia de Instalação e Execução na IDE (Desenvolvedores)](#️-guia-de-instalação-e-execução-na-ide-desenvolvedores)
+5. [Guia de Instalação e Execução na IDE (Desenvolvedores)](#-guia-de-instalação-e-execução-na-ide-desenvolvedores)
 6. [Equipe e Instituição](#-equipe-e-instituição)
 
 ---
@@ -50,9 +50,9 @@ Para avaliar o aplicativo diretamente em um dispositivo **Android (8.0 ou superi
 2. Baixe o arquivo instalável **`.apk`** da versão mais recente com apenas um clique;
 3. Instale e abra o aplicativo no seu smartphone Android.
 
-### 🔑 Credenciais de Teste Provisionadas
+### 🔑 Credenciais de Teste Provisionadas (APK)
 
-Como o sistema exige autenticação, disponibilizamos três contas pré-configuradas para que a banca avaliadora possa testar cada nível de permissão:
+Como o sistema exige autenticação, disponibilizamos três contas pré-configuradas no ambiente publicado para que a banca avaliadora possa testar cada nível de permissão:
 
 | Perfil de Acesso | E-mail Corporativo | Senha | O que testar neste perfil |
 | :--- | :--- | :--- | :--- |
@@ -74,21 +74,22 @@ O sistema opera em uma interface unificada que adapta suas abas e permissões co
 
 ---
 
-## 🛠️ Guia de Instalação e Execução na IDE (Desenvolvedores)
+## 🔧 Guia de Instalação e Execução na IDE (Desenvolvedores)
 
-Caso deseje importar o código-fonte em sua máquina para análise ou execução em modo de desenvolvimento (via **VS Code** ou **Android Studio**), siga os passos abaixo:
+Caso deseje importar o código-fonte em sua máquina para análise ou execução em modo de desenvolvimento (via **VS Code** ou **Android Studio**) utilizando seu próprio banco de dados isolado, siga os passos abaixo:
 
 ### 1. Pré-requisitos
 - **Git** instalado;
 - **Flutter SDK** (versão `3.24` ou superior) e **Dart SDK** (`3.5+`) configurados no `PATH`;
 - **VS Code** (com as extensões *Flutter* e *Dart*) ou **Android Studio**;
+- Conta gratuita no [Supabase](https://supabase.com/);
 - Dispositivo físico Android (conectado via Depuração USB), Emulador Android (API 26+) ou navegador Google Chrome.
 
 ### 2. Clonar o Repositório (Branch `main`)
 Abra o terminal na pasta onde deseja salvar o projeto e execute o comando abaixo para clonar diretamente a branch `main`:
 
 ```bash
-git clone -b main https://github.com/geopontoifpr/geoponto.git
+git clone -b main [https://github.com/geopontoifpr/geoponto.git](https://github.com/geopontoifpr/geoponto.git)
 cd geoponto
 ```
 
@@ -100,15 +101,37 @@ code .
 ```
 *(Ou abra a pasta `geoponto` manualmente através do menu `File > Open Folder` na sua IDE de preferência).*
 
-### 4. Configurar as Variáveis de Ambiente (`.env`)
-Na raiz do projeto (no mesmo nível do arquivo `pubspec.yaml`), crie um arquivo chamado **`.env`** contendo as seguintes credenciais de homologação do projeto no Supabase:
+### 4. Configurar o Banco de Dados (Supabase)
+1. Acesse [supabase.com](https://supabase.com/), faça login e clique em **New Project** para criar um novo banco PostgreSQL;
+2. No menu lateral esquerdo do projeto criado, abra o **SQL Editor**, clique em **New query**, copie todo o conteúdo do arquivo [`supabase/setup.sql`](supabase/setup.sql) deste repositório e clique em **Run** — isso criará automaticamente os tipos `ENUM`, todas as tabelas, funções RPC, políticas de segurança (RLS) e as jornadas padrão (`30h`, `40h` e `44h`);
+3. **Criar o primeiro usuário Administrador:**
+   - No menu lateral do Supabase, acesse **Authentication > Users** e clique em **Add user > Create new user** (informe um e-mail, uma senha e marque **Auto Confirm User**);
+   - Copie o **User UID** gerado e execute o comando abaixo no **SQL Editor** (substituindo o UUID e os dados pelos do usuário criado):
 
-```env
-SUPABASE_URL=[seu url aqui]
-SUPABASE_ANON_KEY=[sua chave aqui]
+```sql
+INSERT INTO public.usuarios (id, nome, email, tipo_usuario, ativo, primeiro_acesso)
+VALUES (
+  'COLE-AQUI-O-UUID-DO-AUTH',
+  'Administrador',
+  'admin@empresa.com',
+  'ADMINISTRADOR',
+  true,
+  false
+);
 ```
 
-### 5. Instalar as Dependências e Executar
+*(Ao rodar o aplicativo conectado ao seu próprio banco, utilize esse e-mail e senha para o primeiro login, cadastrar a empresa, os setores e os demais membros da equipe).*
+
+### 5. Configurar as Variáveis de Ambiente (`.env`)
+1. No painel do seu projeto no Supabase, acesse **Project Settings > API** e copie a **Project URL** e a chave pública **`anon` `public`**;
+2. Na raiz do projeto Flutter (no mesmo nível do arquivo `pubspec.yaml`), crie um arquivo chamado **`.env`** e preencha-o conforme o modelo abaixo:
+
+```env
+SUPABASE_URL=[https://seu-projeto.supabase.co](https://seu-projeto.supabase.co)
+SUPABASE_ANON_KEY=sua-chave-anon-publica
+```
+
+### 6. Instalar as Dependências e Executar
 No terminal integrado da IDE, baixe os pacotes do projeto e inicie a aplicação:
 
 ```bash
