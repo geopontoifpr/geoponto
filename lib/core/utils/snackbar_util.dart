@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../constants/app_colors.dart';
 
 class SnackbarUtil {
@@ -10,7 +10,7 @@ class SnackbarUtil {
           style: const TextStyle(color: AppColors.cardLight), 
         ),
         // Fundo 100% sólido
-        backgroundColor: AppColors.error.withOpacity(1.0),
+        backgroundColor: AppColors.error.withValues(alpha: 1.0),
         behavior: SnackBarBehavior.floating, 
       )
     );
@@ -24,7 +24,7 @@ class SnackbarUtil {
           style: const TextStyle(color: AppColors.cardLight), 
         ),
         // Fundo 100% sólido
-        backgroundColor: AppColors.success.withOpacity(1.0),
+        backgroundColor: AppColors.success.withValues(alpha: 1.0),
         behavior: SnackBarBehavior.floating, 
       )
     );

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../models/ocorrencia_model.dart';
@@ -6,14 +6,17 @@ import '../models/ocorrencia_model.dart';
 class OcorrenciaCard extends StatelessWidget {
   final OcorrenciaModel ocorrencia;
   final String dataFormatada;
-  final Future<void> Function(OcorrenciaModel ocorrencia, bool aprovar) onAvaliar;
+  final Future<void> Function(OcorrenciaModel ocorrencia, bool aprovar)? onAvaliar;
   final Future<void> Function(OcorrenciaModel ocorrencia)? onReabrir;
+  final VoidCallback? onEditar; // NOVO
 
   const OcorrenciaCard({
+    super.key,
     required this.ocorrencia,
     required this.dataFormatada,
-    required this.onAvaliar,
+    this.onAvaliar,
     this.onReabrir,
+    this.onEditar,
   });
 
   @override
@@ -52,6 +55,7 @@ class OcorrenciaCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // --- LADO ESQUERDO: Data e Tipo de Ocorrência ---
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,20 +77,42 @@ class OcorrenciaCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Chip(
-                avatar: Icon(iconeStatus, size: 16, color: corStatus),
-                label: Text(status),
-                side: BorderSide.none,
-                backgroundColor: corStatus.withValues(alpha: 0.12),
-                labelStyle: TextStyle(
-                  color: corStatus,
-                  fontWeight: FontWeight.w600,
-                ),
+
+              // --- LADO DIREITO: Banner e Data da Avaliação ---
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Chip(
+                    avatar: Icon(iconeStatus, size: 16, color: corStatus),
+                    label: Text(status),
+                    side: BorderSide.none,
+                    backgroundColor: corStatus.withValues(alpha: 0.12),
+                    labelStyle: TextStyle(
+                      color: corStatus,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  // Data da avaliação exibida logo abaixo do Chip
+                  if (oc.foiAvaliada && oc.atualizadoEm != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, right: 4),
+                      child: Text(
+                        'em ${oc.atualizadoEm!.day.toString().padLeft(2, '0')}/${oc.atualizadoEm!.month.toString().padLeft(2, '0')} às ${oc.atualizadoEm!.hour.toString().padLeft(2, '0')}:${oc.atualizadoEm!.minute.toString().padLeft(2, '0')}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
-          ),
+          ), // FIM DA ROW DO CABEÇALHO
+
+          // --- RESTANTE DO CARD ---
           if (oc.minutosPropostos > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
               'Abono solicitado: ${oc.minutosPropostos} minutos',
               style: TextStyle(
@@ -116,31 +142,58 @@ class OcorrenciaCard extends StatelessWidget {
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
             ),
           ],
-          if (oc.isPendente) ...[
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 10,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  onPressed: () => onAvaliar(oc, true),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Aprovar'),
+          
+          // BOTÃO DE EDITAR
+          if (onEditar != null && ocorrencia.isPendente)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onEditar,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Editar Ocorrência'),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => onAvaliar(oc, false),
-                  icon: const Icon(Icons.close),
-                  label: const Text('Recusar'),
-                ),
-              ],
+              ),
             ),
-          ],
+            
+          // BOTÃO DE TORNAR PENDENTE (GESTOR)
           if (oc.foiAvaliada && onReabrir != null) ...[
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: () => onReabrir!(oc),
               icon: const Icon(Icons.undo),
               label: const Text('Tornar pendente novamente'),
+            ),
+          ],
+          
+          // BOTÕES DE APROVAR/RECUSAR (GESTOR)
+          if (onAvaliar != null && ocorrencia.isPendente) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => onAvaliar!(ocorrencia, false),
+                    icon: const Icon(Icons.cancel_outlined, color: AppColors.error),
+                    label: const Text('Recusar', style: TextStyle(color: AppColors.error)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.error),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => onAvaliar!(ocorrencia, true),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Aprovar'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],

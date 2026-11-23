@@ -1,3 +1,5 @@
+import '../../../core/utils/formatadores.dart';
+
 enum TipoOcorrenciaEnum {
   esquecimento('esquecimento', 'Esquecimento de registro'),
   atraso('atraso', 'Atraso'),
@@ -37,6 +39,7 @@ class OcorrenciaModel {
   final bool aprovada;
   final String? observacaoGestor;
   final DateTime? criadoEm;
+  final DateTime? atualizadoEm;
 
   OcorrenciaModel({
     this.id,
@@ -52,6 +55,7 @@ class OcorrenciaModel {
     this.aprovada = false,
     this.observacaoGestor,
     this.criadoEm,
+    this.atualizadoEm,
   });
 
   /// Pendentes possuem minutosAbonados nulo. Aprovações e recusas persistidas possuem valor não nulo.
@@ -105,24 +109,24 @@ class OcorrenciaModel {
       criadoEm: map['criado_em'] != null
           ? DateTime.parse(map['criado_em'].toString()).toLocal()
           : null,
+      atualizadoEm: map['atualizado_em'] != null
+          ? DateTime.parse(map['atualizado_em'].toString()).toLocal()
+          : null,
     );
   }
 
   Map<String, dynamic> toInsertMap() {
-    String formatDate(DateTime d) =>
-        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
     return {
       'usuario_id': usuarioId,
       'gestor_id': gestorId,
-      'data_inicio': formatDate(dataInicio),
-      if (dataFim != null) 'data_fim': formatDate(dataFim!),
+      'data_inicio': Formatadores.dataIso(dataInicio),
+      if (dataFim != null) 'data_fim': Formatadores.dataIso(dataFim!),
       if (minutosAbonados != null) 'minutos_abonados': minutosAbonados,
       'tipo_ocorrencia': tipoOcorrencia.valorBanco,
       'justificativa': justificativa,
       if (horarioProposto != null) 'horario_proposto': horarioProposto,
       'aprovada': aprovada,
       if (observacaoGestor != null) 'observacao_gestor': observacaoGestor,
-    };
+    };   
   }
 }

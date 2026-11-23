@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import '../models/usuario_model.dart';
 import '../controllers/usuario_controller.dart';
-import '../../admin/controllers/setor_controller.dart';
+import '../../empresa/controllers/setor_controller.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../jornadas/controllers/jornada_controller.dart';
+
 
 class CadastroUsuarioScreen extends StatefulWidget {
   final String empresaId;
@@ -15,11 +16,11 @@ class CadastroUsuarioScreen extends StatefulWidget {
   final UsuarioModel usuarioLogado;
   
   const CadastroUsuarioScreen({
-    Key? key,
+    super.key,
     required this.empresaId,
     this.membroEmEdicao,
     required this.usuarioLogado,
-  }) : super(key: key);
+  });
 
   @override
   State<CadastroUsuarioScreen> createState() => _CadastroUsuarioScreenState();
@@ -144,6 +145,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
         }
       }
 
+      if (!mounted) return;
+
           // 1. Define a mensagem
       final mensagemSucesso = ehEdicao 
           ? 'Dados atualizados com sucesso!' 
@@ -171,8 +174,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
         
         // Define uma cor ABSOLUTAMENTE sólida ignorando qualquer transparência do sistema
         final corFundo = isDark 
-            ? AppColors.cardDark.withOpacity(1.0) // Força 100% de opacidade
-            : AppColors.cardLight.withOpacity(1.0); // (Ou Colors.white)
+            ? AppColors.cardDark.withValues(alpha: 1.0) // Força 100% de opacidade
+            : AppColors.cardLight.withValues(alpha: 1.0); // (Ou Colors.white)
 
         return AlertDialog(
           title: const Text('Desvincular Aparelho?'),
@@ -272,8 +275,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
 
               if (ehAdmin) ...[
                 DropdownButtonFormField<String>(
-                  value: _tipoSelecionado,
-                  dropdownColor: theme.cardColor.withOpacity(1.0),
+                  initialValue: _tipoSelecionado,
+                  dropdownColor: theme.cardColor.withValues(alpha: 1.0),
                   decoration: InputDecoration(
                     labelText: 'Tipo de Acesso',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -305,8 +308,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                     }
 
                     return DropdownButtonFormField<String>(
-                      value: _setorSelecionado,
-                      dropdownColor: theme.cardColor.withOpacity(1.0),
+                      initialValue: _setorSelecionado,
+                      dropdownColor: theme.cardColor.withValues(alpha: 1.0),
                       decoration: InputDecoration(
                         labelText: 'Setor',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -348,8 +351,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                   }
 
                   return DropdownButtonFormField<String>(
-                    value: _jornadaSelecionada,
-                    dropdownColor: theme.cardColor.withOpacity(1.0),
+                    initialValue: _jornadaSelecionada,
+                    dropdownColor: theme.cardColor.withValues(alpha: 1.0),
                     decoration: InputDecoration(
                       labelText: 'Jornada de Trabalho',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -422,8 +425,8 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: temDispositivo 
-                                            ? Colors.red.withOpacity(0.08)
-                                            : theme.disabledColor.withOpacity(0.08),
+                                            ? Colors.red.withValues(alpha: 0.08)
+                                            : theme.disabledColor.withValues(alpha: 0.08),
                                       ),
                                     ),
                                   ),
@@ -436,7 +439,7 @@ class _CadastroUsuarioScreenState extends State<CadastroUsuarioScreen> {
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: temDispositivo 
-                                            ? Colors.red.withOpacity(0.3) 
+                                            ? Colors.red.withValues(alpha: 0.3) 
                                             : theme.dividerColor,
                                         width: 1.5,
                                       ),

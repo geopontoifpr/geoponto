@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/screens/painel_unificado_screen.dart';
+import '../../home/screens/home_screen.dart';
 import '../../../core/themes/app_themes.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/widgets/custom_text_field.dart';
@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final Widget destino = usuario.primeiroAcesso
           ? PrimeiroAcessoScreen(usuario: usuario)
-          : PainelUnificadoScreen(usuario: usuario);
+          : HomeScreen(usuario: usuario);
 
       Navigator.pushReplacement(
         context,
@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 final sucesso = await _controller.recuperarSenha(email);
 
-                if (!ctx.mounted) return;
+                if (!mounted || !ctx.mounted) return;
 
                 if (sucesso) {
                   Navigator.pop(ctx);
@@ -340,8 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: CustomPaint(
-          // foregroundPainter: const _CantosPainter(),
+        child: CustomPaint(          
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -556,39 +555,4 @@ class _LogoPainter extends CustomPainter {
   bool shouldRepaint(covariant _LogoPainter old) => old.t != t;
 }
 
-class _CantosPainter extends CustomPainter {
-  const _CantosPainter();
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    const l = 16.0;
-    const m = 8.0;
-    final w = size.width;
-    final h = size.height;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..color = AppColors.neonCyan.withValues(alpha: 0.7);
-
-    final path = Path()
-      ..moveTo(m, m + l)
-      ..lineTo(m, m)
-      ..lineTo(m + l, m)
-      ..moveTo(w - m - l, m)
-      ..lineTo(w - m, m)
-      ..lineTo(w - m, m + l)
-      ..moveTo(m, h - m - l)
-      ..lineTo(m, h - m)
-      ..lineTo(m + l, h - m)
-      ..moveTo(w - m - l, h - m)
-      ..lineTo(w - m, h - m)
-      ..lineTo(w - m, h - m - l);
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CantosPainter old) => false;
-}

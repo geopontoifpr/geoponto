@@ -23,11 +23,11 @@ class AuthService {
     final usuario = await _repository.buscarPorCredenciais(emailTratado, senha);
 
     if (usuario == null) {
-      throw AuthExceptionApp('E-mail ou senha inválidos. Verifique suas credenciais.');
+      throw const AuthExceptionApp('E-mail ou senha inválidos. Verifique suas credenciais.');
     }
 
     if (!usuario.ativo) {
-      throw UsuarioInativoException('Usuário inativo. Entre em contato com a administração.');
+      throw const UsuarioInativoException('Usuário inativo. Entre em contato com a administração.');
     }
 
     // === INÍCIO DA VALIDAÇÃO DO DISPOSITIVO ===
@@ -37,7 +37,7 @@ class AuthService {
       final String? dispositivoAtual = await DeviceUtil.getDeviceId();
 
       if (dispositivoAtual == null || dispositivoAtual.isEmpty) {
-        throw AuthExceptionApp('Erro de segurança: Não foi possível identificar o hardware deste aparelho.');
+        throw const AuthExceptionApp('Erro de segurança: Não foi possível identificar o hardware deste aparelho.');
       }
 
       final String? dispositivoCadastrado = usuario.dispositivoUsuario;
@@ -46,12 +46,12 @@ class AuthService {
         // 2. Primeiro acesso neste aparelho: Vincula no banco
         await _repository.vincularDispositivo(usuario.id, dispositivoAtual);
         
-        // Atualiza o objeto na memória e segue o baile
+        // Atualiza o objeto na memória
         return usuario.copyWith(dispositivoUsuario: dispositivoAtual);
         
       } else if (dispositivoCadastrado != dispositivoAtual) {
         // 3. Celular diferente do que está no banco: Bloqueia!
-        throw AuthExceptionApp(
+        throw const AuthExceptionApp(
           'Acesso negado.\nSua conta já está vinculada a outro celular.\n'
           'Solicite ao RH ou Gestor a liberação do seu novo aparelho.'
         );
@@ -69,10 +69,10 @@ class AuthService {
   Future<void> salvarPrimeiroAcesso(String novaSenha, String confirmarSenha, String usuarioId) async {
     // Regras de negócio e validação
     if (novaSenha.trim().length < 6) {
-      throw ValidacaoException('A senha deve ter no mínimo 6 caracteres.');
+      throw const ValidacaoException('A senha deve ter no mínimo 6 caracteres.');
     }
     if (novaSenha != confirmarSenha) {
-      throw ValidacaoException('As senhas não coincidem.');
+      throw const ValidacaoException('As senhas não coincidem.');
     }
 
     // Chama o repositório
@@ -83,7 +83,7 @@ class AuthService {
     final emailTratado = email.trim();
 
     if (emailTratado.isEmpty || !emailTratado.contains('@')) {
-      throw ValidacaoException('Informe um e-mail válido para recuperar a senha.');
+      throw const ValidacaoException('Informe um e-mail válido para recuperar a senha.');
     }
 
     await _repository.enviarEmailRecuperacao(emailTratado);

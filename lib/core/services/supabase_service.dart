@@ -25,7 +25,7 @@ class SupabaseService {
 
     try {
       // Tudo que acessa o dotenv fica DENTRO do try para nunca dar NotInitializedError
-      await dotenv.load(fileName: '.env');
+      await dotenv.load(fileName: 'dotenv.env');
       url = dotenv.env['SUPABASE_URL'];
       anonKey = dotenv.env['SUPABASE_ANON_KEY'];
     } catch (_) {
@@ -47,7 +47,7 @@ class SupabaseService {
 
     await Supabase.initialize(
       url: url,
-      anonKey: anonKey,
+      publishableKey: anonKey,
     );
   }
 
